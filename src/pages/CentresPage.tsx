@@ -1,12 +1,49 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
-import { Plus, Trash2, Edit, X, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Edit,
+  X,
+  Loader2,
+  AlertCircle,
+  MapPin,
+  Activity,
+} from "lucide-react";
+
+const GOUVERNORATS = [
+  "Ariana",
+  "Béja",
+  "Ben Arous",
+  "Bizerte",
+  "Gabès",
+  "Gafsa",
+  "Jendouba",
+  "Kairouan",
+  "Kasserine",
+  "Kébili",
+  "Kef",
+  "Mahdia",
+  "Manouba",
+  "Médenine",
+  "Monastir",
+  "Nabeul",
+  "Sfax",
+  "Sidi Bouzid",
+  "Siliana",
+  "Sousse",
+  "Tataouine",
+  "Tozeur",
+  "Tunis",
+  "Zaghouan",
+];
 
 export default function CentresPage() {
   const [salles, setSalles] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [editingSalleId, setEditingSalleId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<any>({});
 
   const [formData, setFormData] = useState({
     nom: "",
@@ -30,28 +67,49 @@ export default function CentresPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSalles(res.data);
-    } catch (err) {
-      console.error("Erreur chargement:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const validateForm = () => {
+    let newErrors: any = {};
+    if (!formData.nom.trim())
+      newErrors.nom = "Le nom du centre est obligatoire";
+    if (!formData.gouvernorat)
+      newErrors.gouvernorat = "Veuillez choisir un gouvernorat";
+    if (!/^\d{4}$/.test(formData.code_postal))
+      newErrors.code_postal = "4 chiffres requis";
+    if (!/^\d{8}$/.test(formData.telephone_salle))
+      newErrors.telephone_salle = "8 chiffres requis";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const openAddModal = () => {
+    setEditingSalleId(null);
+    setErrors({});
+    setFormData({
+      nom: "",
+      gouvernorat: "",
+      delegation: "",
+      code_postal: "",
+      adresse: "",
+      telephone_salle: "",
+    });
+    setIsModalOpen(true);
+  };
+
   const openEditModal = (salle: any) => {
     setEditingSalleId(salle.id);
-    setFormData({
-      nom: salle.nom || "",
-      gouvernorat: salle.gouvernorat || "",
-      delegation: salle.delegation || "",
-      code_postal: salle.code_postal || "",
-      adresse: salle.adresse || "",
-      telephone_salle: salle.telephone_salle || "",
-    });
+    setErrors({});
+    setFormData(salle);
     setIsModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
     try {
       if (editingSalleId) {
         await api.patch(`/salles/${editingSalleId}`, formData, {
@@ -64,113 +122,156 @@ export default function CentresPage() {
       }
       setIsModalOpen(false);
       fetchSalles();
-      alert("Opération réussie !");
     } catch (err: any) {
-      alert(
-        "Erreur de sauvegarde : " +
-          (err.response?.data?.message || "Erreur serveur"),
-      );
+      if (err.response?.status === 409)
+        setErrors({ nom: "Ce nom de centre existe déjà." });
+      else alert("Erreur de sauvegarde");
     }
   };
 
-  // --- LA FONCTION DE SUPPRESSION CORRIGÉE ---
   const deleteSalle = async (id: string) => {
-    const confirmed = window.confirm(
-      "Voulez-vous vraiment supprimer ce centre ?",
-    );
-    if (!confirmed) return;
-
-    try {
-      await api.delete(`/salles/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchSalles(); // On rafraîchit la liste
-      alert("Centre supprimé !");
-    } catch (err: any) {
-      console.error("Erreur suppression:", err);
-      // Si l'erreur est 403, c'est que tu n'es pas ADMIN en base
-      alert(
-        "Erreur : " +
-          (err.response?.data?.message ||
-            "Impossible de supprimer. Vérifiez vos droits ADMIN."),
-      );
+    if (window.confirm("Voulez-vous vraiment supprimer ce centre ?")) {
+      try {
+        await api.delete(`/salles/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        fetchSalles();
+      } catch (err) {
+        alert("Action refusée");
+      }
     }
   };
 
   return (
-    <div className="p-2">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-7xl mx-auto">
+      {/* 🇹🇳 HEADER OFFICIEL (Creativity Part) */}
+      <div className="flex justify-between items-start mb-12">
+        <div className="flex items-center space-x-4">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Flag_of_Tunisia.svg"
+            alt="Tunisie"
+            className="h-10 rounded-md shadow-sm"
+          />
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-400">
+              République Tunisienne
+            </p>
+            <p className="text-sm font-black text-[#1A1C1E]">
+              Ministère de la Jeunesse et des Sports
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* TITRE ET GREETING */}
+      <div className="mb-10">
+        <h1 className="text-5xl font-black text-[#1A1C1E] tracking-tighter">
           Gestion des Centres
         </h1>
+        <p className="text-gray-500 mt-2 font-medium text-lg">
+          Interface d'administration du réseau national{" "}
+          <span className="text-[#1A1C1E] font-bold">SmartChabeb</span>.
+        </p>
+      </div>
+
+      {/* STATS ET ACTION (Style Image) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <div className="bg-[#D9E8D1] p-8 rounded-[40px] flex justify-between items-center shadow-sm relative overflow-hidden group">
+          <div className="relative z-10">
+            <p className="text-xs font-black uppercase tracking-widest opacity-60">
+              Total Établissements
+            </p>
+            <p className="text-5xl font-black mt-2 text-[#1A1C1E]">
+              {salles.length}
+            </p>
+          </div>
+          <div className="bg-white/40 p-5 rounded-[25px] relative z-10 shadow-inner">
+            <Activity size={32} className="text-[#1A1C1E]" />
+          </div>
+          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
+        </div>
+
         <button
-          onClick={() => {
-            setEditingSalleId(null);
-            setFormData({
-              nom: "",
-              gouvernorat: "",
-              delegation: "",
-              code_postal: "",
-              adresse: "",
-              telephone_salle: "",
-            });
-            setIsModalOpen(true);
-          }}
-          className="bg-blue-900 text-white px-5 py-2.5 rounded-xl flex items-center hover:bg-blue-800 transition-all shadow-md"
+          onClick={openAddModal}
+          className="md:col-span-2 bg-white p-2 rounded-[40px] shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-xl transition-all duration-500"
         >
-          <Plus size={20} className="mr-2" /> Nouveau centre
+          <div className="flex items-center space-x-6 ml-6">
+            <div className="bg-[#1A1C1E] text-white p-5 rounded-[25px] group-hover:rotate-90 transition-transform duration-500 shadow-lg">
+              <Plus size={28} />
+            </div>
+            <div className="text-left">
+              <span className="block font-black text-xl text-[#1A1C1E]">
+                Inscrire un nouveau centre
+              </span>
+              <span className="text-gray-400 text-sm font-medium">
+                Ajouter une maison de jeunes à la base de données
+              </span>
+            </div>
+          </div>
+          <div className="mr-8 opacity-20 group-hover:opacity-100 transition-opacity">
+            <MapPin size={40} className="text-[#1A1C1E]" />
+          </div>
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      {/* TABLEAU (Style Activity Summary) */}
+      <div className="bg-white rounded-[45px] p-10 shadow-sm border border-gray-50 mb-10">
         {isLoading ? (
-          <div className="flex justify-center p-20">
-            <Loader2 className="animate-spin text-blue-900" size={40} />
+          <div className="flex justify-center py-20">
+            <Loader2 className="animate-spin text-[#1A1C1E]" size={40} />
           </div>
         ) : (
           <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b text-gray-600 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="p-4">Centre</th>
-                <th className="p-4">Emplacement (Gouv / Délég)</th>
-                <th className="p-4">Code Postal</th>
-                <th className="p-4">Téléphone</th>
-                <th className="p-4 text-center">Actions</th>
+            <thead>
+              <tr className="text-gray-400 text-[10px] uppercase tracking-[0.25em] font-black border-b border-gray-50">
+                <th className="pb-8 pl-4">Nom de l'institution</th>
+                <th className="pb-8 text-center">Région</th>
+                <th className="pb-8 text-center">Contact</th>
+                <th className="pb-8 text-right pr-4">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-50/50">
               {salles.map((salle: any) => (
                 <tr
                   key={salle.id}
-                  className="hover:bg-blue-50/30 transition-colors"
+                  className="group hover:bg-[#FDFCF9] transition-all duration-300"
                 >
-                  <td className="p-4 font-medium text-gray-800">{salle.nom}</td>
-                  <td className="p-4 text-gray-600">
-                    <span className="font-bold text-blue-900">
+                  <td className="py-8 pl-4">
+                    <div className="flex items-center space-x-5">
+                      <div className="w-14 h-14 bg-[#F7F3E9] rounded-[22px] flex items-center justify-center font-black text-[#1A1C1E] text-xl shadow-sm border border-white">
+                        {salle.nom[0]}
+                      </div>
+                      <div>
+                        <span className="block font-black text-[#1A1C1E] text-lg">
+                          {salle.nom}
+                        </span>
+                        <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">
+                          {salle.delegation}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-8 text-center">
+                    <span className="bg-[#E8DEF8] px-4 py-2 rounded-full text-[#6750A4] font-black text-[10px] uppercase tracking-widest shadow-sm">
                       {salle.gouvernorat}
                     </span>
-                    {salle.delegation && ` > ${salle.delegation}`}
                   </td>
-                  <td className="p-4 text-gray-500">
-                    {salle.code_postal || "---"}
+                  <td className="py-8 text-center font-black text-[#1A1C1E] text-sm tracking-tighter italic">
+                    {salle.telephone_salle}
                   </td>
-                  <td className="p-4 text-gray-600">
-                    {salle.telephone_salle || "---"}
-                  </td>
-                  <td className="p-4">
-                    <div className="flex justify-center space-x-2">
+                  <td className="py-8 pr-4">
+                    <div className="flex justify-end space-x-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
                       <button
                         onClick={() => openEditModal(salle)}
-                        className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition"
+                        className="p-3 bg-[#F7F3E9] text-[#1A1C1E] rounded-2xl hover:bg-[#1A1C1E] hover:text-white transition-all shadow-sm"
                       >
-                        <Edit size={18} />
+                        <Edit size={20} />
                       </button>
                       <button
-                        // --- BRANCHEMENT DE LA FONCTION ICI ---
                         onClick={() => deleteSalle(salle.id)}
-                        className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition"
+                        className="p-3 bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={20} />
                       </button>
                     </div>
                   </td>
@@ -181,83 +282,120 @@ export default function CentresPage() {
         )}
       </div>
 
-      {/* MODAL */}
+      {/* 🎨 MODAL STYLISÉE (Creativity Part) */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-blue-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl relative">
+        <div className="fixed inset-0 bg-[#1A1C1E]/60 backdrop-blur-md flex items-center justify-center z-50 p-6">
+          <div className="bg-[#F7F3E9] rounded-[50px] w-full max-w-xl p-12 shadow-2xl relative border border-white/20 animate-in zoom-in-95 duration-300">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-5 right-5 text-gray-400 hover:text-gray-600"
+              className="absolute top-8 right-8 text-gray-400 hover:text-[#1A1C1E] transition-colors bg-white p-2 rounded-full shadow-sm"
             >
-              <X size={20} />
+              <X size={24} />
             </button>
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">
-              {editingSalleId ? "Modifier" : "Ajouter"}
-            </h2>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input
-                required
-                placeholder="Nom du centre"
-                className="w-full p-3 border rounded-xl"
-                value={formData.nom}
-                onChange={(e) =>
-                  setFormData({ ...formData, nom: e.target.value })
-                }
-              />
-              <div className="grid grid-cols-2 gap-4">
+            <h2 className="text-3xl font-black mb-2 text-[#1A1C1E] tracking-tighter">
+              {editingSalleId ? "Modifier le centre" : "Nouveau centre"}
+            </h2>
+            <p className="text-gray-500 font-medium mb-8">
+              Informations de l'établissement étatique
+            </p>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">
+                  Désignation
+                </label>
                 <input
-                  required
-                  placeholder="Gouvernorat"
-                  className="p-3 border rounded-xl"
-                  value={formData.gouvernorat}
+                  className={`w-full p-5 bg-white border-none rounded-[25px] shadow-sm outline-none focus:ring-4 focus:ring-[#D9E8D1] transition-all font-bold ${errors.nom && "ring-2 ring-red-300"}`}
+                  placeholder="Nom officiel..."
+                  value={formData.nom}
                   onChange={(e) =>
-                    setFormData({ ...formData, gouvernorat: e.target.value })
+                    setFormData({ ...formData, nom: e.target.value })
                   }
                 />
-                <input
-                  placeholder="Délégation"
-                  className="p-3 border rounded-xl"
-                  value={formData.delegation}
-                  onChange={(e) =>
-                    setFormData({ ...formData, delegation: e.target.value })
-                  }
-                />
+                {errors.nom && (
+                  <p className="text-red-500 text-[10px] font-bold ml-4 uppercase tracking-wider italic">
+                    {errors.nom}
+                  </p>
+                )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  placeholder="Code Postal"
-                  className="p-3 border rounded-xl"
-                  value={formData.code_postal}
-                  onChange={(e) =>
-                    setFormData({ ...formData, code_postal: e.target.value })
-                  }
-                />
-                <input
-                  placeholder="Téléphone"
-                  className="p-3 border rounded-xl"
-                  value={formData.telephone_salle}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      telephone_salle: e.target.value,
-                    })
-                  }
-                />
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">
+                    Gouvernorat
+                  </label>
+                  <select
+                    className={`w-full p-5 bg-white border-none rounded-[25px] shadow-sm outline-none focus:ring-4 focus:ring-[#D9E8D1] font-bold ${errors.gouvernorat && "ring-2 ring-red-300"}`}
+                    value={formData.gouvernorat}
+                    onChange={(e) =>
+                      setFormData({ ...formData, gouvernorat: e.target.value })
+                    }
+                  >
+                    <option value="">Choisir...</option>
+                    {GOUVERNORATS.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">
+                    Délégation
+                  </label>
+                  <input
+                    className="w-full p-5 bg-white border-none rounded-[25px] shadow-sm font-bold outline-none focus:ring-4 focus:ring-[#D9E8D1]"
+                    value={formData.delegation}
+                    onChange={(e) =>
+                      setFormData({ ...formData, delegation: e.target.value })
+                    }
+                  />
+                </div>
               </div>
-              <textarea
-                placeholder="Adresse complète"
-                className="w-full p-3 border rounded-xl"
-                value={formData.adresse}
-                onChange={(e) =>
-                  setFormData({ ...formData, adresse: e.target.value })
-                }
-              />
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">
+                    Code Postal
+                  </label>
+                  <input
+                    maxLength={4}
+                    className="w-full p-5 bg-white border-none rounded-[25px] shadow-sm font-bold outline-none focus:ring-4 focus:ring-[#D9E8D1]"
+                    value={formData.code_postal}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        code_postal: e.target.value.replace(/\D/g, ""),
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">
+                    Téléphone
+                  </label>
+                  <input
+                    maxLength={8}
+                    className="w-full p-5 bg-white border-none rounded-[25px] shadow-sm font-bold outline-none focus:ring-4 focus:ring-[#D9E8D1]"
+                    value={formData.telephone_salle}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        telephone_salle: e.target.value.replace(/\D/g, ""),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
               <button
                 type="submit"
-                className="w-full bg-blue-900 text-white py-4 rounded-2xl font-bold hover:bg-blue-800 transition-all shadow-lg active:scale-95"
+                className="w-full bg-[#1A1C1E] text-white py-6 rounded-[30px] font-black text-lg hover:shadow-2xl hover:bg-black transition-all active:scale-95 shadow-xl mt-4"
               >
-                Enregistrer
+                {editingSalleId
+                  ? "Sauvegarder les changements"
+                  : "Confirmer l'ajout"}
               </button>
             </form>
           </div>
