@@ -1,63 +1,83 @@
-import { Users, Building, Activity, Wallet } from "lucide-react";
+import { Users, LayoutGrid, Zap, Wallet, Activity } from "lucide-react";
 
 export default function Dashboard() {
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      {/* BANNIÈRE DE BIENVENUE */}
-      <div className="bg-[#436d75] rounded-[30px] p-10 text-white flex justify-between items-center shadow-xl relative overflow-hidden">
-        <div className="z-10">
-          <h2 className="text-3xl font-bold mb-4 italic">
-            Optimisez la gestion de vos centres
+    <div className="space-y-12 animate-in fade-in duration-1000">
+      {/* 1. SECTION GREETING */}
+      <div className="flex justify-between items-end">
+        <div>
+          <h2 className="text-5xl font-black text-smart-teal tracking-tighter">
+            Hey, Michelle 👋
           </h2>
-          <p className="text-white/70 max-w-md mb-6">
-            SmartChabeb vous permet de suivre en temps réel l'activité de vos
-            établissements et de vos adhérents.
+          <p className="text-gray-400 font-bold mt-2 italic">
+            Welcome back to SmartChabeb administration.
           </p>
-          <button className="bg-white/10 border border-white/20 px-8 py-3 rounded-2xl font-bold hover:bg-white/20 transition">
-            Consulter les statistiques
-          </button>
         </div>
-        {/* Déco abstraite */}
-        <div className="absolute right-[-40px] top-[-40px] w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
+        <div className="bg-smart-sage px-6 py-3 rounded-full flex items-center space-x-2 text-smart-teal font-black shadow-sm">
+          <Zap size={18} fill="currentColor" />
+          <span>124 Institutions</span>
+        </div>
       </div>
 
-      {/* CARTES DE STATISTIQUES */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-        <StatCard
-          icon={<Users className="text-blue-500" />}
-          title="2450"
-          subtitle="Adhérents"
-        />
-        <StatCard
-          icon={<Building className="text-orange-500" />}
-          title="182"
-          subtitle="Centres"
-        />
-        <StatCard
-          icon={<Activity className="text-green-500" />}
-          title="35"
-          subtitle="Activités"
-        />
-        <StatCard
-          icon={<Wallet className="text-purple-500" />}
-          title="12.4k"
-          subtitle="Revenus"
-        />
+      {/* 2. ACTIVITY SUMMARY BENTO GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* GRANDE CARTE SAGE */}
+        <div className="md:col-span-2 bg-smart-sage rounded-[50px] p-10 relative overflow-hidden group shadow-sm border border-white">
+          <div className="relative z-10">
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-smart-teal/40 mb-2">
+              Aperçu Hebdomadaire
+            </p>
+            <h3 className="text-4xl font-black text-smart-teal tracking-tighter">
+              Activity Summary
+            </h3>
+            <div className="mt-10 h-40 flex items-end space-x-4">
+              {[40, 70, 45, 90, 60, 30].map((h, i) => (
+                <div
+                  key={i}
+                  style={{ height: `${h}%` }}
+                  className={`flex-1 rounded-t-2xl transition-all duration-500 hover:scale-105 ${i === 3 ? "bg-smart-salmon" : "bg-white/60"}`}
+                ></div>
+              ))}
+            </div>
+          </div>
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+        </div>
+
+        {/* PETITE CARTE SALMON */}
+        <div className="bg-smart-salmon rounded-[50px] p-10 text-white shadow-xl shadow-smart-salmon/20 flex flex-col justify-between">
+          <Activity size={40} />
+          <div>
+            <h4 className="text-4xl font-black">72 %</h4>
+            <p className="text-white/70 font-bold uppercase text-[10px] tracking-widest mt-2">
+              Croissance Adhérents
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. QUICK STATS */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatItem icon={<Users size={20} />} value="2400" label="Étudiants" />
+        <StatItem icon={<LayoutGrid size={20} />} value="12" label="Modules" />
+        <StatItem icon={<Wallet size={20} />} value="45k" label="Budgets" />
+        <StatItem icon={<Zap size={20} />} value="18" label="Alertes" />
       </div>
     </div>
   );
 }
 
-function StatCard({ icon, title, subtitle }: any) {
+function StatItem({ icon, value, label }: any) {
   return (
-    <div className="bg-white p-6 rounded-[30px] shadow-sm border border-gray-100 hover:shadow-lg transition group">
-      <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+    <div className="bg-smart-bg p-6 rounded-[35px] border border-white flex items-center space-x-6 hover:shadow-lg transition-all cursor-default">
+      <div className="bg-white p-4 rounded-2xl text-smart-teal shadow-sm">
         {icon}
       </div>
-      <h3 className="text-3xl font-black text-[#2c4e54]">{title}</h3>
-      <p className="text-gray-400 font-bold text-[11px] uppercase tracking-widest">
-        {subtitle}
-      </p>
+      <div>
+        <p className="text-2xl font-black text-smart-teal">{value}</p>
+        <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+          {label}
+        </p>
+      </div>
     </div>
   );
 }

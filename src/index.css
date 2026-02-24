@@ -1,7 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  /* On définit tes couleurs "SmartChabeb" ici */
-  --color-smart-teal: #436d75;
-  --color-smart-bg: #f0f4f4;
+  --color-smart-bg: #F7F3E9;      /* Beige crème de l'image */
+  --color-smart-teal: #436d75;    /* Bleu pétrole / Gris foncé */
+  --color-smart-salmon: #E98A7D;  /* Couleur saumon du bouton feu */
+  --color-smart-sage: #D9E8D1;    /* Vert sauge des cartes */
+  --color-smart-text: #1A1C1E;
+}
+.auth-container {
+  perspective: 1000px;
+}
+
+.slide-right {
+  transform: translateX(100%);
+}
+
+.slide-left {
+  transform: translateX(0%);
 }

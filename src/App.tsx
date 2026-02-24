@@ -1,32 +1,29 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
 import CentresPage from "./pages/CentresPage"; // Importe ta page de gestion
 import Layout from "./components/Layout"; // Importe ton Layout
+import Home from "./pages/Home";
+import AuthPage from "./pages/AuthPage";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Routes publiques */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        {/* Page d'accueil publique */}
+        <Route path="/" element={<Home />} />
 
-        {/* Routes privées (Admin) enveloppées dans le Layout */}
+        {/* Page d'authentification (Login + Register) */}
+        <Route path="/auth" element={<AuthPage />} />
+
+        {/* Espace Privé Admin/Coach */}
         <Route
           path="/dashboard"
           element={
             <Layout>
-              <h1 className="text-2xl font-bold">
-                Bienvenue sur le tableau de bord SmartChabeb
-              </h1>
-              <p className="mt-4">
-                Sélectionnez une option dans le menu à gauche.
-              </p>
+              <Dashboard />
             </Layout>
           }
         />
-
         <Route
           path="/centres"
           element={
@@ -36,8 +33,8 @@ function App() {
           }
         />
 
-        {/* Redirection par défaut */}
-        <Route path="/" element={<Navigate to="/login" />} />
+        {/* Redirection si l'URL est fausse */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
   );
