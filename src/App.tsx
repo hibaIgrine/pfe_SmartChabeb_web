@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import AdherentAccessPage from "./pages/AdherentAccessPage";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -15,6 +16,8 @@ function App() {
 
         {/* Page d'authentification (Login + Register) */}
         <Route path="/auth" element={<AuthPage />} />
+
+        <Route path="/mobile-guide" element={<AdherentAccessPage />} />
 
         {/* Espace Privé Admin/Coach */}
         <Route
@@ -35,8 +38,8 @@ function App() {
         />
 
         {/* Redirection si l'URL est fausse */}
-        <Route path="*" element={<Navigate to="/" />} />
-        <Route path="/mobile-guide" element={<AdherentAccessPage />} />
+        {/* 🏆 LA ROUTE MAGIQUE (Toujours en dernier) */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
