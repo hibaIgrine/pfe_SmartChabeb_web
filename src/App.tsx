@@ -4,6 +4,7 @@ import Layout from "./components/Layout"; // Importe ton Layout
 import Home from "./pages/Home";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
+import AdherentAccessPage from "./pages/AdherentAccessPage";
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
 
         {/* Redirection si l'URL est fausse */}
         <Route path="*" element={<Navigate to="/" />} />
+        <Route path="/mobile-guide" element={<AdherentAccessPage />} />
       </Routes>
     </BrowserRouter>
   );

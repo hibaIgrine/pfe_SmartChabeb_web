@@ -15,33 +15,48 @@ export default function AuthPage() {
   const navigate = useNavigate();
 
   // --- LIAISON BACKEND RÉTABLIE ET SÉCURISÉE ---
+  // ... tes imports habituels ...
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
     try {
-      // Si isLogin est vrai -> /auth/login, sinon -> /users (inscription)
       const url = isLogin ? "/auth/login" : "/users";
+
+      // Pour l'inscription, on force le rôle ADMIN par défaut sur le Web
       const payload = isLogin
         ? { email: formData.email, mot_de_passe: formData.mot_de_passe }
-        : {
-            nom: formData.nom,
-            email: formData.email,
-            mot_de_passe: formData.mot_de_passe,
-            role: "ADMIN",
-          };
+        : { ...formData, role: "ADMIN" };
 
       const res = await api.post(url, payload);
 
       if (isLogin) {
+        // --- LOGIQUE DE REDIRECTION PAR RÔLE ---
+        const user = res.data.user;
+
+        console.log("Rôle détecté :", user.role); // Pour vérifier dans F12
+
+        if (user.role === "ADHERENT") {
+          // C'est un jeune : on ne stocke pas le token et on le redirige
+          navigate("/mobile-guide");
+          return;
+        }
+
+        // C'est un Admin ou Coach : on autorise l'accès
         localStorage.setItem("token", res.data.access_token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        localStorage.setItem("user", JSON.stringify(user));
         navigate("/dashboard");
       } else {
-        alert("Compte créé avec succès ! Connectez-vous maintenant.");
-        setIsLogin(true); // Bascule automatiquement vers la connexion
+        // Inscription réussie
+        alert("Compte créé avec succès ! Veuillez vous connecter.");
+        setIsLogin(true);
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur de connexion au serveur");
+      // Si le serveur renvoie une erreur (401, 404, etc.)
+      console.error(err);
+      const errorMsg = err.response?.data?.message || "Identifiants incorrects";
+      alert(errorMsg);
     } finally {
       setIsLoading(false);
     }
