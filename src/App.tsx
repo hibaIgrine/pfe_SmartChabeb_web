@@ -6,6 +6,7 @@ import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import AdherentAccessPage from "./pages/AdherentAccessPage";
 import NotFound from "./pages/NotFound";
+import MembresPage from "./pages/MembresPage";
 
 function App() {
   return (
@@ -33,6 +34,14 @@ function App() {
           element={
             <Layout>
               <CentresPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/membres"
+          element={
+            <Layout>
+              <MembresPage />
             </Layout>
           }
         />
