@@ -14,36 +14,32 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 1. RÉCUPÉRATION DES INFOS UTILISATEUR
+  // 1. RÉCUPÉRATION SÉCURISÉE DES INFOS
   const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
+  const role = user?.role;
 
-  // 2. SÉCURITÉ ET REDIRECTION
+  // 2. SÉCURITÉ : Bloquer les accès non autorisés
   useEffect(() => {
     if (!user) {
-      // Si pas connecté -> Retour au login
       navigate("/auth");
-    } else if (user.role === "ADHERENT") {
-      // Si c'est un jeune -> Redirection vers la page d'explication mobile
+    } else if (role === "ADHERENT") {
       navigate("/mobile-guide");
     }
-  }, [user, navigate]);
+  }, [user, role, navigate]);
 
-  // 3. FONCTION DE DÉCONNEXION
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    navigate("/"); // Retour à l'accueil publique
+    navigate("/");
   };
 
-  // Si l'utilisateur n'est pas autorisé, on n'affiche rien pendant la redirection
-  if (!user || user.role === "ADHERENT") return null;
+  if (!user || role === "ADHERENT") return null;
 
   return (
     <div className="flex h-screen bg-smart-bg font-sans overflow-hidden">
-      {/* --- SIDEBAR FIXE (Style Michelle) --- */}
+      {/* --- SIDEBAR DYNAMIQUE --- */}
       <aside className="w-64 bg-smart-teal text-white flex flex-col py-8 flex-shrink-0 border-r border-white/5">
-        {/* LOGO */}
         <div className="px-8 mb-12 flex items-center space-x-3">
           <div className="w-10 h-10 bg-smart-salmon rounded-xl flex items-center justify-center font-black shadow-lg">
             S
@@ -53,7 +49,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </span>
         </div>
 
-        {/* NAVIGATION DYNAMIQUE */}
         <nav className="flex-1 px-4 space-y-3">
           <SidebarItem
             to="/dashboard"
@@ -62,8 +57,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             active={location.pathname === "/dashboard"}
           />
 
-          {/* Seul l'ADMIN voit la gestion des centres */}
-          {user.role === "ADMIN" && (
+          {/* 🛡️ SEUL L'ADMIN voit les Centres */}
+          {role === "ADMIN" && (
             <SidebarItem
               to="/centres"
               icon={<MapPin size={22} />}
@@ -72,22 +67,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
+          {/* 🛡️ MENU ADAPTATIF : Membres pour Admin / Mes Élèves pour Coach */}
           <SidebarItem
             to="/membres"
             icon={<Users size={22} />}
-            label="Membres"
+            label={role === "COACH" ? "Mes Élèves" : "Membres"}
             active={location.pathname === "/membres"}
           />
 
-          <SidebarItem
-            to="/coaches"
-            icon={<GraduationCap size={22} />}
-            label="Coaches"
-            active={location.pathname === "/coaches"}
-          />
+          {/* 🛡️ SEUL L'ADMIN gère le Staff (Coaches) */}
+          {role === "ADMIN" && (
+            <SidebarItem
+              to="/membres" // On peut réutiliser MembresPage avec un filtre
+              icon={<GraduationCap size={22} />}
+              label="Gestion Staff"
+              active={location.pathname === "/coaches"}
+            />
+          )}
         </nav>
 
-        {/* BOUTON DÉCONNEXION (FIXÉ EN BAS) */}
         <div className="px-4 mt-auto border-t border-white/10 pt-6">
           <button
             onClick={handleLogout}
@@ -102,42 +100,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* --- CONTENU PRINCIPAL (La grande carte blanche) --- */}
+      {/* --- ZONE PRINCIPALE --- */}
       <main className="flex-1 bg-white my-4 mr-4 rounded-tl-[60px] rounded-bl-[60px] shadow-2xl flex flex-col overflow-hidden relative">
-        {/* TOPBAR INTERNE */}
         <header className="px-12 py-8 flex justify-between items-center border-b border-gray-50">
           <div>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-1">
-              Espace {user.role}
+              Espace {role}
             </p>
-            <h1 className="text-3xl font-black text-smart-teal tracking-tighter italic">
-              Smart Management
+            <h1 className="text-3xl font-black text-smart-teal tracking-tighter italic leading-none">
+              {role === "COACH" ? "Suivi Sportif" : "Smart Management"}
             </h1>
           </div>
 
           <div className="flex items-center space-x-6">
-            {/* Recherche rapide */}
-            <div className="hidden lg:flex bg-smart-bg rounded-full px-6 py-3 items-center border border-gray-100 shadow-inner group focus-within:ring-2 focus-within:ring-smart-sage transition-all">
-              <Search
-                size={18}
-                className="text-gray-300 mr-3 group-focus-within:text-smart-teal"
-              />
-              <input
-                type="text"
-                placeholder="Rechercher un membre..."
-                className="bg-transparent outline-none text-xs font-bold w-48 text-smart-teal"
-              />
-            </div>
-
             <Bell
               size={22}
               className="text-gray-300 hover:text-smart-teal cursor-pointer transition-colors"
             />
 
-            {/* Profil Utilisateur */}
             <div className="flex items-center space-x-4 bg-smart-bg p-2 rounded-full pr-8 border border-gray-100 shadow-sm">
               <img
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.nom}`}
+                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
                 className="w-11 h-11 rounded-full border-2 border-white shadow-md"
                 alt="profile"
               />
@@ -146,21 +129,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {user.nom} {user.prenom}
                 </p>
                 <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
-                  {user.role}
+                  {role}
                 </p>
               </div>
             </div>
           </div>
         </header>
 
-        {/* ZONE DE CONTENU VARIABLE */}
         <div className="flex-1 overflow-y-auto p-12 bg-white">{children}</div>
       </main>
     </div>
   );
 }
 
-// COMPOSANT INTERNE POUR LES LIENS DU MENU
 function SidebarItem({ to, icon, label, active }: any) {
   return (
     <Link

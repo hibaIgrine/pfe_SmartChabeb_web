@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import AdherentAccessPage from "./pages/AdherentAccessPage";
 import NotFound from "./pages/NotFound";
 import MembresPage from "./pages/MembresPage";
+import CreateProgram from "./pages/CreateProgram";
 
 function App() {
   return (
@@ -45,7 +46,15 @@ function App() {
             </Layout>
           }
         />
-
+        {/* NOUVELLE ROUTE : Création de programme */}
+        <Route
+          path="/create-program/:idMember"
+          element={
+            <Layout>
+              <CreateProgram />
+            </Layout>
+          }
+        />
         {/* Redirection si l'URL est fausse */}
         {/* 🏆 LA ROUTE MAGIQUE (Toujours en dernier) */}
         <Route path="*" element={<NotFound />} />
