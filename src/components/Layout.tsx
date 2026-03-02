@@ -68,19 +68,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           )}
 
           {/* 🛡️ MENU ADAPTATIF : Membres pour Admin / Mes Élèves pour Coach */}
-          <SidebarItem
-            to="/membres"
-            icon={<Users size={22} />}
-            label={role === "COACH" ? "Mes Élèves" : "Membres"}
-            active={location.pathname === "/membres"}
-          />
+          {user.role === "ADMIN" ? (
+            <SidebarItem
+              to="/membres"
+              icon={<Users size={22} />}
+              label="Membres"
+              active={location.pathname === "/membres"}
+            />
+          ) : (
+            <SidebarItem
+              to="/coach-members"
+              icon={<Users size={22} />}
+              label="Mes Élèves"
+              active={location.pathname === "/coach-members"}
+            />
+          )}
 
           {/* 🛡️ SEUL L'ADMIN gère le Staff (Coaches) */}
-          {role === "ADMIN" && (
+          {user.role === "ADMIN" && (
             <SidebarItem
-              to="/membres" // On peut réutiliser MembresPage avec un filtre
+              to="/coaches"
               icon={<GraduationCap size={22} />}
-              label="Gestion Staff"
+              label="Coaches"
               active={location.pathname === "/coaches"}
             />
           )}

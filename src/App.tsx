@@ -8,6 +8,7 @@ import AdherentAccessPage from "./pages/AdherentAccessPage";
 import NotFound from "./pages/NotFound";
 import MembresPage from "./pages/MembresPage";
 import CreateProgram from "./pages/CreateProgram";
+import CoachMembers from "./pages/CoachMembers";
 
 function App() {
   return (
@@ -43,6 +44,14 @@ function App() {
           element={
             <Layout>
               <MembresPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/coach-members"
+          element={
+            <Layout>
+              <CoachMembers />
             </Layout>
           }
         />
