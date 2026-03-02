@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import MembresPage from "./pages/MembresPage";
 import CreateProgram from "./pages/CreateProgram";
 import CoachMembers from "./pages/CoachMembers";
+import MemberDetails from "./pages/MembreDetails";
 
 function App() {
   return (
@@ -61,6 +62,14 @@ function App() {
           element={
             <Layout>
               <CreateProgram />
+            </Layout>
+          }
+        />
+        <Route
+          path="/member-details/:id"
+          element={
+            <Layout>
+              <MemberDetails />
             </Layout>
           }
         />

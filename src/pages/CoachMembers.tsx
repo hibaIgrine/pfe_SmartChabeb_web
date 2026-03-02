@@ -135,8 +135,11 @@ export default function CoachMembers() {
               <div className="flex items-center space-x-8">
                 <div className="relative">
                   <img
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${m.email}`}
-                    className="w-20 h-20 rounded-[35px] bg-smart-bg border-4 border-white shadow-lg group-hover:scale-105 transition-transform"
+                    src={
+                      m.photo_profil_url ||
+                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.email}`
+                    }
+                    className="w-20 h-20 rounded-[35px] bg-smart-bg border-4 border-white shadow-lg"
                   />
                   <div className="absolute -top-2 -right-2 bg-smart-salmon text-white p-2 rounded-xl shadow-lg rotate-12">
                     <Activity size={14} />
@@ -180,7 +183,10 @@ export default function CoachMembers() {
 
               {/* BOUTON ACTION COACH */}
               <div className="flex items-center space-x-3">
-                <button className="p-5 bg-smart-bg text-smart-teal rounded-[25px] hover:bg-smart-teal hover:text-white transition-all shadow-sm">
+                <button
+                  onClick={() => navigate(`/member-details/${m.id}`)}
+                  className="p-5 bg-smart-bg text-smart-teal rounded-[25px] hover:bg-smart-teal hover:text-white transition-all shadow-sm"
+                >
                   <Eye size={22} />
                 </button>
                 <button
