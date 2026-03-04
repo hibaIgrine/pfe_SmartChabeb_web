@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import api from "../../api/axios";
 import { Mail, Lock, User, ArrowRight, ChevronLeft } from "lucide-react";
 
 export default function AuthPage() {

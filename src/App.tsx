@@ -1,15 +1,18 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import CentresPage from "./pages/CentresPage"; // Importe ta page de gestion
-import Layout from "./components/Layout"; // Importe ton Layout
-import Home from "./pages/Home";
-import AuthPage from "./pages/AuthPage";
-import Dashboard from "./pages/Dashboard";
-import AdherentAccessPage from "./pages/AdherentAccessPage";
-import NotFound from "./pages/NotFound";
-import MembresPage from "./pages/MembresPage";
-import CreateProgram from "./pages/CreateProgram";
-import CoachMembers from "./pages/CoachMembers";
-import MemberDetails from "./pages/MembreDetails";
+import Home from "./pages/auth/Home";
+import Layout from "./components/layout/Layout";;
+import CentresPage from "./pages/admin/CentresPage";
+import Dashboard from "./pages/admin/Dashboard";
+import MembresPage from "./pages/admin/MembresPage";
+import AdherentAccessPage from "./pages/auth/AdherentAccessPage";
+import AuthPage from "./pages/auth/AuthPage";
+import NotFound from "./pages/auth/NotFound";
+import CoachMembers from "./pages/coach/CoachMembers";
+import CreateProgram from "./pages/coach/CreateProgram";
+import MemberDetails from "./pages/coach/MembreDetails";
+import ClubsPage from "./pages/clubs/ClubsPage";
+
+
 
 function App() {
   return (
@@ -70,6 +73,14 @@ function App() {
           element={
             <Layout>
               <MemberDetails />
+            </Layout>
+          }
+        />
+        <Route
+          path="/clubs"
+          element={
+            <Layout>
+              <ClubsPage />
             </Layout>
           }
         />

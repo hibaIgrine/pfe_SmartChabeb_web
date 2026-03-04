@@ -8,6 +8,7 @@ import {
   LogOut,
   Bell,
   Search,
+  LayoutGrid,
 } from "lucide-react";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -93,6 +94,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               active={location.pathname === "/coaches"}
             />
           )}
+          <SidebarItem
+            to="/clubs"
+            icon={<LayoutGrid size={22} />}
+            label="Clubs & Activités"
+            active={location.pathname === "/clubs"}
+          />
         </nav>
 
         <div className="px-4 mt-auto border-t border-white/10 pt-6">
