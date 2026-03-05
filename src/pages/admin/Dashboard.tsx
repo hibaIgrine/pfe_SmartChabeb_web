@@ -4,7 +4,6 @@ import {
   Users,
   MapPin,
   Zap,
-  Wallet,
   TrendingUp,
   ArrowUpRight,
   Clock,
@@ -25,9 +24,27 @@ const dataGrowth = [
   { name: "Sam", val: 1100 },
 ];
 
+const getUserImageUrl = (user: any) => {
+  const photo = user?.photo_profil_url;
+  const seed = user?.email || user?.id || "default";
+  
+  // On récupère dynamiquement la base URL depuis axios pour éviter les problèmes d'IP
+  const baseURL = api.defaults.baseURL || "http://192.168.1.17:3000";
+
+  if (photo && photo.trim() !== "" && photo !== "null") {
+    if (photo.startsWith("http")) return photo;
+    const cleanPath = photo.startsWith("/") ? photo : `/${photo}`;
+    return `${baseURL}${cleanPath}`;
+  }
+  
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=436d75&fontFamily=Inter&fontWeight=900`;
+};
+
 export default function Dashboard() {
-  const [stats, setStats] = useState({ users: 0, salles: 0, verified: 0 });
-  const [recentUsers, setRecentUsers] = useState([]);
+  const [stats, setStats] = useState({ users: 0, salles: 0, verified: 0, clubMembers: 0 });
+  const [recentUsers, setRecentUsers] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [allClubs, setAllClubs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const token = localStorage.getItem("token");
@@ -40,19 +57,42 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const [resUsers, resSalles] = await Promise.all([
+      const [resUsers, resSalles, resClubs] = await Promise.all([
         api.get("/users", { headers: { Authorization: `Bearer ${token}` } }),
         api.get("/salles", { headers: { Authorization: `Bearer ${token}` } }),
+        api.get("/clubs", { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
+      const clubsArray = Array.isArray(resClubs.data) ? resClubs.data : [];
+      const usersArray = Array.isArray(resUsers.data) ? resUsers.data : [];
+      const sallesArray = Array.isArray(resSalles.data) ? resSalles.data : [];
+
+      console.log(`� [Dashboard] Found ${usersArray.length} users, ${sallesArray.length} salles, ${clubsArray.length} clubs.`);
+
       setStats({
-        users: resUsers.data.length,
-        salles: resSalles.data.length,
-        verified: resUsers.data.filter((u: any) => u.est_verifie).length,
+        users: usersArray.length,
+        salles: sallesArray.length,
+        verified: usersArray.filter((u: any) => u.est_verifie).length,
+        clubMembers: clubsArray.reduce((acc: number, c: any) => acc + (c._count?.inscriptions || 0), 0),
       });
-      setRecentUsers(resUsers.data.slice(0, 5));
+
+      // Notifications d'adhésion réelles
+      const allInscriptions = clubsArray.flatMap((c: any) => {
+        const ins = Array.isArray(c.inscriptions) ? c.inscriptions : [];
+        return ins.map((i: any) => ({ ...i, clubName: c.nom }));
+      }).sort((a: any, b: any) => {
+        const timeA = a.date_adhesion ? new Date(a.date_adhesion).getTime() : 0;
+        const timeB = b.date_adhesion ? new Date(b.date_adhesion).getTime() : 0;
+        return timeB - timeA;
+      });
+      
+      console.log(`📊 [Dashboard] Total inscriptions found: ${allInscriptions.length}`);
+      
+      setRecentUsers(usersArray.slice(0, 5));
+      setRecentActivity(allInscriptions.slice(0, 10));
+      setAllClubs(clubsArray);
     } catch (err) {
-      console.error(err);
+      console.error("❌ Error fetching dashboard data:", err);
     } finally {
       setLoading(false);
     }
@@ -131,9 +171,9 @@ export default function Dashboard() {
               color="bg-white"
             />
             <KpiCard
-              icon={<Wallet />}
-              value="142"
-              label="Abonnements Actifs"
+              icon={<Zap />}
+              value={stats.clubMembers}
+              label="Membres de Clubs"
               color="bg-white"
             />
           </>
@@ -250,6 +290,45 @@ export default function Dashboard() {
 
       {/* 4. BOTTOM SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Adhésions aux Clubs */}
+        <div className="bg-white rounded-[60px] p-12 shadow-sm border border-gray-50 flex flex-col">
+          <div className="flex items-center justify-between mb-10">
+            <h3 className="text-2xl font-black text-smart-teal italic tracking-tight">
+              Nouvelles Adhésions
+            </h3>
+            <Activity size={20} className="text-smart-salmon" />
+          </div>
+          <div className="space-y-6 flex-1">
+            {recentActivity.length > 0 ? (
+              recentActivity.map((act: any, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 bg-smart-bg/50 rounded-3xl border border-transparent hover:border-smart-teal/10 transition-all">
+                  <div className="flex items-center space-x-4">
+                    <img
+                      src={getUserImageUrl(act.utilisateur)}
+                      alt="avatar"
+                      className="w-12 h-12 rounded-2xl bg-white border border-gray-100 shadow-sm object-cover"
+                      onError={(e: any) => { e.target.src = "https://api.dicebear.com/7.x/initials/svg?seed=fallback"; }}
+                    />
+                    <div>
+                      <p className="font-black text-smart-teal italic tracking-tight">
+                        {act.utilisateur?.nom} {act.utilisateur?.prenom}
+                      </p>
+                      <p className="text-[9px] text-smart-salmon font-black uppercase tracking-widest mt-1">
+                        Club: {act.clubName}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-black text-gray-300">
+                    Nouveau
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-300 italic text-sm py-10">Aucune activité récente...</p>
+            )}
+          </div>
+        </div>
+
         <div className="bg-white rounded-[60px] p-12 shadow-sm border border-gray-50 flex flex-col">
           <div className="flex items-center justify-between mb-10">
             <h3 className="text-2xl font-black text-smart-teal italic tracking-tight">
@@ -266,8 +345,10 @@ export default function Dashboard() {
                 >
                   <div className="flex items-center space-x-5">
                     <img
-                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`}
-                      className="w-14 h-14 rounded-2xl bg-smart-bg border-4 border-white shadow-sm group-hover:scale-105 transition-transform"
+                      src={getUserImageUrl(u)}
+                      alt={`${u.nom}`}
+                      className="w-14 h-14 rounded-2xl bg-smart-bg border-4 border-white shadow-sm group-hover:scale-105 transition-transform object-cover"
+                      onError={(e: any) => { e.target.src = "https://api.dicebear.com/7.x/initials/svg?seed=fallback"; }}
                     />
                     <div>
                       <p className="font-black text-md text-smart-teal italic tracking-tight">
@@ -290,26 +371,58 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+      </div>
 
-        <div className="bg-smart-salmon rounded-[60px] p-12 text-white shadow-xl shadow-smart-salmon/20 flex flex-col justify-between relative overflow-hidden group">
-          <div className="relative z-10 space-y-6">
-            <h3 className="text-5xl font-black italic tracking-tighter leading-[0.9]">
-              Système de <br /> Vigilance
+      {/* 5. CLUBS OVERVIEW TABLE */}
+      <div className="bg-white rounded-[60px] p-12 shadow-sm border border-gray-50 flex flex-col">
+        <div className="flex items-center justify-between mb-10">
+          <div>
+            <h3 className="text-2xl font-black text-smart-teal italic tracking-tight">
+              Répartition des Clubs
             </h3>
-            <p className="text-white/70 text-sm font-bold max-w-[250px] leading-relaxed italic">
-              {role === "ADMIN"
-                ? "3 centres signalent une rupture de stock d'équipements à Sousse et Béja."
-                : "Attention : 5 de vos élèves présentent un IMC supérieur à 27."}
+            <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mt-1">
+              Vue d'ensemble par catégorie et membres
             </p>
-            <button className="bg-white text-smart-salmon px-10 py-5 rounded-[25px] font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:scale-105 transition-all active:scale-95 shadow-black/10">
-              Ouvrir le protocole
-            </button>
           </div>
-          <ShieldAlert
-            size={180}
-            className="absolute bottom-[-40px] right-[-40px] opacity-10 group-hover:rotate-12 transition-transform duration-700"
-          />
-          <div className="absolute top-[-50px] left-[-50px] w-64 h-64 bg-white/5 rounded-full blur-[80px]"></div>
+          <Zap size={20} className="text-smart-sage" />
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Club</th>
+                <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Catégorie</th>
+                <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Membres</th>
+                <th className="pb-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Animateur</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {allClubs.length > 0 ? (
+                allClubs.map((club: any) => (
+                  <tr key={club.id} className="group hover:bg-smart-bg/30 transition-colors">
+                    <td className="py-6 text-sm italic font-black text-smart-teal">{club.nom}</td>
+                    <td className="py-6 text-[10px] font-black uppercase text-gray-400">{club.categorie}</td>
+                    <td className="py-6">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xl font-black text-smart-salmon">{club._count?.inscriptions || 0}</span>
+                        <Users size={12} className="text-gray-300" />
+                      </div>
+                    </td>
+                    <td className="py-6 text-sm font-medium text-gray-500">
+                      {club.coach?.nom} {club.coach?.prenom}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="py-20 text-center text-gray-300 italic text-sm">
+                    Aucun club configuré ou aucune inscription active.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
