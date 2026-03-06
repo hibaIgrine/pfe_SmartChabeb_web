@@ -1,8 +1,6 @@
 import { Users, Trash2, Edit, Eye, MapPin, User, Calendar, ChevronRight } from "lucide-react";
 import api from "../../../api/axios";
 
-const BASE_URL = api.defaults.baseURL || "http://192.168.1.17:3000";
-
 const CATEGORY_MAP: Record<string, { bg: string; text: string; icon: string }> = {
   Technologie:  { bg: "bg-blue-50",   text: "text-blue-600",   icon: "💻" },
   Art:          { bg: "bg-purple-50", text: "text-purple-600", icon: "🎭" },
@@ -32,11 +30,19 @@ const getCategoryStyle = (category: string) => {
   return { bg: "bg-smart-sage/30", text: "text-smart-teal", icon };
 };
 
-const getFullImageUrl = (url?: string) => {
-  if (!url) return null;
+const getFullImageUrl = (url?: string, seed: string = "default") => {
+  if (!url || url === "null" || url.trim() === "") return null;
+  
+  if (url.startsWith("assets/")) {
+    return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=436d75&fontFamily=Inter&fontWeight=900`;
+  }
+  
   if (url.startsWith("http")) return url;
   if (url.startsWith("data:")) return url;
-  return `${BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+  
+  const baseURL = api.defaults.baseURL || "http://192.168.1.17:3000";
+  const cleanPath = url.startsWith("/") ? url : `/${url}`;
+  return `${baseURL}${cleanPath}`;
 };
 
 /** Convertit sécurisément le champ planning (JSON structuré) en string affichable */
@@ -70,7 +76,7 @@ export const ClubCard = ({ club, onViewMembers, onEdit, onDelete }: ClubCardProp
   const cat = getCategoryStyle(club.categorie);
   const totalMembers = club._count?.inscriptions ?? club.inscriptions?.length ?? 0;
   const planningText = safePlanning(club.planning);
-  const imageUrl = getFullImageUrl(club.logo_url);
+  const imageUrl = getFullImageUrl(club.logo_url, club.nom);
 
   return (
     <div className="group bg-white rounded-[28px] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden hover:-translate-y-1">
@@ -92,11 +98,19 @@ export const ClubCard = ({ club, onViewMembers, onEdit, onDelete }: ClubCardProp
 
         {/* Logo + Nom */}
         <div className="flex items-center gap-3 mb-2">
-          {imageUrl ? (
-            <img src={imageUrl} alt={club.nom} className="w-10 h-10 rounded-2xl object-cover shadow border border-white" />
-          ) : (
-            <div className="w-10 h-10 rounded-2xl bg-smart-sage/30 flex items-center justify-center text-xl">{cat.icon}</div>
-          )}
+          <div className="w-10 h-10 rounded-2xl bg-smart-sage/30 flex items-center justify-center text-xl relative overflow-hidden shadow border border-white shrink-0">
+            {cat.icon}
+            {imageUrl && (
+              <img 
+                src={imageUrl} 
+                alt={club.nom} 
+                className="absolute inset-0 w-full h-full object-cover" 
+                onError={(e: any) => {
+                  e.target.style.display = 'none';
+                }}
+              />
+            )}
+          </div>
           <h3 className="text-lg font-black text-smart-teal leading-tight truncate">{club.nom}</h3>
         </div>
 

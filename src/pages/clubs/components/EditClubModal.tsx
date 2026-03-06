@@ -1,6 +1,7 @@
-import { X, FileText, MapPin, Map, User, Upload, AlertCircle } from "lucide-react";
+import { X, FileText, MapPin, Map, User, AlertCircle } from "lucide-react";
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import { ALL_CATEGORIES, getCategoryIcon } from "./AddClubModal";
+import api from "../../../api/axios";
+import { getCategoryIcon } from "./AddClubModal";
 import { PlanningInput } from "./PlanningInput";
 
 // ─── Validation ───────────────────────────────────────────────────────────────
@@ -21,7 +22,14 @@ const validateForm = (data: any): FormErrors => {
   return errors;
 };
 
-// ─── Composant ────────────────────────────────────────────────────────────────
+const getFullImageUrl = (url?: string): string => {
+  if (!url || url === "null" || url.trim() === "" || url.startsWith("data:")) return url || "";
+  if (url.startsWith("assets/")) return ""; 
+  if (url.startsWith("http")) return url;
+  const baseURL = api.defaults.baseURL || "http://192.168.1.17:3000";
+  const cleanPath = url.startsWith("/") ? url : `/${url}`;
+  return `${baseURL}${cleanPath}`;
+};
 export const EditClubModal = ({
   isOpen, onClose, onSubmit, formData, setFormData, salles, coaches, categories,
 }: any) => {
@@ -134,17 +142,24 @@ export const EditClubModal = ({
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleLogoUpload(f); }}
             >
-              {logoPreview ? (
-                <img src={logoPreview} alt="logo" className="w-16 h-16 rounded-2xl object-cover shadow border-2 border-white" />
-              ) : (
-                <div className="w-16 h-16 rounded-2xl bg-smart-sage/20 flex items-center justify-center">
-                  {uploadLoading ? (
+              <div className="w-16 h-16 rounded-2xl bg-smart-sage/20 flex items-center justify-center relative overflow-hidden shadow-sm border-2 border-white group-hover:border-smart-teal/20 transition-all shrink-0">
+                <span className="text-2xl">{getCategoryIcon(formData.categorie, categories)}</span>
+                {logoPreview && (
+                  <img 
+                    src={logoPreview.startsWith("data:") ? logoPreview : getFullImageUrl(logoPreview)} 
+                    alt="logo" 
+                    className="absolute inset-0 w-full h-full object-cover" 
+                    onError={(e: any) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                )}
+                {uploadLoading && (
+                  <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
                     <div className="w-6 h-6 border-2 border-smart-teal border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Upload size={22} className="text-smart-teal/40 group-hover:text-smart-teal transition-colors" />
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
               <div>
                 <p className="font-bold text-smart-teal text-sm">Glisser-déposer ou cliquer pour changer</p>
                 <p className="text-gray-400 text-xs mt-0.5">PNG, JPG, SVG — max 2 Mo</p>

@@ -1,5 +1,26 @@
-import { X, Calendar, Search } from "lucide-react";
+import { X, Calendar, Search, User as UserIcon } from "lucide-react";
 import { useState } from "react";
+import api from "../../../api/axios";
+
+const getUserImageUrl = (user: any) => {
+  const photo = user?.photo_profil_url;
+  const seed = user?.email || user?.id || "default";
+
+  const baseURL = api.defaults.baseURL || "http://192.168.1.17:3000";
+
+  if (photo && photo.trim() !== "" && photo !== "null") {
+    // Si c'est un path d'asset mobile (commence par assets/), on retourne le fallback initials tout de suite sur le web
+    if (photo.startsWith("assets/")) {
+      return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=436d75&fontFamily=Inter&fontWeight=900`;
+    }
+    
+    if (photo.startsWith("http")) return photo;
+    const cleanPath = photo.startsWith("/") ? photo : `/${photo}`;
+    return `${baseURL}${cleanPath}`;
+  }
+
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=436d75&fontFamily=Inter&fontWeight=900`;
+};
 
 export const MembersModal = ({ club, onClose }: any) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -52,14 +73,17 @@ export const MembersModal = ({ club, onClose }: any) => {
                 className="bg-white p-5 rounded-[35px] flex items-center justify-between border border-white shadow-sm hover:shadow-md transition-all"
               >
                 <div className="flex items-center space-x-5">
-                  <img
-                    src={
-                      ins.utilisateur.photo_profil_url ||
-                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${ins.utilisateur.email}`
-                    }
-                    className="w-14 h-14 rounded-[22px] bg-smart-bg border-2 border-white shadow-sm"
-                    alt="avatar"
-                  />
+                  <div className="w-14 h-14 rounded-[22px] bg-smart-bg border-2 border-white shadow-sm overflow-hidden relative flex items-center justify-center shrink-0">
+                    <UserIcon size={24} className="text-smart-teal/40" />
+                    <img
+                      src={getUserImageUrl(ins.utilisateur)}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      alt="avatar"
+                      onError={(e: any) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
                   <div>
                     <p className="font-black text-smart-teal text-base leading-none italic">
                       {ins.utilisateur.nom} {ins.utilisateur.prenom}

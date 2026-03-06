@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   Loader2,
   CheckCircle2,
+  User as UserIcon,
 } from "lucide-react";
 import { AreaChart, Area, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -28,10 +29,14 @@ const getUserImageUrl = (user: any) => {
   const photo = user?.photo_profil_url;
   const seed = user?.email || user?.id || "default";
   
-  // On récupère dynamiquement la base URL depuis axios pour éviter les problèmes d'IP
   const baseURL = api.defaults.baseURL || "http://192.168.1.17:3000";
 
   if (photo && photo.trim() !== "" && photo !== "null") {
+    // Si c'est un path d'asset mobile, on bascule sur les initiales pour le web
+    if (photo.startsWith("assets/")) {
+      return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=436d75&fontFamily=Inter&fontWeight=900`;
+    }
+
     if (photo.startsWith("http")) return photo;
     const cleanPath = photo.startsWith("/") ? photo : `/${photo}`;
     return `${baseURL}${cleanPath}`;
@@ -303,12 +308,17 @@ export default function Dashboard() {
               recentActivity.map((act: any, idx) => (
                 <div key={idx} className="flex items-center justify-between p-3 bg-smart-bg/50 rounded-3xl border border-transparent hover:border-smart-teal/10 transition-all">
                   <div className="flex items-center space-x-4">
-                    <img
-                      src={getUserImageUrl(act.utilisateur)}
-                      alt="avatar"
-                      className="w-12 h-12 rounded-2xl bg-white border border-gray-100 shadow-sm object-cover"
-                      onError={(e: any) => { e.target.src = "https://api.dicebear.com/7.x/initials/svg?seed=fallback"; }}
-                    />
+                    <div className="w-12 h-12 rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden relative flex items-center justify-center shrink-0">
+                      <UserIcon size={20} className="text-smart-teal/40" />
+                      <img
+                        src={getUserImageUrl(act.utilisateur)}
+                        alt="avatar"
+                        className="absolute inset-0 w-full h-full object-cover"
+                        onError={(e: any) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
                     <div>
                       <p className="font-black text-smart-teal italic tracking-tight">
                         {act.utilisateur?.nom} {act.utilisateur?.prenom}
@@ -344,12 +354,17 @@ export default function Dashboard() {
                   className="flex items-center justify-between group cursor-pointer hover:bg-smart-bg p-3 -mx-3 rounded-3xl transition-all"
                 >
                   <div className="flex items-center space-x-5">
-                    <img
-                      src={getUserImageUrl(u)}
-                      alt={`${u.nom}`}
-                      className="w-14 h-14 rounded-2xl bg-smart-bg border-4 border-white shadow-sm group-hover:scale-105 transition-transform object-cover"
-                      onError={(e: any) => { e.target.src = "https://api.dicebear.com/7.x/initials/svg?seed=fallback"; }}
-                    />
+                    <div className="w-14 h-14 rounded-2xl bg-smart-bg border-4 border-white shadow-sm overflow-hidden relative flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <UserIcon size={24} className="text-smart-teal/40" />
+                      <img
+                        src={getUserImageUrl(u)}
+                        alt={`${u.nom}`}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        onError={(e: any) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
                     <div>
                       <p className="font-black text-md text-smart-teal italic tracking-tight">
                         {u.nom} {u.prenom}
