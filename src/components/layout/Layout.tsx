@@ -6,21 +6,19 @@ import {
   Users,
   GraduationCap,
   LogOut,
-  Bell,
-  Search,
   LayoutGrid,
+  ShieldCheck,
+  UserCircle,
 } from "lucide-react";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 1. RÉCUPÉRATION SÉCURISÉE DES INFOS
   const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
   const role = user?.role;
 
-  // 2. SÉCURITÉ : Bloquer les accès non autorisés
   useEffect(() => {
     if (!user) {
       navigate("/auth");
@@ -38,121 +36,128 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   if (!user || role === "ADHERENT") return null;
 
   return (
-    <div className="flex h-screen bg-smart-bg font-sans overflow-hidden">
-      {/* --- SIDEBAR DYNAMIQUE --- */}
-      <aside className="w-64 bg-smart-teal text-white flex flex-col py-8 flex-shrink-0 border-r border-white/5">
-        <div className="px-8 mb-12 flex items-center space-x-3">
-          <div className="w-10 h-10 bg-smart-salmon rounded-xl flex items-center justify-center font-black shadow-lg">
-            S
+    <div className="flex h-screen bg-[#F7F3E9] font-sans overflow-hidden">
+      {/* --- 🟦 SIDEBAR RECTANGLE FIXE SANS SCROLL --- */}
+      <aside className="w-64 bg-[#436D75] text-white flex flex-col h-full flex-shrink-0 shadow-2xl overflow-hidden">
+        {/* LOGO SANS ESPACE INUTILE */}
+        <div className="pt-10 px-8 pb-2 flex flex-col items-start">
+          <div className="text-2xl font-black tracking-tighter leading-none italic">
+            <span className="text-white">SMART</span>
+            <span className="text-[#E98A7D] ml-1">CHABEB</span>
           </div>
-          <span className="text-xl font-black tracking-tighter uppercase">
-            SmartChabeb
-          </span>
+          <p className="text-[8px] font-bold text-[#D9E8D1] uppercase tracking-[0.4em] mt-2 opacity-40">
+            Gouvernement Tunisien
+          </p>
         </div>
 
-        <nav className="flex-1 px-4 space-y-3">
+        {/* NAVIGATION REMONTÉE (mt-4 au lieu de mt-10) */}
+        <nav className="flex-1 px-4 space-y-1.5 mt-6 overflow-hidden">
           <SidebarItem
             to="/dashboard"
-            icon={<LayoutDashboard size={22} />}
+            icon={<LayoutDashboard size={20} />}
             label="Dashboard"
             active={location.pathname === "/dashboard"}
           />
 
-          {/* 🛡️ SEUL L'ADMIN voit les Centres */}
           {role === "ADMIN" && (
             <SidebarItem
               to="/centres"
-              icon={<MapPin size={22} />}
-              label="Centres"
+              icon={<MapPin size={20} />}
+              label="Gestion Centres"
               active={location.pathname === "/centres"}
             />
           )}
 
-          {/* 🛡️ MENU ADAPTATIF : Membres pour Admin / Mes Élèves pour Coach */}
-          {user.role === "ADMIN" ? (
+          {(role === "ADMIN" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
-              to="/membres"
-              icon={<Users size={22} />}
-              label="Membres"
-              active={location.pathname === "/membres"}
-            />
-          ) : (
-            <SidebarItem
-              to="/coach-members"
-              icon={<Users size={22} />}
-              label="Mes Élèves"
-              active={location.pathname === "/coach-members"}
+              to="/roles"
+              icon={<ShieldCheck size={20} />}
+              label="Grades & Droits"
+              active={location.pathname === "/roles"}
             />
           )}
 
-          {/* 🛡️ SEUL L'ADMIN gère le Staff (Coaches) */}
-          {user.role === "ADMIN" && (
+          <SidebarItem
+            to={role === "ADMIN" ? "/membres" : "/coach-members"}
+            icon={<Users size={20} />}
+            label={role === "COACH" ? "Mes Élèves" : "Communauté"}
+            active={
+              location.pathname === "/membres" ||
+              location.pathname === "/coach-members"
+            }
+          />
+
+          {role === "ADMIN" && (
             <SidebarItem
               to="/coaches"
-              icon={<GraduationCap size={22} />}
-              label="Coaches"
+              icon={<GraduationCap size={20} />}
+              label="Gestion Staff"
               active={location.pathname === "/coaches"}
             />
           )}
+
           <SidebarItem
             to="/clubs"
-            icon={<LayoutGrid size={22} />}
+            icon={<LayoutGrid size={20} />}
             label="Clubs & Activités"
             active={location.pathname === "/clubs"}
           />
         </nav>
 
-        <div className="px-4 mt-auto border-t border-white/10 pt-6">
+        {/* DÉCONNEXION */}
+        <div className="p-6">
           <button
             onClick={handleLogout}
-            className="flex items-center space-x-4 p-4 rounded-2xl w-full text-white/40 hover:bg-red-500/20 hover:text-red-400 transition-all font-bold cursor-pointer group"
+            className="w-full flex items-center space-x-3 p-4 rounded-[22px] bg-black/10 text-white/50 hover:bg-[#E98A7D] hover:text-white transition-all font-black text-[10px] uppercase tracking-widest cursor-pointer group"
           >
             <LogOut
-              size={22}
-              className="group-hover:scale-110 transition-transform"
+              size={16}
+              className="group-hover:translate-x-1 transition-transform"
             />
-            <span className="text-sm">Déconnexion</span>
+            <span>Quitter</span>
           </button>
         </div>
       </aside>
 
-      {/* --- ZONE PRINCIPALE --- */}
-      <main className="flex-1 bg-white my-4 mr-4 rounded-tl-[60px] rounded-bl-[60px] shadow-2xl flex flex-col overflow-hidden relative">
-        <header className="px-12 py-8 flex justify-between items-center border-b border-gray-50">
-          <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-1">
-              Espace {role}
-            </p>
-            <h1 className="text-3xl font-black text-smart-teal tracking-tighter italic leading-none">
-              {role === "COACH" ? "Suivi Sportif" : "Smart Management"}
-            </h1>
+      {/* --- 🏛️ ZONE DE DROITE (RESTE IDENTIQUE) --- */}
+      <main className="flex-1 flex flex-col overflow-hidden p-4">
+        <header className="bg-white/60 backdrop-blur-md h-20 px-8 flex justify-between items-center rounded-[35px] border border-white shadow-sm mb-4 flex-shrink-0">
+          <div className="flex items-center space-x-5">
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Flag_of_Tunisia.svg"
+              className="h-8 shadow-sm rounded-sm"
+              alt="TN"
+            />
+            <div className="leading-tight border-l pl-4 border-gray-200">
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-400">
+                République Tunisienne
+              </p>
+              <h2 className="text-xs font-black text-[#436D75] uppercase tracking-tighter">
+                Ministère de la Jeunesse et des Sports
+              </h2>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-6">
-            <Bell
-              size={22}
-              className="text-gray-300 hover:text-smart-teal cursor-pointer transition-colors"
-            />
-
-            <div className="flex items-center space-x-4 bg-smart-bg p-2 rounded-full pr-8 border border-gray-100 shadow-sm">
-              <img
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
-                className="w-11 h-11 rounded-full border-2 border-white shadow-md"
-                alt="profile"
-              />
-              <div className="text-left leading-tight">
-                <p className="text-sm font-black text-smart-teal">
-                  {user.nom} {user.prenom}
-                </p>
-                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
-                  {role}
-                </p>
-              </div>
+          <div className="flex items-center space-x-4 bg-white p-1 rounded-full pr-6 border border-gray-100 shadow-sm">
+            <div className="w-10 h-10 bg-[#F7F3E9] rounded-full flex items-center justify-center text-[#436D75] shadow-inner border border-white">
+              <UserCircle size={24} />
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-black text-[#436D75] leading-none">
+                {user.nom} {user.prenom}
+              </p>
+              <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-1 italic">
+                {role}
+              </p>
             </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-12 bg-white">{children}</div>
+        <div className="flex-1 bg-white rounded-[50px] shadow-2xl border border-gray-50 overflow-hidden flex flex-col relative">
+          <div className="p-10 flex-1 overflow-y-auto custom-scrollbar">
+            {children}
+          </div>
+        </div>
       </main>
     </div>
   );
@@ -162,14 +167,14 @@ function SidebarItem({ to, icon, label, active }: any) {
   return (
     <Link
       to={to}
-      className={`flex items-center space-x-4 p-4 rounded-[24px] transition-all duration-300 group ${
+      className={`flex items-center space-x-4 p-4 rounded-[22px] transition-all duration-300 group ${
         active
-          ? "bg-white/15 text-white shadow-lg ring-1 ring-white/20"
+          ? "bg-white text-[#436D75] shadow-lg italic"
           : "text-white/40 hover:text-white hover:bg-white/5"
       }`}
     >
       <span
-        className={`transition-transform duration-300 ${active ? "text-smart-salmon scale-110" : "group-hover:scale-110"}`}
+        className={`transition-transform duration-300 ${active ? "scale-110 text-[#E98A7D]" : "group-hover:scale-110"}`}
       >
         {icon}
       </span>

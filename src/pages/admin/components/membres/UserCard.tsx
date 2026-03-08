@@ -6,26 +6,54 @@ import {
   ShieldCheck,
   GraduationCap,
   Briefcase,
-  User as UserLucide
+  User as UserLucide,
+  LayoutGrid,
+  UserCog
 } from "lucide-react";
 import api from "../../../../api/axios";
 
 // Helper for images (Unified Logic)
 const getUserImageUrl = (user: any) => {
-  if (!user || !user.photo_profil_url) return null;
+  if (!user || !user.photo_profil_url || user.photo_profil_url === "")
+    return null; // 🏆 Retourne null si vide
   const url = user.photo_profil_url;
   if (url.startsWith("http")) return url;
   if (url.startsWith("assets/")) return null;
-  const baseURL = api.defaults.baseURL || "http://192.168.1.17:3000";
-  const cleanPath = url.startsWith("/") ? url : `/${url}`;
-  return `${baseURL}${cleanPath}`;
+  const baseURL = api.defaults.baseURL || "http://10.176.158.215:3000";
+  return `${baseURL}${url.startsWith("/") ? "" : "/"}${url}`;
 };
 
-const ROLES_INFO = {
-  ADHERENT: { label: "Adhérent", icon: <UserLucide size={14} />, color: "bg-smart-sage text-smart-teal" },
-  COACH: { label: "Coach", icon: <GraduationCap size={14} />, color: "bg-smart-salmon text-white" },
-  ADMIN: { label: "Admin", icon: <ShieldCheck size={14} />, color: "bg-smart-teal text-white" },
-  GESTIONNAIRE: { label: "Gestionnaire", icon: <Briefcase size={14} />, color: "bg-[#1A1C1E] text-white" },
+const ROLES_INFO: any = {
+  ADMIN: {
+    label: "Admin",
+    icon: <ShieldCheck size={14} />,
+    color: "bg-smart-teal text-white",
+  },
+  RESPONSABLE_MAISON_JEUNE: {
+    label: "Directeur Maison Jeune",
+    icon: <Building2 size={14} />,
+    color: "bg-[#2c4e54] text-white",
+  },
+  RESPONSABLE_CLUB: {
+    label: "Responsable Club",
+    icon: <LayoutGrid size={14} />,
+    color: "bg-smart-teal text-white/80",
+  },
+  COACH: {
+    label: "Coach",
+    icon: <GraduationCap size={14} />,
+    color: "bg-smart-salmon text-white",
+  },
+  ENCADRANT: {
+    label: "Encadrant",
+    icon: <UserCog size={14} />,
+    color: "bg-orange-400 text-white",
+  },
+  ADHERENT: {
+    label: "Adhérent",
+    icon: <UserLucide size={14} />,
+    color: "bg-smart-sage text-smart-teal",
+  },
 };
 
 interface UserCardProps {

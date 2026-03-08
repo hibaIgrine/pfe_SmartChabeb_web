@@ -11,6 +11,7 @@ import CoachMembers from "./pages/coach/CoachMembers";
 import CreateProgram from "./pages/coach/CreateProgram";
 import MemberDetails from "./pages/coach/MembreDetails";
 import ClubsPage from "./pages/clubs/ClubsPage";
+import RolesPage from "./pages/admin/RolesPage";
 
 
 
@@ -81,6 +82,14 @@ function App() {
           element={
             <Layout>
               <ClubsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/roles"
+          element={
+            <Layout>
+              <RolesPage />
             </Layout>
           }
         />

@@ -4,6 +4,10 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  GraduationCap,
+  ShieldCheck,
+  User,
+  UserCog,
 } from "lucide-react";
 
 // Components
@@ -20,6 +24,8 @@ export default function MembresPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [salles, setSalles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [availableRoles, setAvailableRoles] = useState<any[]>([]);
+
   const [notification, setNotification] = useState<{
     msg: string;
     type: "error" | "success";
@@ -47,6 +53,7 @@ export default function MembresPage() {
   useEffect(() => {
     fetchUsers();
     fetchSalles();
+    fetchRoles();
   }, []);
 
   const showAlert = (msg: string, type: "error" | "success") => {
@@ -90,7 +97,7 @@ export default function MembresPage() {
       showAlert("Action refusée par le serveur", "error");
     }
   };
-
+ 
   const confirmDelete = async () => {
     if (!activeUser) return;
     try {
@@ -122,7 +129,16 @@ export default function MembresPage() {
     setModals({ role: false, ban: false, delete: false, assign: false });
     setActiveUser(null);
   };
-
+  const fetchRoles = async () => {
+    try {
+      const res = await api.get("/roles", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAvailableRoles(res.data);
+    } catch (err) {
+      console.error("Erreur lors du chargement des rôles");
+    }
+  };
   // --- DERIVED DATA ---
   const gouvernorats = useMemo(() => 
     Array.from(new Set(salles.map((s: any) => s.gouvernorat))).filter(Boolean) as string[],
@@ -150,7 +166,11 @@ export default function MembresPage() {
           className={`fixed top-10 right-10 z-[1000] p-6 rounded-[30px] shadow-2xl animate-in slide-in-from-right-10 border border-white/20 backdrop-blur-md ${notification.type === "error" ? "bg-[#E98A7D] text-white" : "bg-smart-sage text-smart-teal"}`}
         >
           <div className="flex items-center space-x-3 font-bold uppercase text-xs tracking-wider text-shadow-sm">
-            {notification.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+            {notification.type === "success" ? (
+              <CheckCircle2 size={18} />
+            ) : (
+              <AlertCircle size={18} />
+            )}
             <span>{notification.msg}</span>
           </div>
         </div>
@@ -170,7 +190,7 @@ export default function MembresPage() {
       <UserStats users={users} />
 
       {/* 3. FILTRES */}
-      <UserFilters 
+      <UserFilters
         search={search}
         setSearch={setSearch}
         filterRole={filterRole}
@@ -183,6 +203,7 @@ export default function MembresPage() {
         setSelectedSalleId={setSelectedSalleId}
         gouvernorats={gouvernorats}
         salles={salles}
+        availableRoles={availableRoles}
       />
 
       {/* 4. LISTE */}
@@ -190,51 +211,86 @@ export default function MembresPage() {
         {loading ? (
           <div className="col-span-full flex flex-col items-center justify-center py-32 space-y-4">
             <Loader2 className="animate-spin text-smart-teal/20" size={60} />
-            <p className="text-gray-300 font-bold text-xs uppercase tracking-widest animate-pulse">Syncing subscribers...</p>
+            <p className="text-gray-300 font-bold text-xs uppercase tracking-widest animate-pulse">
+              Syncing subscribers...
+            </p>
           </div>
         ) : filteredUsers.length > 0 ? (
           filteredUsers.map((u: any) => (
-            <UserCard 
+            <UserCard
               key={u.id}
               user={u}
-              onRoleClick={(user) => { setActiveUser(user); setModals({ ...modals, role: true }); }}
-              onBanClick={(user) => { setActiveUser(user); setModals({ ...modals, ban: true }); }}
-              onDeleteClick={(user) => { setActiveUser(user); setModals({ ...modals, delete: true }); }}
-              onAssignClick={(user) => { setActiveUser(user); setModals({ ...modals, assign: true }); }}
+              onRoleClick={(user) => {
+                setActiveUser(user);
+                setModals({ ...modals, role: true });
+              }}
+              onBanClick={(user) => {
+                setActiveUser(user);
+                setModals({ ...modals, ban: true });
+              }}
+              onDeleteClick={(user) => {
+                setActiveUser(user);
+                setModals({ ...modals, delete: true });
+              }}
+              onAssignClick={(user) => {
+                setActiveUser(user);
+                setModals({ ...modals, assign: true });
+              }}
               onToggleStatus={toggleUserStatus}
             />
           ))
         ) : (
           <div className="col-span-full bg-white/50 rounded-[40px] border-4 border-dashed border-gray-100 py-24 text-center">
-             <p className="text-gray-300 font-black text-lg italic italic">Aucun membre ne correspond à vos critères.</p>
+            <p className="text-gray-300 font-black text-lg italic italic">
+              Aucun membre ne correspond à vos critères.
+            </p>
           </div>
         )}
       </div>
 
       {/* 5. MODALES */}
-      <RoleModal 
-        isOpen={modals.role} 
+      <RoleModal
+        isOpen={modals.role}
         onClose={closeAllModals}
         user={activeUser}
-        onSelect={(roleId) => handleAction(`/users/${activeUser.id}/role`, { role: roleId }, "Rôle mis à jour")}
+        availableRoles={availableRoles} // 👈 TRÈS IMPORTANT : passe ta liste chargée via l'API
+        onSelect={(roleName) =>
+          handleAction(
+            `/users/${activeUser.id}/role`,
+            { role: roleName },
+            "Grade mis à jour !",
+          )
+        }
       />
 
-      <BanModal 
+      <BanModal
         isOpen={modals.ban}
         onClose={closeAllModals}
         user={activeUser}
-        onSubmit={(data) => handleAction(`/users/${activeUser.id}/ban`, data, "Utilisateur suspendu")}
+        onSubmit={(data) =>
+          handleAction(
+            `/users/${activeUser.id}/ban`,
+            data,
+            "Utilisateur suspendu",
+          )
+        }
       />
 
-      <AssignSalleModal 
+      <AssignSalleModal
         isOpen={modals.assign}
         onClose={closeAllModals}
         user={activeUser}
         salles={salles}
-        onAssign={(salleId) => handleAction(`/users/${activeUser.id}/assign-salle`, { id_salle: salleId }, "Membre affecté")}
+        onAssign={(salleId) =>
+          handleAction(
+            `/users/${activeUser.id}/assign-salle`,
+            { id_salle: salleId },
+            "Membre affecté",
+          )
+        }
       />
 
-      <DeleteUserModal 
+      <DeleteUserModal
         isOpen={modals.delete}
         onClose={closeAllModals}
         userName={activeUser?.nom + " " + activeUser?.prenom}

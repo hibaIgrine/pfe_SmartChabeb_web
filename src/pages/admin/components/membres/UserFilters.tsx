@@ -13,6 +13,7 @@ interface UserFiltersProps {
   setSelectedSalleId: (id: string) => void;
   gouvernorats: string[];
   salles: any[];
+  availableRoles: any[]; // 🏆 ÉTAPE 3 : On ajoute cette Prop pour recevoir les rôles de la BDD
 }
 
 export const UserFilters = ({
@@ -28,10 +29,18 @@ export const UserFilters = ({
   setSelectedSalleId,
   gouvernorats,
   salles,
+  availableRoles, // 🏆 On l'utilise ici
 }: UserFiltersProps) => {
-  const filteredSalles = salles.filter((s: any) => !selectedGouvernorat || s.gouvernorat === selectedGouvernorat);
+  const filteredSalles = salles.filter(
+    (s: any) => !selectedGouvernorat || s.gouvernorat === selectedGouvernorat,
+  );
 
-  const hasFilter = search || filterRole !== "ALL" || filterStatus !== "ALL" || selectedGouvernorat || selectedSalleId;
+  const hasFilter =
+    search ||
+    filterRole !== "ALL" ||
+    filterStatus !== "ALL" ||
+    selectedGouvernorat ||
+    selectedSalleId;
 
   return (
     <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm p-6 space-y-5">
@@ -70,7 +79,9 @@ export const UserFilters = ({
         >
           <option value="">🗺️ Tous les gouvernorats</option>
           {gouvernorats.map((gov) => (
-            <option key={gov} value={gov}>{gov}</option>
+            <option key={gov} value={gov}>
+              {gov}
+            </option>
           ))}
         </select>
 
@@ -79,7 +90,7 @@ export const UserFilters = ({
           className={`w-full px-4 py-3 rounded-2xl font-bold text-[11px] border outline-none transition-all ${
             !selectedGouvernorat && !selectedSalleId
               ? "bg-[#F7F3E9] text-smart-teal border-transparent focus:border-smart-teal cursor-pointer"
-              : selectedGouvernorat 
+              : selectedGouvernorat
                 ? "bg-[#F7F3E9] text-smart-teal border-transparent focus:border-smart-teal cursor-pointer"
                 : "bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed"
           }`}
@@ -88,7 +99,9 @@ export const UserFilters = ({
         >
           <option value="">🏛️ Tous les centres</option>
           {filteredSalles.map((s: any) => (
-            <option key={s.id} value={s.id}>{s.nom}</option>
+            <option key={s.id} value={s.id}>
+              {s.nom}
+            </option>
           ))}
         </select>
       </div>
@@ -97,19 +110,31 @@ export const UserFilters = ({
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-wrap gap-2">
-          {/* Rôles */}
-          <div className="flex bg-[#F7F3E9] p-1 rounded-xl border border-gray-100">
-            {["ALL", "ADMIN", "COACH", "GESTIONNAIRE", "ADHERENT"].map((r) => (
+          {/* 🏆 RÔLES DYNAMIQUES (MODIFIÉ) */}
+          <div className="flex bg-[#F7F3E9] p-1 rounded-xl border border-gray-100 overflow-x-auto max-w-full">
+            <button
+              onClick={() => setFilterRole("ALL")}
+              className={`px-4 py-1.5 rounded-lg text-[9px] font-black transition-all ${
+                filterRole === "ALL"
+                  ? "bg-smart-teal text-white shadow-sm"
+                  : "text-gray-400 hover:text-smart-teal"
+              }`}
+            >
+              ALL
+            </button>
+
+            {/* On boucle sur les rôles de la base de données */}
+            {availableRoles.map((role: any) => (
               <button
-                key={r}
-                onClick={() => setFilterRole(r)}
-                className={`px-4 py-1.5 rounded-lg text-[9px] font-black transition-all ${
-                  filterRole === r 
-                    ? "bg-smart-teal text-white shadow-sm" 
+                key={role.id}
+                onClick={() => setFilterRole(role.nom)}
+                className={`px-4 py-1.5 rounded-lg text-[9px] font-black transition-all whitespace-nowrap ${
+                  filterRole === role.nom
+                    ? "bg-smart-teal text-white shadow-sm"
                     : "text-gray-400 hover:text-smart-teal"
                 }`}
               >
-                {r}
+                {role.nom.replace(/_/g, " ")}
               </button>
             ))}
           </div>
@@ -125,8 +150,8 @@ export const UserFilters = ({
                 key={s.id}
                 onClick={() => setFilterStatus(s.id)}
                 className={`px-4 py-1.5 rounded-lg text-[9px] font-black transition-all ${
-                  filterStatus === s.id 
-                    ? "bg-smart-salmon text-white shadow-sm" 
+                  filterStatus === s.id
+                    ? "bg-smart-salmon text-white shadow-sm"
                     : "text-gray-400 hover:text-smart-salmon"
                 }`}
               >
