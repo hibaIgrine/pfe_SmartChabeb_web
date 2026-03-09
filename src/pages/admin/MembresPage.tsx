@@ -192,6 +192,21 @@ export default function MembresPage() {
     selectedAgeRange,
   ]);
 
+  const toggleUserStatus = (user: any) => {
+    // Si l'utilisateur est ACTIF, on veut le suspendre -> On ouvre la MODALE
+    if (user.compte_actif) {
+      setActiveUser(user); // 1. On mémorise l'utilisateur à bannir
+      setModals((prev) => ({ ...prev, ban: true })); // 2. On ouvre la modale de ban
+    } else {
+      // Si l'utilisateur est déjà BANNI, on le réactive direct (sans modale)
+      handleAction(
+        `/users/${user.id}/status`,
+        { compte_actif: true },
+        "Compte Réactivé",
+      );
+    }
+  };
+
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-20">
       {notification && (
@@ -270,9 +285,7 @@ export default function MembresPage() {
                 setActiveUser(user);
                 setModals({ ...modals, assign: true });
               }}
-              onToggleStatus={() => {
-                /* toggle logic */
-              }}
+              onToggleStatus={toggleUserStatus}
             />
           ))
         ) : (
@@ -303,9 +316,9 @@ export default function MembresPage() {
         user={activeUser}
         onSubmit={(data) =>
           handleAction(
-            `/users/${activeUser.id}/ban`,
+            `/users/${activeUser?.id}/ban`, // On utilise l'ID de l'user actif
             data,
-            "Utilisateur suspendu",
+            "Utilisateur suspendu avec succès",
           )
         }
       />

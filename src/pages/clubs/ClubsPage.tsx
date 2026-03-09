@@ -21,28 +21,31 @@ const EMPTY_FORM = {
 };
 
 export default function ClubsPage() {
-  const [clubs, setClubs]   = useState<any[]>([]);
+  const [clubs, setClubs] = useState<any[]>([]);
   const [salles, setSalles] = useState<any[]>([]);
   const [coaches, setCoaches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filtres
-  const [searchQuery, setSearchQuery]           = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [selectedGouvernorat, setSelectedGouvernorat] = useState("");
-  const [selectedCentre, setSelectedCentre]     = useState("");
+  const [selectedCentre, setSelectedCentre] = useState("");
 
   // Notification toast
-  const [notification, setNotification] = useState<{ msg: string; type: "error" | "success" } | null>(null);
+  const [notification, setNotification] = useState<{
+    msg: string;
+    type: "error" | "success";
+  } | null>(null);
 
   // Modales
-  const [isAddModalOpen, setIsAddModalOpen]         = useState(false);
-  const [editingClub, setEditingClub]               = useState<any>(null);
-  const [deletingClub, setDeletingClub]             = useState<any>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingClub, setEditingClub] = useState<any>(null);
+  const [deletingClub, setDeletingClub] = useState<any>(null);
   const [viewingClubDetails, setViewingClubDetails] = useState<any>(null);
 
   // Formulaires
-  const [addFormData, setAddFormData]   = useState({ ...EMPTY_FORM });
+  const [addFormData, setAddFormData] = useState({ ...EMPTY_FORM });
   const [editFormData, setEditFormData] = useState({ ...EMPTY_FORM });
 
   const token = localStorage.getItem("token");
@@ -53,9 +56,9 @@ export default function ClubsPage() {
     setIsLoading(true);
     try {
       const [resC, resS, resU] = await Promise.all([
-        api.get("/clubs",  { headers }),
+        api.get("/clubs", { headers }),
         api.get("/salles", { headers }),
-        api.get("/users",  { headers }),
+        api.get("/users", { headers }),
       ]);
       setClubs(resC.data);
       setSalles(resS.data);
@@ -67,24 +70,31 @@ export default function ClubsPage() {
     }
   };
 
-  useEffect(() => { loadAllData(); }, []);
+  useEffect(() => {
+    loadAllData();
+  }, []);
 
   // ─── Gouvernorats uniques ─────────────────────────────────────────────────
   const gouvernorats = useMemo(
-    () => Array.from(new Set(salles.map((s: any) => s.gouvernorat))).filter(Boolean) as string[],
-    [salles]
+    () =>
+      Array.from(new Set(salles.map((s: any) => s.gouvernorat))).filter(
+        Boolean,
+      ) as string[],
+    [salles],
   );
 
   // ─── Catégories dynamiques ────────────────────────────────────────────────
   const allCategories = useMemo(() => {
     const customCats = clubs
       .map((c: any) => c.categorie)
-      .filter((cat: string) => cat && !ALL_CATEGORIES.some(ac => ac.id === cat)); // Garde uniquement les catégories non standards
+      .filter(
+        (cat: string) => cat && !ALL_CATEGORIES.some((ac) => ac.id === cat),
+      ); // Garde uniquement les catégories non standards
 
-    const uniqueCustoms = Array.from(new Set(customCats)).map(cat => ({
+    const uniqueCustoms = Array.from(new Set(customCats)).map((cat) => ({
       id: cat,
       label: cat,
-      icon: "✨"
+      icon: "✨",
     }));
 
     return [...ALL_CATEGORIES, ...uniqueCustoms];
@@ -92,19 +102,28 @@ export default function ClubsPage() {
 
   // ─── Filtrage des clubs ───────────────────────────────────────────────────
   const centresPourFiltre = useMemo(
-    () => !selectedGouvernorat ? [] : salles.filter((s: any) => s.gouvernorat === selectedGouvernorat),
-    [salles, selectedGouvernorat]
+    () =>
+      !selectedGouvernorat
+        ? []
+        : salles.filter((s: any) => s.gouvernorat === selectedGouvernorat),
+    [salles, selectedGouvernorat],
   );
 
-  const filteredClubs = useMemo(() =>
-    clubs.filter((c: any) => {
-      const matchSearch = c.nom.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchCat    = selectedCategory === "ALL" || c.categorie === selectedCategory;
-      const matchGov    = !selectedGouvernorat || c.salles?.gouvernorat === selectedGouvernorat;
-      const matchCentre = !selectedCentre || c.id_salle === selectedCentre;
-      return matchSearch && matchCat && matchGov && matchCentre;
-    }),
-  [clubs, searchQuery, selectedCategory, selectedGouvernorat, selectedCentre]);
+  const filteredClubs = useMemo(
+    () =>
+      clubs.filter((c: any) => {
+        const matchSearch = c.nom
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+        const matchCat =
+          selectedCategory === "ALL" || c.categorie === selectedCategory;
+        const matchGov =
+          !selectedGouvernorat || c.salles?.gouvernorat === selectedGouvernorat;
+        const matchCentre = !selectedCentre || c.id_salle === selectedCentre;
+        return matchSearch && matchCat && matchGov && matchCentre;
+      }),
+    [clubs, searchQuery, selectedCategory, selectedGouvernorat, selectedCentre],
+  );
 
   // ─── Utilitaires ──────────────────────────────────────────────────────────
   const showAlert = (msg: string, type: "error" | "success") => {
@@ -128,25 +147,31 @@ export default function ClubsPage() {
 
   const handleEditOpen = (club: any) => {
     setEditFormData({
-      nom:         club.nom         ?? "",
+      nom: club.nom ?? "",
       description: club.description ?? "",
-      categorie:   club.categorie   ?? "",
-      id_salle:    club.id_salle    ?? "",
-      id_coach:    club.id_coach    ?? "",
-      logo_url:    club.logo_url    ?? "",
-      planning:    club.planning    ?? "",
+      categorie: club.categorie ?? "",
+      id_salle: club.id_salle ?? "",
+      id_coach: club.id_coach ?? "",
+      logo_url: club.logo_url ?? "",
+      planning: club.planning ?? "",
     });
     setEditingClub(club);
   };
 
-  const handleUpdate = async (e: any) => {
+  // 💡 La fonction reçoit maintenant (event, data)
+  const handleUpdate = async (e: any, updatedData: any) => {
     e.preventDefault();
+
     try {
-      await api.patch(`/clubs/${editingClub.id}`, editFormData, { headers });
+      // 💡 On envoie updatedData qui contient déjà { ...formData, staff: [...] }
+      await api.patch(`/clubs/${editingClub.id}`, updatedData, { headers });
+
       setEditingClub(null);
+      setEditFormData({ ...EMPTY_FORM }); // Reset propre
       await loadAllData();
       showAlert("Club mis à jour avec succès ! ✅", "success");
-    } catch {
+    } catch (err) {
+      console.error(err);
       showAlert("Erreur lors de la mise à jour", "error");
     }
   };
@@ -165,7 +190,6 @@ export default function ClubsPage() {
   // ─── Rendu ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-in fade-in duration-500">
-
       {/* ── Toast notification ── */}
       {notification && (
         <div
@@ -175,7 +199,11 @@ export default function ClubsPage() {
               : "bg-green-50 text-green-600 border-green-100"
           }`}
         >
-          {notification.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+          {notification.type === "success" ? (
+            <CheckCircle2 size={18} />
+          ) : (
+            <AlertCircle size={18} />
+          )}
           <span>{notification.msg}</span>
         </div>
       )}
@@ -187,11 +215,15 @@ export default function ClubsPage() {
             Gestion des Clubs
           </h1>
           <p className="text-gray-400 text-sm font-medium mt-1">
-            Répertoire officiel des activités socio-culturelles du Ministère de la Jeunesse
+            Répertoire officiel des activités socio-culturelles du Ministère de
+            la Jeunesse
           </p>
         </div>
         <button
-          onClick={() => { setAddFormData({ ...EMPTY_FORM }); setIsAddModalOpen(true); }}
+          onClick={() => {
+            setAddFormData({ ...EMPTY_FORM });
+            setIsAddModalOpen(true);
+          }}
           className="bg-smart-teal text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-md hover:bg-[#35565d] active:scale-95 transition-all flex items-center gap-2 shrink-0"
         >
           <Plus size={18} />
@@ -203,30 +235,33 @@ export default function ClubsPage() {
       <ClubStats clubs={clubs} salles={salles} />
 
       {/* ── Filtres avancés ── */}
-  <ClubFilters
-    searchQuery={searchQuery}
-    setSearchQuery={setSearchQuery}
-    selectedCategory={selectedCategory}
-    setSelectedCategory={setSelectedCategory}
-    selectedGouvernorat={selectedGouvernorat}
-    setSelectedGouvernorat={setSelectedGouvernorat}
-    selectedCentre={selectedCentre}
-    setSelectedCentre={setSelectedCentre}
-    categories={allCategories}
-    gouvernorats={gouvernorats}
-    centres={centresPourFiltre}
-  />
+      <ClubFilters
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedGouvernorat={selectedGouvernorat}
+        setSelectedGouvernorat={setSelectedGouvernorat}
+        selectedCentre={selectedCentre}
+        setSelectedCentre={setSelectedCentre}
+        categories={allCategories}
+        gouvernorats={gouvernorats}
+        centres={centresPourFiltre}
+      />
 
       {/* ── Liste clubs ── */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-24 gap-4">
           <Loader2 className="animate-spin text-smart-teal" size={44} />
-          <p className="text-gray-300 text-sm font-bold">Chargement des clubs...</p>
+          <p className="text-gray-300 text-sm font-bold">
+            Chargement des clubs...
+          </p>
         </div>
       ) : filteredClubs.length > 0 ? (
         <>
           <p className="text-xs text-gray-400 font-bold pl-1">
-            {filteredClubs.length} club{filteredClubs.length > 1 ? "s" : ""} trouvé{filteredClubs.length > 1 ? "s" : ""}
+            {filteredClubs.length} club{filteredClubs.length > 1 ? "s" : ""}{" "}
+            trouvé{filteredClubs.length > 1 ? "s" : ""}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredClubs.map((club: any) => (
@@ -243,9 +278,16 @@ export default function ClubsPage() {
       ) : (
         <div className="bg-white rounded-[28px] py-24 text-center border border-gray-100 flex flex-col items-center gap-3">
           <span className="text-5xl">🔍</span>
-          <p className="text-gray-400 font-bold text-sm italic">Aucun club ne correspond à vos critères.</p>
+          <p className="text-gray-400 font-bold text-sm italic">
+            Aucun club ne correspond à vos critères.
+          </p>
           <button
-            onClick={() => { setSearchQuery(""); setSelectedCategory("ALL"); setSelectedGouvernorat(""); setSelectedCentre(""); }}
+            onClick={() => {
+              setSearchQuery("");
+              setSelectedCategory("ALL");
+              setSelectedGouvernorat("");
+              setSelectedCentre("");
+            }}
             className="text-smart-teal text-xs font-black underline mt-1"
           >
             Réinitialiser les filtres

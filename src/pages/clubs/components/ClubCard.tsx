@@ -86,13 +86,17 @@ export const ClubCard = ({ club, onViewMembers, onEdit, onDelete }: ClubCardProp
       <div className="p-6 flex flex-col flex-1">
         {/* Badge catégorie + compteur */}
         <div className="flex justify-between items-start mb-4">
-          <span className={`text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1 ${cat.bg} ${cat.text}`}>
+          <span
+            className={`text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1 ${cat.bg} ${cat.text}`}
+          >
             <span>{cat.icon}</span>
             {club.categorie}
           </span>
           <div className="flex items-center gap-1.5 bg-smart-sage/20 px-3 py-1.5 rounded-full">
             <Users size={12} className="text-smart-teal" />
-            <span className="text-xs font-black text-smart-teal">{totalMembers}</span>
+            <span className="text-xs font-black text-smart-teal">
+              {totalMembers}
+            </span>
           </div>
         </div>
 
@@ -101,17 +105,19 @@ export const ClubCard = ({ club, onViewMembers, onEdit, onDelete }: ClubCardProp
           <div className="w-10 h-10 rounded-2xl bg-smart-sage/30 flex items-center justify-center text-xl relative overflow-hidden shadow border border-white shrink-0">
             {cat.icon}
             {imageUrl && (
-              <img 
-                src={imageUrl} 
-                alt={club.nom} 
-                className="absolute inset-0 w-full h-full object-cover" 
+              <img
+                src={imageUrl}
+                alt={club.nom}
+                className="absolute inset-0 w-full h-full object-cover"
                 onError={(e: any) => {
-                  e.target.style.display = 'none';
+                  e.target.style.display = "none";
                 }}
               />
             )}
           </div>
-          <h3 className="text-lg font-black text-smart-teal leading-tight truncate">{club.nom}</h3>
+          <h3 className="text-lg font-black text-smart-teal leading-tight truncate">
+            {club.nom}
+          </h3>
         </div>
 
         {/* Description */}
@@ -127,20 +133,26 @@ export const ClubCard = ({ club, onViewMembers, onEdit, onDelete }: ClubCardProp
             <div className="flex items-center gap-1.5 text-gray-400">
               <MapPin size={11} className="text-smart-salmon shrink-0" />
               <span className="text-[10px] font-bold">
-                {club.salles.nom}{club.salles.gouvernorat ? ` — ${club.salles.gouvernorat}` : ""}
+                {club.salles.nom}
+                {club.salles.gouvernorat ? ` — ${club.salles.gouvernorat}` : ""}
               </span>
             </div>
           )}
-          {club.coach && (
-            <div className="flex items-center gap-1.5 text-gray-400">
-              <User size={11} className="text-smart-teal shrink-0" />
-              <span className="text-[10px] font-bold">{club.coach.nom} {club.coach.prenom}</span>
-            </div>
-          )}
+          
+          <div className="flex items-center gap-1.5 text-gray-400">
+            <User size={11} className="text-smart-teal shrink-0" />
+            <span className="text-[10px] font-bold">
+              {club.responsable
+                ? `${club.responsable.nom} ${club.responsable.prenom}`
+                : "Aucun responsable"}
+            </span>
+          </div>
           {planningText && (
             <div className="flex items-center gap-1.5 text-gray-400">
               <Calendar size={11} className="text-purple-400 shrink-0" />
-              <span className="text-[10px] font-medium line-clamp-1">{planningText}</span>
+              <span className="text-[10px] font-medium line-clamp-1">
+                {planningText}
+              </span>
             </div>
           )}
         </div>
