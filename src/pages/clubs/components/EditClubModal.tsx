@@ -1,34 +1,9 @@
-import { X, FileText, MapPin, Map, User, AlertCircle } from "lucide-react";
+import { X, FileText, MapPin, Map, AlertCircle } from "lucide-react";
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import api from "../../../api/axios";
-import { getCategoryIcon } from "./AddClubModal";
+import { getCategoryIcon, ALL_CATEGORIES } from "./AddClubModal";
 import { PlanningInput } from "./PlanningInput";
 
-// ─── Validation ───────────────────────────────────────────────────────────────
-interface FormErrors {
-  nom?: string;
-  categorie?: string;
-  id_salle?: string;
-}
-
-const validateForm = (data: any): FormErrors => {
-  const errors: FormErrors = {};
-  if (!data.nom || data.nom.trim().length < 3)
-    errors.nom = "Le nom doit contenir au moins 3 caractères.";
-  if (!data.categorie) errors.categorie = "Veuillez choisir une catégorie.";
-  if (!data.id_salle) errors.id_salle = "Veuillez choisir un centre d'accueil.";
-  return errors;
-};
-
-const getFullImageUrl = (url?: string): string => {
-  if (!url || url === "null" || url.trim() === "" || url.startsWith("data:"))
-    return url || "";
-  if (url.startsWith("assets/")) return "";
-  if (url.startsWith("http")) return url;
-  const baseURL = api.defaults.baseURL || "http://192.168.1.17:3000";
-  const cleanPath = url.startsWith("/") ? url : `/${url}`;
-  return `${baseURL}${cleanPath}`;
-};
 export const EditClubModal = ({
   isOpen,
   onClose,
@@ -36,52 +11,41 @@ export const EditClubModal = ({
   formData,
   setFormData,
   salles,
-  coaches,
   categories,
 }: any) => {
   const [selectedGouvernorat, setSelectedGouvernorat] = useState("");
-  const [errors, setErrors] = useState<FormErrors>({});
   const [logoPreview, setLogoPreview] = useState<string>("");
-  const [uploadLoading, setUploadLoading] = useState(false);
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
   const [staffList, setStaffList] = useState<any[]>([]);
   const [selectedStaff, setSelectedStaff] = useState<any[]>([]);
   const token = localStorage.getItem("token");
-  // Initialisation lors de l'ouverture
+
   useEffect(() => {
     if (isOpen) {
-      setErrors({});
       setLogoPreview(formData.logo_url || "");
-
-      // Check if it's a custom category
-      if (
+      const isCustom =
         formData.categorie &&
-        !categories.some((c: any) => c.id === formData.categorie)
-      ) {
-        setIsCustomCategory(true);
-      } else {
-        setIsCustomCategory(false);
+        !ALL_CATEGORIES.some((c: any) => c.id === formData.categorie);
+      setIsCustomCategory(isCustom);
+
+      if (formData.staff) {
+        setSelectedStaff(
+          formData.staff.map((s: any) => ({
+            id_utilisateur: s.id_utilisateur || s.utilisateur?.id,
+            role_dans_club: s.role_dans_club,
+          })),
+        );
       }
 
       if (formData.id_salle) {
         const salle = salles.find((s: any) => s.id === formData.id_salle);
-        if (salle && salle.gouvernorat) {
-          setSelectedGouvernorat(salle.gouvernorat);
-        }
+        if (salle) setSelectedGouvernorat(salle.gouvernorat);
       }
-    } else {
-      setLogoPreview("");
-      setSelectedGouvernorat("");
-      setIsCustomCategory(false);
     }
-  }, [
-    isOpen,
-    formData.id_salle,
-    formData.logo_url,
-    formData.categorie,
-    salles,
-  ]);
+  }, [isOpen, formData, salles]);
+
   useEffect(() => {
     if (formData.id_salle && isOpen) {
       api
@@ -90,22 +54,9 @@ export const EditClubModal = ({
         })
         .then((res) => setStaffList(res.data))
         .catch(() => setStaffList([]));
-    } else {
-      setStaffList([]);
     }
   }, [formData.id_salle, isOpen, token]);
 
-  // Initialisation lors de l'ouverture pour remplir les déjà sélectionnés
-  useEffect(() => {
-    if (isOpen && formData.staff) {
-      setSelectedStaff(
-        formData.staff.map((s: any) => ({
-          id_utilisateur: s.id_utilisateur || s.utilisateur?.id,
-          role_dans_club: s.role_dans_club,
-        })),
-      );
-    }
-  }, [isOpen, formData.staff]);
   const gouvernorats = useMemo(
     () =>
       Array.from(new Set(salles.map((s: any) => s.gouvernorat))).filter(
@@ -123,17 +74,10 @@ export const EditClubModal = ({
 
   const handleLogoUpload = useCallback(
     (file: File) => {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("Image trop grande (max 2 Mo)");
-        return;
-      }
-      setUploadLoading(true);
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setLogoPreview(base64);
-        setFormData((prev: any) => ({ ...prev, logo_url: base64 }));
-        setUploadLoading(false);
+        setLogoPreview(reader.result as string);
+        setFormData((prev: any) => ({ ...prev, logo_url: reader.result }));
       };
       reader.readAsDataURL(file);
     },
@@ -142,166 +86,108 @@ export const EditClubModal = ({
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
-    const errs = validateForm(formData);
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
-    setErrors({});
-    onSubmit(e);
-  };
-
-  const handleClose = () => {
-    setErrors({});
-    setLogoPreview("");
-    setSelectedGouvernorat("");
-    onClose();
+    onSubmit(e, { ...formData, staff: selectedStaff });
   };
 
   if (!isOpen) return null;
 
-  const inputCls = (err?: string) =>
-    `w-full p-4 bg-white rounded-[20px] font-bold text-sm outline-none shadow-sm text-smart-teal transition-all placeholder:font-medium placeholder:text-gray-300 ${
-      err
-        ? "ring-2 ring-red-300 focus:ring-red-400"
-        : "focus:ring-4 focus:ring-smart-sage/50"
-    }`;
+  const getFullImageUrl = (url?: string) => {
+    if (!url || url.startsWith("data:")) return url || "";
+    const cleanPath = url.startsWith("/") ? url : `/${url}`;
+    return `${api.defaults.baseURL || "http://localhost:3000"}${cleanPath}`;
+  };
+
+  const inputCls =
+    "w-full p-4 bg-white rounded-[20px] font-bold text-sm outline-none border-none shadow-sm text-smart-teal transition-all focus:ring-4 focus:ring-smart-sage/50";
 
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center bg-[#1A1C1E]/65 backdrop-blur-md p-4 overflow-y-auto">
-      <div className="bg-[#F7F3E9] rounded-[40px] p-8 w-full max-w-3xl shadow-2xl relative border-4 border-white animate-in zoom-in my-8 max-h-[92vh] overflow-y-auto">
-        {/* Close */}
+      <div className="bg-[#F7F3E9] rounded-[40px] p-8 w-full max-w-3xl shadow-2xl relative border-4 border-white my-8 max-h-[92vh] overflow-y-auto">
         <button
-          onClick={handleClose}
-          type="button"
-          className="absolute top-6 right-6 bg-white p-2 rounded-full text-gray-400 hover:text-black shadow-sm z-10 transition-colors"
+          onClick={onClose}
+          className="absolute top-6 right-6 text-gray-400 hover:text-black"
         >
           <X size={20} />
         </button>
 
-        {/* Title */}
-        <div className="flex items-center gap-3 mb-8 pb-5 border-b-2 border-white/60">
-          <div className="w-10 h-10 bg-smart-teal/10 rounded-xl flex items-center justify-center text-smart-teal text-lg font-black">
-            ✏️
-          </div>
-          <div>
-            <h2 className="text-3xl font-black text-smart-teal tracking-tight">
-              Modifier le Club
-            </h2>
-            <p className="text-gray-400 text-xs font-bold mt-0.5">
-              Mettez à jour les informations du club
-            </p>
-          </div>
-        </div>
+        <h2 className="text-3xl font-black text-smart-teal mb-8">
+          Modifier le Club
+        </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-7" noValidate>
-          {/* ── Logo Upload ── */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest pl-1">
-              Logo du Club
-            </label>
-            <div
-              className="flex items-center gap-4 p-4 bg-white rounded-[20px] shadow-sm cursor-pointer border-2 border-dashed border-gray-200 hover:border-smart-teal/40 transition-all group"
-              onClick={() => fileRef.current?.click()}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const f = e.dataTransfer.files[0];
-                if (f) handleLogoUpload(f);
-              }}
-            >
-              <div className="w-16 h-16 rounded-2xl bg-smart-sage/20 flex items-center justify-center relative overflow-hidden shadow-sm border-2 border-white group-hover:border-smart-teal/20 transition-all shrink-0">
-                <span className="text-2xl">
-                  {getCategoryIcon(formData.categorie, categories)}
-                </span>
-                {logoPreview && (
-                  <img
-                    src={
-                      logoPreview.startsWith("data:")
-                        ? logoPreview
-                        : getFullImageUrl(logoPreview)
-                    }
-                    alt="logo"
-                    className="absolute inset-0 w-full h-full object-cover"
-                    onError={(e: any) => {
-                      e.target.style.display = "none";
-                    }}
-                  />
-                )}
-                {uploadLoading && (
-                  <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-                    <div className="w-6 h-6 border-2 border-smart-teal border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-              </div>
-              <div>
-                <p className="font-bold text-smart-teal text-sm">
-                  Glisser-déposer ou cliquer pour changer
-                </p>
-                <p className="text-gray-400 text-xs mt-0.5">
-                  PNG, JPG, SVG — max 2 Mo
-                </p>
-              </div>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleLogoUpload(f);
-                }}
-              />
-            </div>
-          </div>
-
-          {/* ── Informations générales ── */}
-          <div className="space-y-4">
-            <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest pl-1">
-              Informations Générales *
-            </label>
-
-            <div className="space-y-1">
-              <input
-                required
-                placeholder="Nom du club ou de l'activité *"
-                className={inputCls(errors.nom)}
-                value={formData.nom || ""}
-                onChange={(e) => {
-                  setFormData({ ...formData, nom: e.target.value });
-                  setErrors({ ...errors, nom: undefined });
-                }}
-              />
-              {errors.nom && (
-                <p className="text-red-500 text-[10px] font-bold pl-2 flex items-center gap-1">
-                  <AlertCircle size={10} />
-                  {errors.nom}
-                </p>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div
+            className="flex items-center gap-4 p-4 bg-white rounded-[20px] cursor-pointer border-2 border-dashed border-gray-200"
+            onClick={() => fileRef.current?.click()}
+          >
+            <div className="w-16 h-16 rounded-2xl bg-smart-sage/20 flex items-center justify-center relative overflow-hidden shrink-0">
+              <span className="text-2xl">
+                {getCategoryIcon(formData.categorie, categories)}
+              </span>
+              {logoPreview && (
+                <img
+                  src={
+                    logoPreview.startsWith("data:")
+                      ? logoPreview
+                      : getFullImageUrl(logoPreview)
+                  }
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
               )}
             </div>
-
-            <div className="relative group">
-              <FileText
-                className="absolute left-4 top-4 text-gray-300 group-focus-within:text-smart-teal transition-colors"
-                size={16}
-              />
-              <textarea
-                placeholder="Description (optionnel)..."
-                className={`${inputCls()} pl-11 min-h-[90px] resize-y`}
-                value={formData.description || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-              />
-            </div>
+            <p className="font-bold text-sm text-smart-teal">
+              Cliquer pour changer le logo
+            </p>
+            <input
+              ref={fileRef}
+              type="file"
+              className="hidden"
+              onChange={(e) =>
+                e.target.files?.[0] && handleLogoUpload(e.target.files[0])
+              }
+            />
           </div>
 
-          {/* ── Catégorie ── */}
+          {/* 💡 AJOUTS : Capacite et Locale */}
+          <input
+            className={inputCls}
+            value={formData.nom || ""}
+            onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+            placeholder="Nom du club *"
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              type="number"
+              placeholder="Capacité maximale"
+              className={inputCls}
+              value={formData.capacite || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, capacite: e.target.value })
+              }
+            />
+            <input
+              placeholder="Locale (ex: Salle 1)"
+              className={inputCls}
+              value={formData.locale || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, locale: e.target.value })
+              }
+            />
+          </div>
+          <textarea
+            className={`${inputCls} h-24`}
+            value={formData.description || ""}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
+            placeholder="Description..."
+          />
+
+          {/* Catégories */}
           <div className="space-y-3">
-            <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest pl-1">
+            <label className="text-[10px] font-black uppercase text-smart-teal/50">
               Catégorie *
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {categories.map((cat: any) => (
                 <button
                   key={cat.id}
@@ -309,200 +195,120 @@ export const EditClubModal = ({
                   onClick={() => {
                     setIsCustomCategory(false);
                     setFormData({ ...formData, categorie: cat.id });
-                    setErrors({ ...errors, categorie: undefined });
                   }}
-                  className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[10px] font-black transition-all border-2 ${
-                    !isCustomCategory && formData.categorie === cat.id
-                      ? "bg-smart-teal text-white border-smart-teal shadow-lg scale-105"
-                      : "bg-white text-smart-teal border-transparent hover:border-smart-teal/30 shadow-sm"
-                  }`}
+                  className={`p-3 rounded-2xl flex flex-col items-center text-[10px] font-black border-2 transition ${!isCustomCategory && formData.categorie === cat.id ? "bg-smart-teal text-white border-smart-teal" : "bg-white text-smart-teal border-transparent"}`}
                 >
-                  <span className="text-lg">
-                    {getCategoryIcon(cat.id, categories)}
-                  </span>
-                  <span className="text-center leading-tight">
-                    {cat.label?.split(" ")[0] || cat.id}
-                  </span>
+                  <span className="text-xl">{cat.icon}</span>
+                  {cat.label?.split(" ")[0]}
                 </button>
               ))}
-
-              {/* Bouton "Autre" */}
               <button
                 type="button"
                 onClick={() => {
                   setIsCustomCategory(true);
                   setFormData({ ...formData, categorie: "" });
                 }}
-                className={`p-3 rounded-2xl flex flex-col items-center gap-1 text-[10px] font-black transition-all border-2 ${
-                  isCustomCategory
-                    ? "bg-smart-teal text-white border-smart-teal shadow-lg scale-105"
-                    : "bg-white text-smart-teal border-transparent hover:border-smart-teal/30 shadow-sm"
-                }`}
+                className={`p-3 rounded-2xl flex flex-col items-center text-[10px] font-black border-2 transition ${isCustomCategory ? "bg-smart-teal text-white border-smart-teal" : "bg-white text-smart-teal border-transparent"}`}
               >
-                <span className="text-lg">✨</span>
-                <span className="text-center leading-tight">Autre...</span>
+                <span className="text-xl">✨</span>Autre
               </button>
             </div>
-
-            {/* Input texte si "Autre" est sélectionné */}
             {isCustomCategory && (
-              <div className="pt-2 animate-in fade-in slide-in-from-top-2">
-                <input
-                  required
-                  placeholder="Saisissez la nouvelle catégorie... *"
-                  className={inputCls(errors.categorie)}
-                  value={formData.categorie || ""}
-                  onChange={(e) => {
-                    setFormData({ ...formData, categorie: e.target.value });
-                    setErrors({ ...errors, categorie: undefined });
-                  }}
-                />
-              </div>
-            )}
-            {errors.categorie && (
-              <p className="text-red-500 text-[10px] font-bold pl-2 flex items-center gap-1">
-                <AlertCircle size={10} />
-                {errors.categorie}
-              </p>
+              <input
+                className={inputCls}
+                placeholder="Saisir la catégorie..."
+                value={formData.categorie || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, categorie: e.target.value })
+                }
+              />
             )}
           </div>
 
-          {/* ── Coach ── */}
-          
-
-          <div className="h-px bg-white/60 rounded-full" />
-
-          {/* ── Localisation ── */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest pl-1">
-              Localisation *
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Gouvernorat */}
-              <div className="relative group">
-                <Map
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none z-10"
-                  size={16}
-                />
-                <select
-                  className={`${inputCls()} pl-11 appearance-none cursor-pointer`}
-                  value={selectedGouvernorat}
-                  onChange={(e) => {
-                    setSelectedGouvernorat(e.target.value);
-                    setFormData({ ...formData, id_salle: "" });
-                  }}
-                >
-                  <option value="">🗺️ Filtrer par gouvernorat...</option>
-                  {gouvernorats.map((gov) => (
-                    <option key={gov} value={gov}>
-                      {gov}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {/* Centre */}
-              <div className="space-y-1">
-                <div className="relative group">
-                  <MapPin
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none z-10"
-                    size={16}
-                  />
-                  <select
-                    required
-                    className={`${inputCls(errors.id_salle)} pl-11 appearance-none cursor-pointer`}
-                    value={formData.id_salle || ""}
-                    onChange={(e) => {
-                      setFormData({ ...formData, id_salle: e.target.value });
-                      setErrors({ ...errors, id_salle: undefined });
-                    }}
-                  >
-                    <option value="" disabled>
-                      Choisir un centre... *
-                    </option>
-                    {filteredSalles.map((s: any) => (
-                      <option key={s.id} value={s.id}>
-                        {s.nom}
-                        {s.gouvernorat ? ` (${s.gouvernorat})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {errors.id_salle && (
-                  <p className="text-red-500 text-[10px] font-bold pl-2 flex items-center gap-1">
-                    <AlertCircle size={10} />
-                    {errors.id_salle}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="h-px bg-white/60 rounded-full" />
-          {/* ── Staff affecté ── */}
+          {/* Staff */}
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-smart-teal/50">
               Staff affecté
             </label>
-            <div className="grid grid-cols-1 gap-2">
-              {staffList.map((s: any) => {
-                const isSelected = selectedStaff.find(
-                  (item) => item.id_utilisateur === s.id,
-                );
-                return (
-                  <div
-                    key={s.id}
-                    className="flex justify-between items-center p-3 bg-white rounded-2xl border border-gray-100"
+            {staffList.map((s: any) => {
+              const isSelected = selectedStaff.find(
+                (item) => item.id_utilisateur === s.id,
+              );
+              return (
+                <div
+                  key={s.id}
+                  className="flex justify-between items-center p-3 bg-white rounded-2xl border border-gray-100"
+                >
+                  <span className="text-sm font-bold text-smart-teal">
+                    {s.nom} {s.prenom} ({s.role})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      isSelected
+                        ? setSelectedStaff(
+                            selectedStaff.filter(
+                              (x) => x.id_utilisateur !== s.id,
+                            ),
+                          )
+                        : setSelectedStaff([
+                            ...selectedStaff,
+                            { id_utilisateur: s.id, role_dans_club: s.role },
+                          ])
+                    }
+                    className={`text-[10px] font-black px-4 py-2 rounded-lg ${isSelected ? "bg-red-50 text-red-500" : "bg-smart-sage/20 text-smart-teal"}`}
                   >
-                    <span className="text-sm font-bold text-smart-teal">
-                      {s.nom} {s.prenom} ({s.role})
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        isSelected
-                          ? setSelectedStaff(
-                              selectedStaff.filter(
-                                (x) => x.id_utilisateur !== s.id,
-                              ),
-                            )
-                          : setSelectedStaff([
-                              ...selectedStaff,
-                              { id_utilisateur: s.id, role_dans_club: s.role },
-                            ])
-                      }
-                      className={`text-[10px] font-black px-4 py-2 rounded-lg ${isSelected ? "bg-red-50 text-red-500" : "bg-smart-sage/20 text-smart-teal"}`}
-                    >
-                      {isSelected ? "Retirer" : "Ajouter"}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          {/* ── Planning ── */}
-          <div className="space-y-4">
-            <PlanningInput
-              value={formData.planning}
-              onChange={(val) => setFormData({ ...formData, planning: val })}
-            />
+                    {isSelected ? "Retirer" : "Ajouter"}
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
-          {/* ── Submit ── */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="flex-1 bg-white text-gray-500 border border-gray-200 py-4 rounded-[25px] font-black text-sm hover:bg-gray-50 transition-all"
+          {/* Localisation */}
+          <div className="grid grid-cols-2 gap-4">
+            <select
+              className={inputCls}
+              value={selectedGouvernorat}
+              onChange={(e) => {
+                setSelectedGouvernorat(e.target.value);
+                setFormData({ ...formData, id_salle: "" });
+              }}
             >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              className="flex-2 flex-grow bg-smart-teal text-white py-4 px-8 rounded-[25px] font-black text-sm shadow-xl hover:bg-[#2f5059] transition-all active:scale-95 flex items-center justify-center gap-2"
+              <option value="">🗺️ Gouvernorat...</option>
+              {gouvernorats.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+            <select
+              className={inputCls}
+              value={formData.id_salle}
+              onChange={(e) =>
+                setFormData({ ...formData, id_salle: e.target.value })
+              }
             >
-              💾 Enregistrer les modifications
-            </button>
+              <option value="">Centre *</option>
+              {filteredSalles.map((s: any) => (
+                <option key={s.id} value={s.id}>
+                  {s.nom}
+                </option>
+              ))}
+            </select>
           </div>
+
+          <PlanningInput
+            value={formData.planning}
+            onChange={(val) => setFormData({ ...formData, planning: val })}
+          />
+
+          <button
+            type="submit"
+            className="w-full bg-smart-teal text-white py-4 rounded-[25px] font-black hover:bg-black transition-all"
+          >
+            Enregistrer les modifications
+          </button>
         </form>
       </div>
     </div>

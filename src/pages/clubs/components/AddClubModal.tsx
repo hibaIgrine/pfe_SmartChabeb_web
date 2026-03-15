@@ -1,17 +1,8 @@
-import {
-  X,
-  FileText,
-  MapPin,
-  Map,
-  User,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
+import { X, FileText, MapPin, Map, AlertCircle } from "lucide-react";
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { PlanningInput } from "./PlanningInput";
 import api from "../../../api/axios";
 
-// ─── Catégories enrichies ─────────────────────────────────────────────────────
 export const ALL_CATEGORIES = [
   { id: "Technologie", label: "Robotique & IT", icon: "💻" },
   { id: "Art", label: "Théâtre & Cinéma", icon: "🎭" },
@@ -33,19 +24,13 @@ export const getCategoryIcon = (categoryId: string, categories: any[]) => {
   return "✨";
 };
 
-// ─── Validation ───────────────────────────────────────────────────────────────
-interface FormErrors {
-  nom?: string;
-  categorie?: string;
-  id_salle?: string;
-}
-
-const validateForm = (data: any): FormErrors => {
-  const errors: FormErrors = {};
-  if (!data.nom || data.nom.trim().length < 3)
-    errors.nom = "Le nom doit contenir au moins 3 caractères.";
-  if (!data.categorie) errors.categorie = "Veuillez choisir une catégorie.";
-  if (!data.id_salle) errors.id_salle = "Veuillez choisir un centre d'accueil.";
+const validateForm = (data: any) => {
+  const errors: any = {};
+  if (!data.nom || data.nom.trim().length < 3) errors.nom = "Nom trop court.";
+  if (!data.categorie) errors.categorie = "Catégorie requise.";
+  if (!data.id_salle) errors.id_salle = "Centre requis.";
+  if (data.capacite && parseInt(data.capacite) <= 0)
+    errors.capacite = "Invalide.";
   return errors;
 };
 
@@ -56,36 +41,26 @@ export const AddClubModal = ({
   formData,
   setFormData,
   salles,
-  coaches,
   categories,
 }: any) => {
   const [selectedGouvernorat, setSelectedGouvernorat] = useState("");
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [errors, setErrors] = useState<any>({});
   const [logoPreview, setLogoPreview] = useState<string>("");
-  const [uploadLoading, setUploadLoading] = useState(false);
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // ─── État du Staff ───
   const [staffList, setStaffList] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState<any[]>([]);
   const token = localStorage.getItem("token");
 
-  // 💡 Cet useEffect s'exécute à chaque fois que la salle change
   useEffect(() => {
     if (formData.id_salle && isOpen) {
-      // 💡 On appelle la nouvelle route spécifique au staff
       api
         .get(`/users/staff/${formData.id_salle}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
-        .then((res) => {
-          setStaffList(res.data);
-        })
-        .catch((err) => {
-          console.error("Erreur chargement staff", err);
-          setStaffList([]);
-        });
+        .then((res) => setStaffList(res.data))
+        .catch(() => setStaffList([]));
     } else {
       setStaffList([]);
       setSelectedStaff([]);
@@ -109,17 +84,13 @@ export const AddClubModal = ({
 
   const handleLogoUpload = useCallback(
     (file: File) => {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("Image trop grande (max 2 Mo)");
-        return;
-      }
-      setUploadLoading(true);
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setLogoPreview(base64);
-        setFormData((prev: any) => ({ ...prev, logo_url: base64 }));
-        setUploadLoading(false);
+        setLogoPreview(reader.result as string);
+        setFormData((prev: any) => ({
+          ...prev,
+          logo_url: reader.result as string,
+        }));
       };
       reader.readAsDataURL(file);
     },
@@ -134,17 +105,14 @@ export const AddClubModal = ({
       return;
     }
 
-    // 💡 ON AJOUTE LE STAFF ICI
     const payload = {
       ...formData,
       staff: selectedStaff,
-      // On garde id_coach pour ne pas casser l'ancien code
       id_coach:
         selectedStaff.find((s) => s.role_dans_club === "COACH")
           ?.id_utilisateur || formData.id_coach,
     };
-
-    onSubmit(e, payload); // On envoie le payload complet au parent
+    onSubmit(e, payload);
   };
 
   const handleClose = () => {
@@ -159,7 +127,7 @@ export const AddClubModal = ({
   if (!isOpen) return null;
 
   const inputCls = (err?: string) =>
-    `w-full p-4 bg-white rounded-[20px] font-bold text-sm outline-none shadow-sm text-smart-teal transition-all ${err ? "ring-2 ring-red-300" : "focus:ring-4 focus:ring-smart-sage/50"}`;
+    `w-full p-4 bg-white rounded-[20px] font-bold text-sm outline-none border-none shadow-sm text-smart-teal transition-all ${err ? "ring-2 ring-red-400" : "focus:ring-4 focus:ring-smart-sage/50"}`;
 
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center bg-[#1A1C1E]/65 backdrop-blur-md p-4 overflow-y-auto">
@@ -167,63 +135,48 @@ export const AddClubModal = ({
         <button
           onClick={handleClose}
           type="button"
-          className="absolute top-6 right-6 bg-white p-2 rounded-full text-gray-400 hover:text-black shadow-sm z-10"
+          className="absolute top-6 right-6 bg-white p-2 rounded-full text-gray-400 hover:text-black"
         >
           <X size={20} />
         </button>
 
-        <div className="flex items-center gap-3 mb-8 pb-5 border-b-2 border-white/60">
-          <div className="w-10 h-10 bg-smart-teal rounded-xl flex items-center justify-center text-white text-lg">
-            ＋
-          </div>
-          <div>
-            <h2 className="text-3xl font-black text-smart-teal tracking-tight">
-              Nouveau Club
-            </h2>
-            <p className="text-gray-400 text-xs font-bold mt-0.5">
-              Remplissez les informations
-            </p>
-          </div>
-        </div>
+        <h2 className="text-3xl font-black text-smart-teal mb-8">
+          Nouveau Club
+        </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-7" noValidate>
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
           {/* Logo */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest pl-1">
-              Logo du Club
-            </label>
-            <div
-              className="flex items-center gap-4 p-4 bg-white rounded-[20px] shadow-sm cursor-pointer border-2 border-dashed border-gray-200"
-              onClick={() => fileRef.current?.click()}
-            >
-              <div className="w-16 h-16 rounded-2xl bg-smart-sage/20 flex items-center justify-center relative overflow-hidden shrink-0">
-                <span className="text-2xl">
-                  {getCategoryIcon(formData.categorie, categories)}
-                </span>
-                {logoPreview && (
-                  <img
-                    src={logoPreview}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                )}
-              </div>
-              <p className="font-bold text-smart-teal text-sm">
-                Cliquer pour changer
-              </p>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleLogoUpload(f);
-                }}
-              />
+          <div
+            className="flex items-center gap-4 p-4 bg-white rounded-[20px] cursor-pointer border-2 border-dashed border-gray-200"
+            onClick={() => fileRef.current?.click()}
+          >
+            <div className="w-16 h-16 rounded-2xl bg-smart-sage/20 flex items-center justify-center relative overflow-hidden">
+              <span className="text-2xl">
+                {getCategoryIcon(formData.categorie, categories)}
+              </span>
+              {logoPreview && (
+                <img
+                  src={logoPreview}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )}
             </div>
+            <p className="font-bold text-sm text-smart-teal">
+              Cliquer pour ajouter un logo
+            </p>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleLogoUpload(f);
+              }}
+            />
           </div>
 
-          {/* Général */}
+          {/* Nom, Capacité, Locale */}
           <div className="space-y-4">
             <input
               required
@@ -234,6 +187,25 @@ export const AddClubModal = ({
                 setFormData({ ...formData, nom: e.target.value })
               }
             />
+            <div className="grid grid-cols-2 gap-4">
+              <input
+                type="number"
+                placeholder="Capacité maximale"
+                className={inputCls(errors.capacite)}
+                value={formData.capacite || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, capacite: e.target.value })
+                }
+              />
+              <input
+                placeholder="Locale (ex: Salle 1)"
+                className={inputCls()}
+                value={formData.locale || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, locale: e.target.value })
+                }
+              />
+            </div>
             <textarea
               placeholder="Description..."
               className={`${inputCls()} min-h-[90px]`}
@@ -244,9 +216,9 @@ export const AddClubModal = ({
             />
           </div>
 
-          {/* Catégorie */}
+          {/* Catégories */}
           <div className="space-y-3">
-            <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest pl-1">
+            <label className="text-[10px] font-black text-smart-teal/50 uppercase">
               Catégorie *
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -258,23 +230,45 @@ export const AddClubModal = ({
                     setIsCustomCategory(false);
                     setFormData({ ...formData, categorie: cat.id });
                   }}
-                  className={`p-3 rounded-2xl text-[10px] font-black ${!isCustomCategory && formData.categorie === cat.id ? "bg-smart-teal text-white" : "bg-white"}`}
+                  className={`p-3 rounded-2xl flex flex-col items-center text-[10px] font-black border-2 transition ${!isCustomCategory && formData.categorie === cat.id ? "bg-smart-teal text-white border-smart-teal" : "bg-white text-smart-teal border-transparent"}`}
                 >
+                  <span className="text-xl">{cat.icon}</span>
                   {cat.label?.split(" ")[0]}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCustomCategory(true);
+                  setFormData({ ...formData, categorie: "" });
+                }}
+                className={`p-3 rounded-2xl flex flex-col items-center text-[10px] font-black border-2 transition ${isCustomCategory ? "bg-smart-teal text-white border-smart-teal" : "bg-white text-smart-teal border-transparent"}`}
+              >
+                <span className="text-xl">✨</span>Autre
+              </button>
             </div>
+            {isCustomCategory && (
+              <input
+                required
+                placeholder="Saisissez la catégorie..."
+                className={inputCls(errors.categorie)}
+                value={formData.categorie || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, categorie: e.target.value })
+                }
+              />
+            )}
           </div>
 
           {/* Staff */}
-          <div className="space-y-4">
-            <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest pl-1">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-smart-teal/50 uppercase">
               Staff du Club
             </label>
             <div className="grid grid-cols-1 gap-2">
               {formData.id_salle && staffList.length === 0 && (
                 <p className="text-[10px] text-red-400 italic">
-                  Aucun membre du staff trouvé dans ce centre.
+                  Aucun staff dans ce centre.
                 </p>
               )}
               {staffList.map((s: any) => {
@@ -315,36 +309,50 @@ export const AddClubModal = ({
 
           {/* Localisation */}
           <div className="grid grid-cols-2 gap-4">
-            <select
-              className={inputCls()}
-              value={selectedGouvernorat}
-              onChange={(e) => {
-                setSelectedGouvernorat(e.target.value);
-                setFormData({ ...formData, id_salle: "" });
-              }}
-            >
-              <option value="">🗺️ Gouvernorat...</option>
-              {gouvernorats.map((gov) => (
-                <option key={gov} value={gov}>
-                  {gov}
+            <div className="relative group">
+              <Map
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 z-10"
+                size={16}
+              />
+              <select
+                className={`${inputCls()} pl-11`}
+                value={selectedGouvernorat}
+                onChange={(e) => {
+                  setSelectedGouvernorat(e.target.value);
+                  setFormData({ ...formData, id_salle: "" });
+                }}
+              >
+                <option value="">🗺️ Gouvernorat...</option>
+                {gouvernorats.map((gov) => (
+                  <option key={gov} value={gov}>
+                    {gov}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="relative group">
+              <MapPin
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 z-10"
+                size={16}
+              />
+              <select
+                required
+                className={`${inputCls(errors.id_salle)} pl-11`}
+                value={formData.id_salle || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, id_salle: e.target.value })
+                }
+              >
+                <option value="" disabled>
+                  Choisir un centre... *
                 </option>
-              ))}
-            </select>
-            <select
-              required
-              className={inputCls(errors.id_salle)}
-              value={formData.id_salle || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, id_salle: e.target.value })
-              }
-            >
-              <option value="">Choisir un centre *</option>
-              {filteredSalles.map((s: any) => (
-                <option key={s.id} value={s.id}>
-                  {s.nom}
-                </option>
-              ))}
-            </select>
+                {filteredSalles.map((s: any) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nom}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <PlanningInput
@@ -354,7 +362,7 @@ export const AddClubModal = ({
 
           <button
             type="submit"
-            className="w-full bg-smart-teal text-white py-4 rounded-[25px] font-black hover:bg-[#2f5059]"
+            className="w-full bg-smart-teal text-white py-4 rounded-[25px] font-black hover:bg-[#2f5059] transition-all"
           >
             Créer le Club
           </button>
@@ -362,4 +370,4 @@ export const AddClubModal = ({
       </div>
     </div>
   );
-};;
+};
