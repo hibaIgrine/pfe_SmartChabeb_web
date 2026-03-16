@@ -8,7 +8,8 @@ import { ClubFilters } from "./components/ClubFilters";
 import { AddClubModal, ALL_CATEGORIES } from "./components/AddClubModal";
 import { EditClubModal } from "./components/EditClubModal";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
-import { MembersModal } from "./components/members/MembersModal"; // 💡 Note le chemin modifié
+
+import { ClubManagementView } from "./management/ClubManagementView";
 
 const EMPTY_FORM = {
   nom: "",
@@ -231,7 +232,6 @@ export default function ClubsPage() {
           <span>{notification.msg}</span>
         </div>
       )}
-
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-gray-100">
         <div>
           <h1 className="text-3xl font-black text-smart-teal tracking-tight">
@@ -251,9 +251,7 @@ export default function ClubsPage() {
           <Plus size={18} /> Nouveau Club
         </button>
       </div>
-
       <ClubStats clubs={clubs} salles={salles} />
-
       <ClubFilters
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -267,7 +265,6 @@ export default function ClubsPage() {
         gouvernorats={gouvernorats}
         centres={centresPourFiltre}
       />
-
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-24 gap-4">
           <Loader2 className="animate-spin text-smart-teal" size={44} />
@@ -292,7 +289,6 @@ export default function ClubsPage() {
           </p>
         </div>
       )}
-
       <AddClubModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -318,10 +314,11 @@ export default function ClubsPage() {
         onClose={() => setDeletingClub(null)}
         onConfirm={handleDelete}
       />
+      
       {viewingClubDetails && (
-        <MembersModal
+        <ClubManagementView
           club={viewingClubDetails}
-          onClose={() => setViewingClubDetails(null)}
+          onBack={() => setViewingClubDetails(null)}
           onUpdateStatus={handleUpdateStatus}
           onRemoveMember={handleRemoveMember}
         />

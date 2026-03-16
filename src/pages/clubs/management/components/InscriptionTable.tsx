@@ -1,0 +1,117 @@
+import { Check, X, Trash2, User, Calendar, Mail } from "lucide-react";
+
+export const InscriptionTable = ({ data, type, onAction }: any) => {
+  if (data.length === 0)
+    return (
+      <div className="py-24 text-center bg-white rounded-[40px] border-4 border-dashed border-gray-50 flex flex-col items-center">
+        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-200 mb-4">
+          <User size={32} />
+        </div>
+        <p className="text-gray-300 font-bold italic">
+          Aucun adhérent trouvé dans cette section.
+        </p>
+      </div>
+    );
+
+  return (
+    <div className="bg-white rounded-[40px] shadow-sm border border-gray-50 overflow-hidden">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="bg-gray-50/50 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 border-b border-gray-50">
+            <th className="p-8">Adhérent</th>
+            <th className="p-8">Contact</th>
+            <th className="p-8">Date de demande</th>
+            <th className="p-8 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50">
+          {data.map((ins: any) => (
+            <tr
+              key={ins.id}
+              className="group hover:bg-smart-sage/5 transition-all"
+            >
+              {/* Colonne 1 : Identité */}
+              <td className="p-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-smart-bg rounded-2xl flex items-center justify-center text-smart-teal font-black shadow-inner border border-white">
+                    {ins.utilisateur?.nom
+                      ? ins.utilisateur.nom[0].toUpperCase()
+                      : "?"}
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-smart-teal leading-none">
+                      {ins.utilisateur?.nom} {ins.utilisateur?.prenom}
+                    </p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">
+                      ID: #{ins.id.slice(0, 8)}
+                    </p>
+                  </div>
+                </div>
+              </td>
+
+              {/* Colonne 2 : Email */}
+              <td className="p-8">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2 text-gray-500 text-xs font-bold">
+                    <Mail size={12} className="text-smart-salmon" />
+                    {ins.utilisateur?.email}
+                  </div>
+                </div>
+              </td>
+
+              {/* Colonne 3 : Date */}
+              <td className="p-8 text-xs text-gray-400 font-medium">
+                <div className="flex items-center gap-2 italic">
+                  <Calendar size={14} />
+                  {new Date(ins.date_adhesion).toLocaleDateString()}
+                </div>
+              </td>
+
+              {/* Colonne 4 : Actions dynamiques */}
+              <td className="p-8 text-right">
+                <div className="flex justify-end gap-3">
+                  {/* CAS 1 : Déjà membre (Bouton Supprimer) */}
+                  {type === "MEMBERS" ? (
+                    <button
+                      onClick={() => onAction(ins.id)}
+                      className="p-3 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
+                      title="Exclure du club"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  ) : (
+                    <>
+                      {/* CAS 2 : Demande, File d'attente ou Refusé (Bouton Accepter toujours visible) */}
+                      <button
+                        onClick={() => onAction(ins.id, "ACCEPTE")}
+                        className="p-3 bg-green-50 text-green-600 rounded-2xl hover:bg-green-600 hover:text-white transition-all shadow-sm active:scale-90"
+                        title={
+                          type === "REJECTED"
+                            ? "Accepter finalement"
+                            : "Accepter l'adhésion"
+                        }
+                      >
+                        <Check size={20} />
+                      </button>
+
+                      {/* CAS 3 : Uniquement pour Demandes et File d'attente (Bouton Refuser) */}
+                      {type !== "REJECTED" && (
+                        <button
+                          onClick={() => onAction(ins.id, "REFUSE")}
+                          className="p-3 bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-90"
+                          title="Refuser la demande"
+                        >
+                          <X size={20} />
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
