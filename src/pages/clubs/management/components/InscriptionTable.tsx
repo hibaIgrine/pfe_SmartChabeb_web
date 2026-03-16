@@ -33,10 +33,24 @@ export const InscriptionTable = ({ data, type, onAction }: any) => {
               {/* Colonne 1 : Identité */}
               <td className="p-8">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-smart-bg rounded-2xl flex items-center justify-center text-smart-teal font-black shadow-inner border border-white">
-                    {ins.utilisateur?.nom
-                      ? ins.utilisateur.nom[0].toUpperCase()
-                      : "?"}
+                  <div className="w-12 h-12 bg-smart-bg rounded-2xl flex items-center justify-center text-smart-teal font-black shadow-inner border border-white overflow-hidden relative">
+                    {/* 💡 SOLUTION : On affiche les initiales par défaut */}
+                    <span className="z-0">
+                      {ins.utilisateur?.nom[0].toUpperCase()}
+                    </span>
+
+                    {/* 💡 On n'affiche l'image QUE si l'URL existe et n'est pas une chaîne vide */}
+                    {ins.utilisateur?.photo_profil_url &&
+                      ins.utilisateur.photo_profil_url !== "" && (
+                        <img
+                          src={ins.utilisateur.photo_profil_url}
+                          alt="profile"
+                          className="absolute inset-0 w-full h-full object-cover z-10"
+                          onError={(e: any) =>
+                            (e.target.style.display = "none")
+                          } // Cache l'image si le lien est mort
+                        />
+                      )}
                   </div>
                   <div>
                     <p className="text-lg font-black text-smart-teal leading-none">

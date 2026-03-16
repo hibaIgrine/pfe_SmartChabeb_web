@@ -205,15 +205,23 @@ export default function ClubsPage() {
     }
   };
 
+  // Dans ClubsPage.tsx
   const handleRemoveMember = async (inscriptionId: string) => {
-    if (window.confirm("Voulez-vous vraiment expulser ce membre du club ?")) {
+    if (window.confirm("Voulez-vous vraiment retirer ce membre ?")) {
+      // 💡 RE-RÉCUPÉRER LE TOKEN JUSTE AVANT L'APPEL
+      const token = localStorage.getItem("token");
+
       try {
-        await api.delete(`/clubs/inscription/${inscriptionId}`, { headers });
-        showAlert("Membre retiré du club", "success");
+        await api.delete(`/clubs/inscription/${inscriptionId}`, {
+          headers: { Authorization: `Bearer ${token}` }, // 👈 Assure-toi que c'est bien écrit comme ça
+        });
+
+        showAlert("Membre retiré avec succès", "success");
         await loadAllData();
         setViewingClubDetails(null);
-      } catch {
-        showAlert("Erreur lors de la suppression", "error");
+      } catch (err) {
+        console.error(err);
+        showAlert("Non autorisé ou erreur serveur", "error");
       }
     }
   };
@@ -314,7 +322,7 @@ export default function ClubsPage() {
         onClose={() => setDeletingClub(null)}
         onConfirm={handleDelete}
       />
-      
+
       {viewingClubDetails && (
         <ClubManagementView
           club={viewingClubDetails}
