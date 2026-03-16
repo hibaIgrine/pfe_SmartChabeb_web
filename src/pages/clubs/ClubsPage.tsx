@@ -10,6 +10,7 @@ import { EditClubModal } from "./components/EditClubModal";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 
 import { ClubManagementView } from "./management/ClubManagementView";
+import { SuspensionModal } from "./management/components/members/SuspensionModal";
 
 const EMPTY_FORM = {
   nom: "",
@@ -47,7 +48,9 @@ export default function ClubsPage() {
 
   const [addFormData, setAddFormData] = useState({ ...EMPTY_FORM });
   const [editFormData, setEditFormData] = useState({ ...EMPTY_FORM });
-
+  // Dans ClubsPage.tsx
+  const [memberToSuspend, setMemberToSuspend] = useState<any>(null); // Stocke l'inscription à suspendre
+  const [isSuspensionModalOpen, setIsSuspensionModalOpen] = useState(false);
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -62,8 +65,9 @@ export default function ClubsPage() {
       setClubs(resC.data);
       setSalles(resS.data);
       setCoaches(resU.data.filter((u: any) => u.role === "COACH"));
+      return resC.data; // 💡 On retourne les nouveaux clubs pour la suite
     } catch {
-      showAlert("Erreur lors du chargement des données", "error");
+      showAlert("Erreur de chargement", "error");
     } finally {
       setIsLoading(false);
     }
@@ -205,24 +209,56 @@ export default function ClubsPage() {
     }
   };
 
-  // Dans ClubsPage.tsx
-  const handleRemoveMember = async (inscriptionId: string) => {
-    if (window.confirm("Voulez-vous vraiment retirer ce membre ?")) {
-      // 💡 RE-RÉCUPÉRER LE TOKEN JUSTE AVANT L'APPEL
-      const token = localStorage.getItem("token");
+  // Fichier : ClubsPage.tsx
 
-      try {
-        await api.delete(`/clubs/inscription/${inscriptionId}`, {
-          headers: { Authorization: `Bearer ${token}` }, // 👈 Assure-toi que c'est bien écrit comme ça
+  const handleMemberAction = async (
+    inscriptionId: string,
+    type: string,
+    data?: any,
+  ) => {
+    const token = localStorage.getItem("token");
+    const headers = { Authorization: `Bearer ${token}` };
+
+    // 💡 CAS 1 : On veut suspendre -> On ouvre juste la modale
+    if (type === "OPEN_SUSPEND_MODAL") {
+      // On trouve l'inscription dans le club actuel pour avoir le nom de l'utilisateur
+      const ins = viewingClubDetails.inscriptions.find(
+        (i: any) => i.id === inscriptionId,
+      );
+      setMemberToSuspend(ins);
+      setIsSuspensionModalOpen(true);
+      return; // On s'arrête ici, on n'appelle pas l'API tout de suite
+    }
+
+    // 💡 CAS 2 : On confirme la suspension depuis la modale
+    try {
+      if (type === "SUSPEND") {
+        await api.patch(`/clubs/inscription/${inscriptionId}/suspend`, data, {
+          headers,
         });
-
-        showAlert("Membre retiré avec succès", "success");
-        await loadAllData();
-        setViewingClubDetails(null);
-      } catch (err) {
-        console.error(err);
-        showAlert("Non autorisé ou erreur serveur", "error");
+        setIsSuspensionModalOpen(false);
+        setMemberToSuspend(null);
+      } else if (type === "REACTIVATE") {
+        await api.patch(
+          `/clubs/inscription/${inscriptionId}/reactivate`,
+          {},
+          { headers },
+        );
+      } else if (type === "DELETE") {
+        if (!window.confirm("Supprimer ce membre ?")) return;
+        await api.delete(`/clubs/inscription/${inscriptionId}`, { headers });
       }
+
+      // RAFRAICHISSEMENT SANS QUITTER LA PAGE
+      const freshClubs = await loadAllData();
+      const updatedClub = freshClubs.find(
+        (c: any) => c.id === viewingClubDetails.id,
+      );
+      setViewingClubDetails(updatedClub);
+
+      showAlert("Action effectuée avec succès", "success");
+    } catch (err) {
+      showAlert("Erreur lors de l'action", "error");
     }
   };
 
@@ -328,7 +364,17 @@ export default function ClubsPage() {
           club={viewingClubDetails}
           onBack={() => setViewingClubDetails(null)}
           onUpdateStatus={handleUpdateStatus}
-          onRemoveMember={handleRemoveMember}
+          onMemberAction={handleMemberAction}
+        />
+      )}
+      {isSuspensionModalOpen && memberToSuspend && (
+        <SuspensionModal
+          isOpen={isSuspensionModalOpen}
+          onClose={() => setIsSuspensionModalOpen(false)}
+          memberName={`${memberToSuspend.utilisateur.nom} ${memberToSuspend.utilisateur.prenom}`}
+          onConfirm={(data: any) =>
+            handleMemberAction(memberToSuspend.id, "SUSPEND", data)
+          }
         />
       )}
     </div>

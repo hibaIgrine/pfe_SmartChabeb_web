@@ -1,4 +1,4 @@
-import { Check, X, Trash2, User, Calendar, Mail } from "lucide-react";
+import { Check, X, Trash2, User, Calendar, Mail, ShieldAlert, UserSearch } from "lucide-react";
 
 export const InscriptionTable = ({ data, type, onAction }: any) => {
   if (data.length === 0)
@@ -80,19 +80,58 @@ export const InscriptionTable = ({ data, type, onAction }: any) => {
                   {new Date(ins.date_adhesion).toLocaleDateString()}
                 </div>
               </td>
-
+              {type === "MEMBERS" && (
+                <td className="p-8">
+                  {ins.est_suspendu ? (
+                    <span className="px-3 py-1 bg-red-100 text-red-600 text-[10px] font-black rounded-full uppercase">
+                      Suspendu
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 bg-green-100 text-green-600 text-[10px] font-black rounded-full uppercase">
+                      Actif
+                    </span>
+                  )}
+                </td>
+              )}
               {/* Colonne 4 : Actions dynamiques */}
               <td className="p-8 text-right">
-                <div className="flex justify-end gap-3">
+                <div className="flex justify-end gap-2">
                   {/* CAS 1 : Déjà membre (Bouton Supprimer) */}
                   {type === "MEMBERS" ? (
-                    <button
-                      onClick={() => onAction(ins.id)}
-                      className="p-3 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
-                      title="Exclure du club"
-                    >
-                      <Trash2 size={20} />
-                    </button>
+                    <>
+                      {/* 1. VUE PROFIL (Quick View) */}
+                      <button
+                        onClick={() =>
+                          alert(`Bio: ${ins.utilisateur.bio || "Pas de bio"}`)
+                        } // Tu peux remplacer par un Drawer plus tard
+                        className="p-3 bg-smart-sage/20 text-smart-teal rounded-2xl hover:bg-smart-teal hover:text-white transition-all"
+                        title="Voir le profil"
+                      >
+                        <UserSearch size={18} />
+                      </button>
+                      {/* 2. SUSPENDRE / RÉACTIVER (Local au club) */}
+                     
+                      <button
+                        onClick={() =>
+                          onAction(
+                            ins.id,
+                            ins.est_suspendu
+                              ? "REACTIVATE"
+                              : "OPEN_SUSPEND_MODAL",
+                          )
+                        }
+                        className={`p-3 rounded-2xl transition-all ${ins.est_suspendu ? "bg-red-500 text-white" : "bg-gray-50 text-gray-400"}`}
+                      >
+                        <ShieldAlert size={20} />
+                      </button>
+                      {/* 3. SUPPRIMER DÉFINITIVEMENT */}
+                      <button
+                        onClick={() => onAction(ins.id, "DELETE")}
+                        className="p-3 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </>
                   ) : (
                     <>
                       {/* CAS 2 : Demande, File d'attente ou Refusé (Bouton Accepter toujours visible) */}

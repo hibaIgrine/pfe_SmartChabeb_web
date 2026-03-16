@@ -8,7 +8,7 @@ export const ClubManagementView = ({
   club,
   onBack,
   onUpdateStatus,
-  onRemoveMember,
+  onMemberAction,
 }: any) => {
   const [activeTab, setActiveTab] = useState("PENDING");
 
@@ -19,8 +19,8 @@ export const ClubManagementView = ({
     club.inscriptions?.filter((i: any) => i.statut === "LISTE_ATTENTE") || [];
   const members =
     club.inscriptions?.filter((i: any) => i.statut === "ACCEPTE") || [];
-    const rejected =
-      club.inscriptions?.filter((i: any) => i.statut === "REFUSE") || [];
+  const rejected =
+    club.inscriptions?.filter((i: any) => i.statut === "REFUSE") || [];
   return (
     <div className="animate-in slide-in-from-right duration-700 bg-smart-bg min-h-screen p-10 absolute inset-0 z-[800] overflow-y-auto custom-scrollbar">
       <div className="max-w-6xl mx-auto space-y-10">
@@ -60,7 +60,7 @@ export const ClubManagementView = ({
             <InscriptionTable
               data={members}
               type="MEMBERS"
-              onAction={onRemoveMember}
+              onAction={onMemberAction}
             />
           )}
           {activeTab === "REJECTED" && (
