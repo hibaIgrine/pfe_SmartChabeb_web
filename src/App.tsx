@@ -12,6 +12,7 @@ import CreateProgram from "./pages/coach/CreateProgram";
 import MemberDetails from "./pages/coach/MembreDetails";
 import ClubsPage from "./pages/clubs/ClubsPage";
 import RolesPage from "./pages/admin/RolesPage";
+import LocauxPage from "./pages/locaux/LocauxPage";
 
 
 
@@ -90,6 +91,14 @@ function App() {
           element={
             <Layout>
               <RolesPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/locaux"
+          element={
+            <Layout>
+              <LocauxPage />
             </Layout>
           }
         />

@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   ShieldCheck,
   UserCircle,
+  Building2,
 } from "lucide-react";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -67,7 +68,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               active={location.pathname === "/centres"}
             />
           )}
-
+          {role === "ADMIN" && (
+            <SidebarItem
+              to="/locaux"
+              icon={<Building2 size={20} />}
+              label="Gestion Locaux"
+              active={location.pathname === "/locaux"}
+            />
+          )}
           {(role === "ADMIN" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
               to="/roles"
