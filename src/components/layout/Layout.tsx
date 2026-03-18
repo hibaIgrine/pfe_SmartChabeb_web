@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   UserCircle,
   Building2,
+  CalendarCheck,
 } from "lucide-react";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -74,6 +75,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               icon={<Building2 size={20} />}
               label="Gestion Locaux"
               active={location.pathname === "/locaux"}
+            />
+          )}
+          {role === "ADMIN" && (
+            <SidebarItem
+              to="/reservations"
+              icon={<CalendarCheck size={20} />}
+              label="Réservations"
+              active={location.pathname === "/reservations"}
             />
           )}
           {(role === "ADMIN" || role === "RESPONSABLE_CLUB") && (

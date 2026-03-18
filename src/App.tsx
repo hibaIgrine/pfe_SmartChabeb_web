@@ -13,6 +13,7 @@ import MemberDetails from "./pages/coach/MembreDetails";
 import ClubsPage from "./pages/clubs/ClubsPage";
 import RolesPage from "./pages/admin/RolesPage";
 import LocauxPage from "./pages/locaux/LocauxPage";
+import ReservationsPage from "./pages/reservations/ReservationPage";
 
 
 
@@ -99,6 +100,14 @@ function App() {
           element={
             <Layout>
               <LocauxPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/reservations"
+          element={
+            <Layout>
+              <ReservationsPage />
             </Layout>
           }
         />
