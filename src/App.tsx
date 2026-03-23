@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/auth/Home";
-import Layout from "./components/layout/Layout";;
-import CentresPage from "./pages/admin/CentresPage";
+import Layout from "./components/layout/Layout";
+import CentresPage from "./pages/admin/centres/CentresPage";
 import Dashboard from "./pages/admin/Dashboard";
 import MembresPage from "./pages/admin/MembresPage";
 import AdherentAccessPage from "./pages/auth/AdherentAccessPage";
@@ -14,8 +14,6 @@ import ClubsPage from "./pages/clubs/ClubsPage";
 import RolesPage from "./pages/admin/RolesPage";
 import LocauxPage from "./pages/locaux/LocauxPage";
 import ReservationsPage from "./pages/reservations/ReservationPage";
-
-
 
 function App() {
   return (

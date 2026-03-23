@@ -1,5 +1,5 @@
-import { Search, X } from "lucide-react";
-import { useMemo } from "react"; // 🏆 Importe useMemo pour la performance
+import { Search, X, MapPinOff } from "lucide-react";
+import { useMemo } from "react";
 
 interface UserFiltersProps {
   search: string;
@@ -10,14 +10,14 @@ interface UserFiltersProps {
   setFilterStatus: (s: string) => void;
   selectedGouvernorat: string;
   setSelectedGouvernorat: (g: string) => void;
-  selectedSalleId: string;
-  setSelectedSalleId: (id: string) => void;
+  selectedCentreId: string;
+  setSelectedCentreId: (id: string) => void;
   selectedClubId: string;
   setSelectedClubId: (id: string) => void;
   selectedAgeRange: string;
   setSelectedAgeRange: (id: string) => void;
   gouvernorats: string[];
-  salles: any[];
+  centres: any[];
   clubs: any[];
   availableRoles: any[];
 }
@@ -31,29 +31,29 @@ export const UserFilters = ({
   setFilterStatus,
   selectedGouvernorat,
   setSelectedGouvernorat,
-  selectedSalleId,
-  setSelectedSalleId,
+  selectedCentreId,
+  setSelectedCentreId,
   selectedClubId,
   setSelectedClubId,
   selectedAgeRange,
   setSelectedAgeRange,
   gouvernorats,
-  salles,
+  centres,
   clubs,
   availableRoles,
 }: UserFiltersProps) => {
-  // 1. Filtrage des salles selon le gouvernorat
-  const filteredSalles = salles.filter(
-    (s: any) => !selectedGouvernorat || s.gouvernorat === selectedGouvernorat,
-  );
+  // 1. Filtrage en cascade : Centres selon la Région
+  const filteredCentres = useMemo(() => {
+    return centres.filter(
+      (c: any) => !selectedGouvernorat || c.gouvernorat === selectedGouvernorat,
+    );
+  }, [centres, selectedGouvernorat]);
 
-  // 🏆 2. AMÉLIORATION SMART : Filtrage des clubs selon la salle choisie
+  // 2. Filtrage en cascade : Clubs selon le Centre choisi
   const filteredClubsOptions = useMemo(() => {
-    // Si aucune salle n'est sélectionnée, on affiche tous les clubs
-    if (!selectedSalleId) return clubs;
-    // Sinon, on n'affiche que les clubs rattachés à cette salle précise
-    return clubs.filter((c: any) => c.id_salle === selectedSalleId);
-  }, [clubs, selectedSalleId]);
+    if (!selectedCentreId) return clubs;
+    return clubs.filter((c: any) => c.id_centre === selectedCentreId);
+  }, [clubs, selectedCentreId]);
 
   const AGE_RANGES = [
     { id: "CHILD", label: "Enfants (< 12)" },
@@ -62,35 +62,44 @@ export const UserFilters = ({
     { id: "ADULT", label: "Adultes (30+)" },
   ];
 
+  const STATUS_OPTIONS = [
+    { id: "ALL", label: "TOUS", color: "bg-smart-teal" },
+    { id: "ACTIF", label: "ACTIFS", color: "bg-smart-teal" },
+    { id: "BAN", label: "SUSPENDUS", color: "bg-smart-salmon" },
+    { id: "ORPHAN", label: "SANS CENTRE", color: "bg-orange-400" }, // 💡 Le nouveau filtre
+  ];
+
   return (
-    <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm p-6 space-y-5 animate-in fade-in duration-500">
+    <div className="bg-white rounded-[35px] border border-gray-100 shadow-sm p-7 space-y-6 animate-in fade-in duration-700">
+      {/* --- LIGNE 1 : RECHERCHE ET CASCADES --- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-4">
-        {/* Recherche */}
+        {/* Recherche textuelle */}
         <div className="relative group lg:col-span-2 xl:col-span-1">
           <Search
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"
-            size={17}
+            className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-smart-teal transition-colors"
+            size={18}
           />
           <input
             type="text"
             placeholder="Nom, email..."
-            className="w-full pl-11 py-3.5 bg-[#F7F3E9] rounded-2xl outline-none font-bold text-xs text-smart-teal transition-all focus:ring-2 focus:ring-smart-teal/10"
+            className="w-full pl-12 pr-6 py-4 bg-smart-bg rounded-2xl outline-none font-bold text-xs text-smart-teal transition-all focus:ring-4 focus:ring-smart-teal/5"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
-        {/* Gouvernorat */}
+        {/* Gouvernorats (Arabe RTL) */}
         <select
-          className="px-4 py-3 rounded-2xl font-bold text-[11px] text-smart-teal bg-[#F7F3E9] outline-none cursor-pointer border-none"
+          dir="rtl"
+          className="px-5 py-4 rounded-2xl font-black text-[11px] text-smart-teal bg-smart-bg outline-none cursor-pointer border-none appearance-none hover:bg-gray-100 transition-colors"
           value={selectedGouvernorat}
           onChange={(e) => {
             setSelectedGouvernorat(e.target.value);
-            setSelectedSalleId(""); // Reset salle si gouv change
-            setSelectedClubId(""); // Reset club si gouv change
+            setSelectedCentreId("");
+            setSelectedClubId("");
           }}
         >
-          <option value="">🗺️ Gouvernorats</option>
+          <option value="">🗺️ Toutes les régions</option>
           {gouvernorats.map((gov) => (
             <option key={gov} value={gov}>
               {gov}
@@ -98,31 +107,33 @@ export const UserFilters = ({
           ))}
         </select>
 
-        {/* Centre */}
+        {/* Centres */}
         <select
-          className="px-4 py-3 rounded-2xl font-bold text-[11px] text-smart-teal bg-[#F7F3E9] outline-none cursor-pointer border-none"
-          value={selectedSalleId}
+          className={`px-5 py-4 rounded-2xl font-black text-[11px] text-smart-teal bg-smart-bg outline-none border-none appearance-none transition-all ${!selectedGouvernorat ? "opacity-40 grayscale cursor-not-allowed" : "cursor-pointer hover:bg-gray-100"}`}
+          value={selectedCentreId}
+          disabled={!selectedGouvernorat}
           onChange={(e) => {
-            setSelectedSalleId(e.target.value);
-            setSelectedClubId(""); // 🏆 Reset le club quand on change de centre
+            setSelectedCentreId(e.target.value);
+            setSelectedClubId("");
           }}
         >
           <option value="">🏛️ Tous les centres</option>
-          {filteredSalles.map((s: any) => (
-            <option key={s.id} value={s.id}>
-              {s.nom}
+          {filteredCentres.map((c: any) => (
+            <option key={c.id} value={c.id}>
+              {c.nom}
             </option>
           ))}
         </select>
 
-        {/* 🎭 FILTRE CLUB (Désormais filtré par la salle choisie) */}
+        {/* Clubs */}
         <select
-          className={`px-4 py-3 rounded-2xl font-bold text-[11px] text-smart-teal bg-[#F7F3E9] outline-none transition-all ${filteredClubsOptions.length === 0 ? "opacity-30" : "cursor-pointer"}`}
+          className={`px-5 py-4 rounded-2xl font-black text-[11px] text-smart-teal bg-smart-bg outline-none border-none appearance-none transition-all ${filteredClubsOptions.length === 0 ? "opacity-30" : "cursor-pointer hover:bg-gray-100"}`}
           value={selectedClubId}
           onChange={(e) => setSelectedClubId(e.target.value)}
         >
           <option value="">
-            🎭 {selectedSalleId ? "Clubs de ce centre" : "Tous les clubs"}
+            🎭{" "}
+            {selectedCentreId ? "Activités du centre" : "Toutes les activités"}
           </option>
           {filteredClubsOptions.map((c: any) => (
             <option key={c.id} value={c.id}>
@@ -131,9 +142,9 @@ export const UserFilters = ({
           ))}
         </select>
 
-        {/* 🎂 FILTRE AGE */}
+        {/* Age */}
         <select
-          className="px-4 py-3 rounded-2xl font-bold text-[11px] text-smart-teal bg-[#F7F3E9] outline-none cursor-pointer border-none"
+          className="px-5 py-4 rounded-2xl font-black text-[11px] text-smart-teal bg-smart-bg outline-none cursor-pointer border-none appearance-none hover:bg-gray-100"
           value={selectedAgeRange}
           onChange={(e) => setSelectedAgeRange(e.target.value)}
         >
@@ -148,56 +159,66 @@ export const UserFilters = ({
 
       <div className="h-px bg-gray-50 w-full" />
 
-      {/* Rôles et Statuts */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap gap-2">
-          <div className="flex bg-[#F7F3E9] p-1 rounded-xl">
-            <button
-              onClick={() => setFilterRole("ALL")}
-              className={`px-4 py-1.5 rounded-lg text-[9px] font-black transition-all ${filterRole === "ALL" ? "bg-smart-teal text-white shadow-sm" : "text-gray-400"}`}
-            >
-              ALL
-            </button>
-            {availableRoles.map((role: any) => (
+      {/* --- LIGNE 2 : RÔLES ET STATUTS (Pills) --- */}
+      <div className="flex flex-wrap items-center justify-between gap-6">
+        <div className="flex flex-wrap gap-4">
+          {/* Groupe : Grades Habilitation */}
+          <div className="flex items-center gap-2">
+            <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest ml-2">
+              Grades
+            </span>
+            <div className="flex bg-smart-bg p-1 rounded-2xl shadow-inner border border-white">
               <button
-                key={role.id}
-                onClick={() => setFilterRole(role.nom)}
-                className={`px-4 py-1.5 rounded-lg text-[9px] font-black whitespace-nowrap transition-all ${filterRole === role.nom ? "bg-smart-teal text-white shadow-sm" : "text-gray-400"}`}
+                onClick={() => setFilterRole("ALL")}
+                className={`px-5 py-2 rounded-xl text-[9px] font-black transition-all ${filterRole === "ALL" ? "bg-smart-teal text-white shadow-md scale-105" : "text-gray-400 hover:text-smart-teal"}`}
               >
-                {role.nom}
+                TOUS
               </button>
-            ))}
+              {availableRoles.map((role: any) => (
+                <button
+                  key={role.id}
+                  onClick={() => setFilterRole(role.nom)}
+                  className={`px-5 py-2 rounded-xl text-[9px] font-black whitespace-nowrap transition-all ${filterRole === role.nom ? "bg-smart-teal text-white shadow-md scale-105" : "text-gray-400 hover:text-smart-teal"}`}
+                >
+                  {role.nom}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex bg-[#F7F3E9] p-1 rounded-xl">
-            {[
-              { id: "ALL", l: "Tous" },
-              { id: "ACTIF", l: "Actif" },
-              { id: "BAN", l: "Suspendu" },
-            ].map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setFilterStatus(s.id)}
-                className={`px-4 py-1.5 rounded-lg text-[9px] font-black transition-all ${filterStatus === s.id ? "bg-smart-salmon text-white shadow-sm" : "text-gray-400"}`}
-              >
-                {s.l}
-              </button>
-            ))}
+
+          {/* Groupe : État du compte & Affectation */}
+          <div className="flex items-center gap-2">
+            <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest ml-2">
+              Statut
+            </span>
+            <div className="flex bg-smart-bg p-1 rounded-2xl shadow-inner border border-white">
+              {STATUS_OPTIONS.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setFilterStatus(s.id)}
+                  className={`px-5 py-2 rounded-xl text-[9px] font-black transition-all ${filterStatus === s.id ? `${s.color} text-white shadow-md scale-105` : "text-gray-400 hover:text-smart-teal"}`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
+        {/* Réinitialisation */}
         <button
           onClick={() => {
             setSearch("");
             setFilterRole("ALL");
             setFilterStatus("ALL");
             setSelectedGouvernorat("");
-            setSelectedSalleId("");
+            setSelectedCentreId("");
             setSelectedClubId("");
             setSelectedAgeRange("");
           }}
-          className="text-[10px] font-black text-smart-salmon uppercase tracking-widest px-4 hover:underline flex items-center gap-1 transition-all"
+          className="text-[10px] font-black text-smart-salmon uppercase tracking-[0.2em] px-6 py-2 hover:bg-red-50 rounded-full flex items-center gap-2 transition-all active:scale-90"
         >
-          <X size={12} /> Réinitialiser
+          <X size={14} strokeWidth={3} /> Réinitialiser
         </button>
       </div>
     </div>

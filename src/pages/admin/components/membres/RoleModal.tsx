@@ -1,14 +1,12 @@
 import {
   X,
-  User as UserLucide,
   ShieldCheck,
   GraduationCap,
-  Briefcase,
   UserCog,
   Building2,
   HelpCircle,
   LayoutGrid,
-  User,
+  User, // Nettoyé : une seule version suffit
 } from "lucide-react";
 
 interface RoleModalProps {
@@ -16,7 +14,7 @@ interface RoleModalProps {
   onClose: () => void;
   onSelect: (roleName: string) => void;
   user: any;
-  availableRoles: any[]; // 🏆 On ajoute la liste dynamique ici
+  availableRoles: any[];
 }
 
 export const RoleModal = ({
@@ -28,7 +26,7 @@ export const RoleModal = ({
 }: RoleModalProps) => {
   if (!isOpen || !user) return null;
 
-  // 🎨 Fonction "Smart" pour donner du style aux rôles de la base
+  // 🎨 Style des grades (Design Michelle)
   const getRoleStyle = (roleName: string) => {
     switch (roleName.toUpperCase()) {
       case "ADMIN":
@@ -39,7 +37,7 @@ export const RoleModal = ({
         };
       case "RESPONSABLE_MAISON_JEUNE":
         return {
-          label: "Responsable Maison Jeune",
+          label: "Directeur Maison",
           icon: <Building2 size={18} />,
           color: "bg-[#2c4e54] text-white",
         };
@@ -78,10 +76,11 @@ export const RoleModal = ({
 
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center bg-[#1A1C1E]/80 backdrop-blur-md p-6 animate-in fade-in">
-      <div className="bg-[#F7F3E9] rounded-[60px] p-12 max-w-sm w-full shadow-2xl border-4 border-white animate-in zoom-in text-center relative">
+      <div className="bg-[#F7F3E9] rounded-[60px] p-10 md:p-12 max-w-sm w-full shadow-2xl border-4 border-white animate-in zoom-in text-center relative">
+        {/* Bouton Fermer */}
         <button
           onClick={onClose}
-          className="absolute top-8 right-8 text-gray-400 hover:text-black bg-white p-2 rounded-full transition-colors"
+          className="absolute top-8 right-8 text-gray-400 hover:text-black bg-white p-2 rounded-full shadow-sm transition-all hover:rotate-90"
         >
           <X size={20} />
         </button>
@@ -89,24 +88,41 @@ export const RoleModal = ({
         <h3 className="text-3xl font-black text-smart-teal italic mb-2 tracking-tighter">
           Nouveau Grade
         </h3>
-        <p className="text-gray-400 text-[10px] font-bold uppercase mb-8 italic tracking-widest leading-none">
-          {user.nom} {user.prenom} <br />
-          <span className="text-smart-salmon mt-1 inline-block italic lowercase">
-            Actuellement : {user.role}
-          </span>
-        </p>
+
+        <div className="mb-8">
+          <p className="text-gray-400 text-[10px] font-bold uppercase italic tracking-widest leading-none">
+            {user.nom} {user.prenom}
+          </p>
+          <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-smart-sage/30 shadow-sm">
+            <span className="text-[9px] font-black text-gray-300 uppercase">
+              Actuel :
+            </span>
+            <span className="text-[10px] font-black text-smart-salmon uppercase italic">
+              {user.role}
+            </span>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 gap-3">
-          {/* 🏆 ON BOUCLE SUR LES VRAIS RÔLES DE LA BDD */}
           {availableRoles.map((role) => {
             const style = getRoleStyle(role.nom);
+            const isCurrentRole = user.role === role.nom;
+
             return (
               <button
                 key={role.id}
+                disabled={isCurrentRole} // 💡 On empêche de re-cliquer sur le même rôle
                 onClick={() => onSelect(role.nom)}
-                className={`flex items-center justify-between p-5 rounded-[25px] font-black text-sm transition-all hover:scale-105 active:scale-95 border-2 border-transparent hover:border-white shadow-sm ${style.color}`}
+                className={`flex items-center justify-between p-5 rounded-[25px] font-black text-sm transition-all border-2 shadow-sm
+                  ${
+                    isCurrentRole
+                      ? "opacity-40 grayscale border-dashed border-gray-300 cursor-not-allowed"
+                      : `hover:scale-[1.03] active:scale-95 border-transparent hover:border-white ${style.color}`
+                  }`}
               >
-                <span className="uppercase tracking-tight">{style.label}</span>
+                <span className="uppercase tracking-tighter">
+                  {style.label}
+                </span>
                 {style.icon}
               </button>
             );
@@ -115,9 +131,9 @@ export const RoleModal = ({
 
         <button
           onClick={onClose}
-          className="w-full text-gray-400 font-black text-[10px] uppercase tracking-widest mt-8 hover:text-smart-teal transition-colors"
+          className="w-full text-gray-300 font-black text-[10px] uppercase tracking-[0.3em] mt-8 hover:text-smart-teal transition-colors"
         >
-          Annuler
+          Abandonner
         </button>
       </div>
     </div>

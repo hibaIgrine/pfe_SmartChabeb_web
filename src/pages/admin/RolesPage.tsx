@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import api from "../../api/axios";
 import {
   Plus,
@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Filter,
   ShieldAlert,
+  Users,
 } from "lucide-react";
 
 const GOUVERNORATS_AR = [
@@ -41,14 +42,13 @@ const GOUVERNORATS_AR = [
 
 export default function RolesPage() {
   const [roles, setRoles] = useState([]);
-  const [salles, setSalles] = useState([]);
+  const [centres, setCentres] = useState([]); // 💡 salles -> centres
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<{
     msg: string;
     type: "error" | "success";
   } | null>(null);
 
-  // ÉTATS DES MODALES
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
@@ -62,9 +62,13 @@ export default function RolesPage() {
 
   const [newRole, setNewRole] = useState({ nom: "", description: "" });
   const [selectedGouv, setSelectedGouv] = useState("");
-  const [selectedSalleId, setSelectedSalleId] = useState("");
+  const [selectedCentreId, setSelectedCentreId] = useState("");
 
   const token = localStorage.getItem("token");
+  const headers = useMemo(
+    () => ({ Authorization: `Bearer ${token}` }),
+    [token],
+  );
 
   useEffect(() => {
     loadData();
@@ -78,12 +82,12 @@ export default function RolesPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [resRoles, resSalles] = await Promise.all([
-        api.get("/roles", { headers: { Authorization: `Bearer ${token}` } }),
-        api.get("/salles", { headers: { Authorization: `Bearer ${token}` } }),
+      const [resRoles, resCentres] = await Promise.all([
+        api.get("/roles", { headers }),
+        api.get("/centres", { headers }), // 💡 mis à jour
       ]);
       setRoles(resRoles.data);
-      setSalles(resSalles.data);
+      setCentres(resCentres.data);
     } finally {
       setLoading(false);
     }
@@ -92,99 +96,93 @@ export default function RolesPage() {
   const handleAdd = async (e: any) => {
     e.preventDefault();
     try {
-      await api.post("/roles", newRole, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.post("/roles", newRole, { headers });
       setIsModalOpen(false);
       setNewRole({ nom: "", description: "" });
       loadData();
-      showAlert("Nouveau grade créé avec succès", "success");
+      showAlert("Grade enregistré au registre", "success");
     } catch (err) {
-      showAlert("Erreur : Ce rôle existe déjà", "error");
+      showAlert("Erreur : Grade déjà existant", "error");
     }
   };
 
-  // --- LOGIQUE DE SUPPRESSION SÉCURISÉE ---
   const executeDelete = async () => {
     if (!deleteConfirm.id) return;
     try {
-      await api.delete(`/roles/${deleteConfirm.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/roles/${deleteConfirm.id}`, { headers });
       setDeleteConfirm({ isOpen: false, id: null, name: "" });
       loadData();
-      showAlert("Le grade a été supprimé", "success");
-    } catch (err: any) {
+      showAlert("Grade supprimé avec succès", "success");
+    } catch (err) {
       setDeleteConfirm({ isOpen: false, id: null, name: "" });
-      // On capture l'erreur si des utilisateurs sont liés au rôle
-      showAlert("Impossible : des membres utilisent encore ce rôle", "error");
+      showAlert("Action impossible : grade utilisé", "error");
     }
   };
+
+  const filteredCentres = centres.filter(
+    (c: any) => !selectedGouv || c.gouvernorat === selectedGouv,
+  );
 
   const getFilteredCount = (roleUsers: any[]) => {
     if (!roleUsers) return 0;
     return roleUsers.filter((u: any) => {
-      const matchGouv = !selectedGouv || u.salles?.gouvernorat === selectedGouv;
-      const matchSalle = !selectedSalleId || u.id_salle === selectedSalleId;
-      return matchGouv && matchSalle;
+      const matchGouv = !selectedGouv || u.centre?.gouvernorat === selectedGouv;
+      const matchCentre = !selectedCentreId || u.id_centre === selectedCentreId;
+      return matchGouv && matchCentre;
     }).length;
   };
 
-  const filteredSalles = salles.filter(
-    (s: any) => !selectedGouv || s.gouvernorat === selectedGouv,
-  );
-
   return (
-    <div className="space-y-10 animate-in fade-in duration-1000 relative pb-10">
-      {/* 🔔 JOLI TOAST NOTIFICATION */}
+    <div className="space-y-8 animate-in fade-in duration-700 pb-10">
+      {/* 🔔 TOAST NOTIFICATION COMPACT */}
       {notification && (
         <div
-          className={`fixed top-10 right-10 z-[1000] p-6 rounded-[30px] shadow-2xl animate-in slide-in-from-right-10 border border-white/20 backdrop-blur-md ${notification.type === "error" ? "bg-[#E98A7D] text-white" : "bg-smart-sage text-smart-teal"}`}
+          className={`fixed top-8 right-8 z-[1000] flex items-center space-x-3 px-5 py-3 rounded-2xl shadow-xl border border-white/20 backdrop-blur-md animate-in slide-in-from-right-5 ${notification.type === "error" ? "bg-[#E98A7D] text-white" : "bg-[#D9E8D1] text-[#436d75]"}`}
         >
-          <div className="flex items-center space-x-3 font-black italic">
-            {notification.type === "success" ? (
-              <CheckCircle2 size={20} />
-            ) : (
-              <AlertCircle size={20} />
-            )}
-            <span>{notification.msg}</span>
-          </div>
+          {notification.type === "success" ? (
+            <CheckCircle2 size={16} />
+          ) : (
+            <AlertCircle size={16} />
+          )}
+          <span className="text-xs font-black uppercase tracking-wider">
+            {notification.msg}
+          </span>
         </div>
       )}
 
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-6">
+      {/* HEADER INSTITUTIONNEL RÉDUIT */}
+      <div className="flex justify-between items-end border-b border-gray-100 pb-6">
         <div>
-          <h1 className="text-6xl font-black text-smart-teal tracking-tighter italic leading-none">
-            Grades
+          <h1 className="text-4xl font-black text-smart-teal tracking-tighter italic leading-none">
+            Grades & Rôles
           </h1>
-          <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.5em] mt-3 ml-1">
-            Gestion des habilitations
+          <p className="text-gray-400 font-bold uppercase text-[9px] tracking-[0.4em] mt-3">
+            Référentiel des habilitations ministérielles
           </p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-smart-teal text-white p-5 rounded-[30px] shadow-xl hover:bg-black transition-all active:scale-95 cursor-pointer"
+          className="bg-smart-teal text-white px-6 py-3 rounded-2xl font-black text-xs shadow-lg hover:bg-black transition-all flex items-center gap-2 active:scale-95"
         >
-          <Plus size={28} />
+          <Plus size={16} /> NOUVEAU GRADE
         </button>
       </div>
 
-      {/* FILTRES ANALYTIQUES */}
-      <div className="bg-white p-4 rounded-[35px] shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 items-center">
-        <div className="flex items-center px-4 text-smart-teal opacity-30">
-          <Filter size={18} />
+      {/* FILTRES ANALYTIQUES PLUS FINS */}
+      <div className="bg-white p-3 rounded-[25px] border border-gray-100 flex gap-3 items-center shadow-sm">
+        <div className="px-3 text-smart-teal opacity-30">
+          <Filter size={16} />
         </div>
         <select
           dir="rtl"
-          className="flex-1 p-3 bg-smart-bg rounded-2xl outline-none font-black text-xs text-smart-teal border-none appearance-none cursor-pointer"
+          className="flex-1 p-3 bg-smart-bg rounded-xl outline-none font-bold text-[11px] text-smart-teal border-none cursor-pointer"
           value={selectedGouv}
           onChange={(e) => {
             setSelectedGouv(e.target.value);
-            setSelectedSalleId("");
+            setSelectedCentreId("");
           }}
         >
-          <option value="">🗺️ Toutes les régions</option>
+          <option value="">Toutes les régions...</option>
           {GOUVERNORATS_AR.map((g) => (
             <option key={g} value={g}>
               {g}
@@ -193,26 +191,26 @@ export default function RolesPage() {
         </select>
         <select
           disabled={!selectedGouv}
-          className="flex-1 p-3 bg-smart-bg rounded-2xl outline-none font-black text-xs text-smart-teal border-none disabled:opacity-30"
-          value={selectedSalleId}
-          onChange={(e) => setSelectedSalleId(e.target.value)}
+          className="flex-1 p-3 bg-smart-bg rounded-xl outline-none font-bold text-[11px] text-smart-teal border-none disabled:opacity-30"
+          value={selectedCentreId}
+          onChange={(e) => setSelectedCentreId(e.target.value)}
         >
-          <option value="">🏛️ Tous les centres</option>
-          {filteredSalles.map((s: any) => (
-            <option key={s.id} value={s.id}>
-              {s.nom}
+          <option value="">Tous les établissements...</option>
+          {filteredCentres.map((c: any) => (
+            <option key={c.id} value={c.id}>
+              {c.nom}
             </option>
           ))}
         </select>
       </div>
 
-      {/* GRILLE DES RÔLES */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* GRILLE DES RÔLES - CARTES RÉDUITES */}
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-5">
         {loading ? (
           <div className="col-span-full py-20 text-center">
             <Loader2
               className="animate-spin inline text-smart-teal"
-              size={40}
+              size={30}
             />
           </div>
         ) : (
@@ -221,28 +219,32 @@ export default function RolesPage() {
             return (
               <div
                 key={role.id}
-                className="bg-white p-10 rounded-[55px] shadow-sm border border-gray-50 flex flex-col justify-between group hover:shadow-2xl transition-all duration-500 relative overflow-hidden"
+                className="bg-white p-6 rounded-[30px] border border-gray-100 flex flex-col justify-between group hover:shadow-xl transition-all duration-300 relative overflow-hidden"
               >
-                <div className="absolute top-8 right-10 text-right">
-                  <p className="text-5xl font-black text-smart-teal tracking-tighter italic">
-                    {count}
-                  </p>
-                  <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest">
-                    Membres
-                  </p>
-                </div>
-                <div>
-                  <div className="bg-smart-sage w-14 h-14 rounded-[22px] flex items-center justify-center text-smart-teal mb-8 shadow-inner border border-white">
-                    <ShieldCheck size={28} />
+                <div className="flex justify-between items-start mb-6">
+                  <div className="bg-smart-bg p-3 rounded-xl text-smart-teal shadow-inner">
+                    <ShieldCheck size={20} />
                   </div>
-                  <h3 className="text-3xl font-black text-smart-teal tracking-tighter italic uppercase">
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-smart-teal leading-none italic">
+                      {count}
+                    </p>
+                    <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest mt-1">
+                      Membres
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-black text-smart-teal uppercase tracking-tighter leading-tight">
                     {role.nom}
                   </h3>
-                  <p className="text-gray-400 text-xs font-medium mt-4 leading-relaxed line-clamp-2">
+                  <p className="text-gray-400 text-[11px] font-medium mt-2 leading-relaxed line-clamp-2 italic">
                     {role.description || "Droits d'accès standards."}
                   </p>
                 </div>
-                <div className="mt-10 pt-8 border-t border-gray-50 flex justify-end">
+
+                <div className="mt-6 pt-4 border-t border-gray-50 flex justify-end">
                   <button
                     onClick={() =>
                       setDeleteConfirm({
@@ -251,91 +253,91 @@ export default function RolesPage() {
                         name: role.nom,
                       })
                     }
-                    className="p-3 bg-red-50 text-red-400 rounded-2xl hover:bg-[#E98A7D] hover:text-white transition-all shadow-sm active:scale-90 cursor-pointer"
+                    className="p-2 text-gray-300 hover:text-smart-salmon hover:bg-red-50 rounded-lg transition-all active:scale-90"
                   >
-                    <Trash2 size={20} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
-                <div
-                  className={`absolute -bottom-12 -left-12 w-40 h-40 rounded-full blur-3xl opacity-20 ${count > 0 ? "bg-smart-sage" : "bg-gray-100"}`}
-                ></div>
               </div>
             );
           })
         )}
       </div>
 
-      {/* 🎨 MODALE SUPPRESSION (REMPLACE LOCALHOST) */}
+      {/* 🎨 MODALE SUPPRESSION COMPACTE */}
       {deleteConfirm.isOpen && (
-        <div className="fixed inset-0 z-[800] flex items-center justify-center p-6 bg-[#1A1C1E]/90 backdrop-blur-2xl animate-in fade-in duration-500">
-          <div className="bg-white rounded-[60px] p-16 max-w-sm w-full text-center shadow-2xl border-8 border-red-50 animate-in zoom-in">
-            <div className="w-24 h-24 bg-red-100 text-[#E98A7D] rounded-[40px] flex items-center justify-center mx-auto mb-10 animate-bounce">
-              <ShieldAlert size={44} />
-            </div>
-            <h3 className="text-4xl font-black text-[#1A1C1E] tracking-tighter mb-4 italic leading-none">
-              Attention !
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-[#1A1C1E]/90 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-[40px] p-10 max-w-xs w-full text-center shadow-2xl border-4 border-red-50">
+            <ShieldAlert
+              size={40}
+              className="text-smart-salmon mx-auto mb-4 animate-pulse"
+            />
+            <h3 className="text-xl font-black text-[#1A1C1E] mb-2 italic">
+              Confirmation
             </h3>
-            <p className="text-gray-400 font-medium text-sm leading-relaxed mb-10 italic">
-              Supprimer définitivement le grade{" "}
-              <span className="text-red-500 font-black">
-                {deleteConfirm.name}
+            <p className="text-gray-400 text-xs leading-relaxed mb-8">
+              Supprimer le grade{" "}
+              <span className="text-smart-salmon font-bold">
+                "{deleteConfirm.name}"
               </span>{" "}
               ?
             </p>
-            <div className="space-y-4">
+            <div className="space-y-3">
               <button
                 onClick={executeDelete}
-                className="w-full bg-[#E98A7D] text-white py-6 rounded-[30px] font-black text-xl hover:bg-red-600 transition-all active:scale-95 shadow-xl shadow-red-100"
+                className="w-full bg-smart-salmon text-white py-4 rounded-2xl font-black text-sm hover:bg-red-600 transition-all"
               >
-                Oui, Supprimer
+                OUI, SUPPRIMER
               </button>
               <button
                 onClick={() =>
                   setDeleteConfirm({ isOpen: false, id: null, name: "" })
                 }
-                className="w-full text-gray-300 font-black text-xs uppercase tracking-widest pt-4"
+                className="w-full text-gray-300 font-black text-[10px] uppercase tracking-widest"
               >
-                Conserver
+                ANNULER
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 🎨 MODAL AJOUT */}
+      {/* 🎨 MODAL AJOUT COMPACT */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-[#1A1C1E]/60 backdrop-blur-md p-6">
-          <div className="bg-[#F7F3E9] rounded-[60px] p-12 max-w-sm w-full shadow-2xl border-4 border-white animate-in zoom-in">
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-8 right-8 text-gray-400 hover:text-black bg-white p-2 rounded-full shadow-sm"
-            >
-              <X size={20} />
-            </button>
-            <h2 className="text-4xl font-black text-smart-teal italic mb-8 tracking-tighter">
-              Nouveau Grade
-            </h2>
-            <form onSubmit={handleAdd} className="space-y-6">
+        <div className="fixed inset-0 z-[900] flex items-center justify-center bg-[#1A1C1E]/60 backdrop-blur-md p-6">
+          <div className="bg-[#F7F3E9] rounded-[40px] p-10 max-w-sm w-full shadow-2xl border-4 border-white animate-in zoom-in">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-black text-smart-teal italic">
+                Nouveau Grade
+              </h2>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-black"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleAdd} className="space-y-4">
               <input
                 required
                 placeholder="NOM DU RÔLE..."
-                className="w-full p-6 bg-white rounded-[32px] font-black text-lg text-smart-teal outline-none shadow-sm uppercase border-none"
+                className="w-full p-4 bg-white rounded-2xl font-black text-xs text-smart-teal outline-none shadow-sm uppercase border-none focus:ring-2 focus:ring-smart-sage"
                 onChange={(e) =>
                   setNewRole({ ...newRole, nom: e.target.value.toUpperCase() })
                 }
               />
               <textarea
                 placeholder="Description des droits..."
-                className="w-full p-6 bg-white rounded-[32px] font-bold text-sm text-smart-teal outline-none shadow-sm h-32 resize-none border-none"
+                className="w-full p-4 bg-white rounded-2xl font-bold text-[11px] text-smart-teal outline-none shadow-sm h-24 resize-none border-none focus:ring-2 focus:ring-smart-sage"
                 onChange={(e) =>
                   setNewRole({ ...newRole, description: e.target.value })
                 }
               />
               <button
                 type="submit"
-                className="w-full bg-smart-teal text-white py-6 rounded-[35px] font-black text-xl shadow-xl hover:bg-black transition-all active:scale-95 italic"
+                className="w-full bg-smart-teal text-white py-4 rounded-2xl font-black text-sm shadow-xl hover:bg-black transition-all active:scale-95"
               >
-                CRÉER LE RÔLE
+                ENREGISTRER
               </button>
             </form>
           </div>
