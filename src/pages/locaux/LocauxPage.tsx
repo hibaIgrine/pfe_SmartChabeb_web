@@ -21,7 +21,7 @@ export default function LocauxPage() {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("ALL");
   const [selectedCentre, setSelectedCentre] = useState("");
-  const [localToDelete, setLocalToDelete] = useState<any>(null); 
+  const [localToDelete, setLocalToDelete] = useState<any>(null);
   const [notification, setNotification] = useState<{
     msg: string;
     type: "error" | "success";
@@ -82,7 +82,11 @@ export default function LocauxPage() {
       showAlert("Erreur lors de la suppression", "error");
     }
   };
-
+  // 💡 Extrait tous les types uniques présents dans la base de données
+  const availableTypes = useMemo(() => {
+    const types = locaux.map((l: any) => l.type);
+    return Array.from(new Set(types)); // Supprime les doublons
+  }, [locaux]);
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-20">
       {/* 🔔 DESIGN DU TOAST PERSONNALISÉ (Michelle Style) */}
@@ -126,6 +130,7 @@ export default function LocauxPage() {
         setSearch={setSearch}
         type={filterType}
         setType={setFilterType}
+        availableTypes={availableTypes} // 💡 La liste calculée
         centres={centres}
         selectedCentre={selectedCentre}
         setCentre={setSelectedCentre}
