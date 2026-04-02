@@ -1,4 +1,4 @@
-import { X, ShieldAlert } from "lucide-react";
+import { X, Power, ShieldAlert } from "lucide-react";
 
 interface DeleteUserModalProps {
   isOpen: boolean;
@@ -36,12 +36,11 @@ export const DeleteUserModal = ({
         </h3>
 
         <p className="text-gray-400 font-medium text-sm leading-relaxed mb-10 italic">
-          Voulez-vous vraiment supprimer définitivement le compte de{" "}
+          Voulez-vous vraiment désactiver le compte de
           <span className="text-[#E98A7D] font-black break-words">
             {" "}
-            {/* 💡 Corrigé ici */}
             {userName}
-          </span>{" "}
+          </span>
           ?
         </p>
 
@@ -50,7 +49,7 @@ export const DeleteUserModal = ({
             onClick={onConfirm}
             className="w-full bg-[#E98A7D] text-white py-6 rounded-[30px] font-black text-xl hover:bg-red-600 shadow-xl shadow-red-100 active:scale-95 transition-all uppercase tracking-tighter"
           >
-            Oui, Supprimer
+            <Power size={20} className="inline-block mr-2" /> Oui, Désactiver
           </button>
 
           <button

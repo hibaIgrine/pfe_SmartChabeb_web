@@ -1,5 +1,5 @@
 import { X, LayoutGrid } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export const AssignClubModal = ({
   isOpen,
@@ -7,8 +7,16 @@ export const AssignClubModal = ({
   onConfirm,
   clubs,
   userName,
+  userCentreId,
 }: any) => {
   const [selectedClubId, setSelectedClubId] = useState("");
+  const filteredClubs = Array.isArray(clubs)
+    ? clubs.filter((c: any) => c.id_centre === userCentreId)
+    : [];
+
+  useEffect(() => {
+    if (isOpen) setSelectedClubId("");
+  }, [isOpen, userCentreId]);
 
   if (!isOpen) return null;
 
@@ -26,14 +34,29 @@ export const AssignClubModal = ({
           className="w-full p-5 bg-white rounded-[25px] outline-none shadow-sm font-bold text-smart-teal border-none focus:ring-4 focus:ring-smart-sage/50"
           value={selectedClubId}
           onChange={(e) => setSelectedClubId(e.target.value)}
+          disabled={!userCentreId || filteredClubs.length === 0}
         >
-          <option value="">Choisir l'activité à diriger...</option>
-          {clubs.map((c: any) => (
+          <option value="">
+            {userCentreId
+              ? filteredClubs.length > 0
+                ? "Choisir l'activité à diriger..."
+                : "Aucun club disponible dans ce centre"
+              : "L'utilisateur n'est pas rattaché à un centre"}
+          </option>
+          {filteredClubs.map((c: any) => (
             <option key={c.id} value={c.id}>
               {c.nom} ({c.centre?.nom})
             </option>
           ))}
         </select>
+
+        <p className="mt-4 text-[11px] text-gray-500 leading-snug">
+          {userCentreId
+            ? filteredClubs.length === 0
+              ? "Aucun club n'est encore disponible pour ce centre."
+              : "Seuls les clubs de l’institution rattachée sont affichés."
+            : "Veuillez d'abord affecter un centre à ce responsable."}
+        </p>
 
         <button
           onClick={() => onConfirm(selectedClubId)}

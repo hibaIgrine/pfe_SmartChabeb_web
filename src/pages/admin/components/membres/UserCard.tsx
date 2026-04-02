@@ -1,6 +1,6 @@
 import {
   Building2,
-  Trash2,
+  Power,
   Plus,
   User as UserIcon,
   ShieldCheck,
@@ -72,7 +72,6 @@ export const UserCard = ({
   user,
   onRoleClick,
   onBanClick,
-  onDeleteClick,
   onAssignClick,
   onToggleStatus,
   onAssignClub,
@@ -169,14 +168,22 @@ export const UserCard = ({
 
       {/* 3. SECTION ACTIONS DÉCISIVES */}
       <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-        {/* Toggle Status (Switch Moderne) */}
+        {/* Toggle Status (Power Button) */}
         <button
           onClick={() => onToggleStatus(user)}
-          className={`relative inline-flex h-8 w-14 items-center rounded-full transition-all shadow-inner border-2 ${user.compte_actif ? "bg-smart-teal border-smart-teal" : "bg-gray-100 border-gray-200"}`}
+          title={user.compte_actif ? "Désactiver / Suspendre" : "Réactiver"}
+          className={`p-3 rounded-2xl transition-all shadow-sm border ${user.compte_actif ? "bg-smart-teal text-white border-smart-teal hover:bg-black" : "bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200"}`}
         >
-          <span
-            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-all ${user.compte_actif ? "translate-x-7" : "translate-x-1"}`}
-          />
+          <Power size={18} />
+        </button>
+
+        {/* Block / Ban Button */}
+        <button
+          onClick={() => onBanClick(user)}
+          title="Bloquer / Suspendre"
+          className="p-3 rounded-2xl transition-all shadow-sm border bg-red-50 text-[#E98A7D] border-red-100 hover:bg-red-500 hover:text-white"
+        >
+          <ShieldAlert size={18} />
         </button>
 
         {/* Change Role Button */}
@@ -188,15 +195,6 @@ export const UserCard = ({
           <div className="group-hover/btn:scale-110 transition-transform">
             {info.icon}
           </div>
-        </button>
-
-        {/* Delete Button */}
-        <button
-          onClick={() => onDeleteClick(user)}
-          className="p-3 bg-red-50 text-[#E98A7D] border border-red-50 rounded-2xl hover:bg-[#E98A7D] hover:text-white transition-all shadow-sm"
-          title="Supprimer définitivement"
-        >
-          <Trash2 size={18} />
         </button>
       </div>
     </div>

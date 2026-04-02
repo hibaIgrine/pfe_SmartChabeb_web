@@ -1,4 +1,4 @@
-import { Search, X, MapPinOff } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useMemo } from "react";
 
 interface UserFiltersProps {
@@ -64,9 +64,8 @@ export const UserFilters = ({
 
   const STATUS_OPTIONS = [
     { id: "ALL", label: "TOUS", color: "bg-smart-teal" },
-    { id: "ACTIF", label: "ACTIFS", color: "bg-smart-teal" },
-    { id: "BAN", label: "SUSPENDUS", color: "bg-smart-salmon" },
-    { id: "ORPHAN", label: "SANS CENTRE", color: "bg-orange-400" }, // 💡 Le nouveau filtre
+    { id: "ACTIVE", label: "ACTIFS", color: "bg-smart-teal" },
+    { id: "INACTIVE", label: "INACTIFS", color: "bg-smart-salmon" },
   ];
 
   return (

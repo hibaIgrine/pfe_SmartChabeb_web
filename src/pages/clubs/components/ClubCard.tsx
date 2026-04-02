@@ -9,6 +9,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import api from "../../../api/axios";
+import { ClubResponsablesList } from "./ClubResponsablesList";
 
 const CATEGORY_MAP: Record<string, { bg: string; text: string; icon: string }> =
   {
@@ -173,14 +174,11 @@ export const ClubCard = ({
             </div>
           )}
 
-          <div className="flex items-center gap-1.5 text-gray-400">
-            <User size={11} className="text-smart-teal shrink-0" />
-            <span className="text-[10px] font-bold">
-              {club.responsable
-                ? `${club.responsable.nom} ${club.responsable.prenom}`
-                : "Aucun responsable"}
-            </span>
-          </div>
+          <ClubResponsablesList
+            className="text-gray-400"
+            responsable={club.responsable}
+            responsables={club.staff}
+          />
           {planningText && (
             <div className="flex items-center gap-1.5 text-gray-400">
               <Calendar size={11} className="text-purple-400 shrink-0" />

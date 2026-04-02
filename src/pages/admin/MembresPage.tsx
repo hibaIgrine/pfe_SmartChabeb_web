@@ -172,9 +172,8 @@ export default function MembresPage() {
       // 💡 LOGIQUE DU FILTRE STATUT (Incluant ORPHAN)
       const matchesStatus =
         filterStatus === "ALL" ||
-        (filterStatus === "ACTIF" && u.compte_actif) ||
-        (filterStatus === "BAN" && !u.compte_actif) ||
-        (filterStatus === "ORPHAN" && !u.id_centre);
+        (filterStatus === "ACTIVE" && u.compte_actif) ||
+        (filterStatus === "INACTIVE" && !u.compte_actif);
 
       const matchesGouv =
         !selectedGouvernorat || u.centre?.gouvernorat === selectedGouvernorat;
@@ -215,12 +214,12 @@ export default function MembresPage() {
   const toggleUserStatus = (user: any) => {
     if (user.compte_actif) {
       setActiveUser(user);
-      setModals((prev) => ({ ...prev, ban: true }));
+      setModals((prev) => ({ ...prev, delete: true }));
     } else {
       handleAction(
         `/users/${user.id}/status`,
         { compte_actif: true },
-        "Compte Réactivé avec succès",
+        "Compte réactivé avec succès",
       );
     }
   };
@@ -400,9 +399,9 @@ export default function MembresPage() {
         userName={`${activeUser?.nom} ${activeUser?.prenom}`}
         onConfirm={() =>
           handleAction(
-            `/users/${activeUser.id}`,
-            {},
-            "Compte supprimé du système",
+            `/users/${activeUser?.id}/status`,
+            { compte_actif: false },
+            "Compte désactivé avec succès",
           )
         }
       />
@@ -412,6 +411,7 @@ export default function MembresPage() {
         isOpen={modals.assignClub}
         onClose={() => setModals((prev) => ({ ...prev, assignClub: false }))}
         userName={`${activeUser?.nom} ${activeUser?.prenom}`}
+        userCentreId={activeUser?.id_centre}
         clubs={clubs}
         onConfirm={async (clubId: string) => {
           try {
