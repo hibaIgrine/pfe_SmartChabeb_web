@@ -35,6 +35,7 @@ export default function ClubsPage() {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [selectedGouvernorat, setSelectedGouvernorat] = useState("");
   const [selectedCentre, setSelectedCentre] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("ALL");
 
   const [notification, setNotification] = useState<{
     msg: string;
@@ -117,9 +118,21 @@ export default function ClubsPage() {
         const matchGov =
           !selectedGouvernorat || c.centre?.gouvernorat === selectedGouvernorat;
         const matchCentre = !selectedCentre || c.id_centre === selectedCentre;
-        return matchSearch && matchCat && matchGov && matchCentre;
+        const matchStatus =
+          selectedStatus === "ALL" ||
+          (selectedStatus === "ACTIVE" ? c.est_actif : !c.est_actif);
+        return (
+          matchSearch && matchCat && matchGov && matchCentre && matchStatus
+        );
       }),
-    [clubs, searchQuery, selectedCategory, selectedGouvernorat, selectedCentre],
+    [
+      clubs,
+      searchQuery,
+      selectedCategory,
+      selectedGouvernorat,
+      selectedCentre,
+      selectedStatus,
+    ],
   );
 
   const showAlert = (msg: string, type: "error" | "success") => {
@@ -190,10 +203,28 @@ export default function ClubsPage() {
       await api.delete(`/clubs/${deletingClub.id}`, { headers });
       setDeletingClub(null);
       await loadAllData();
-      showAlert("Club supprimé avec succès", "success");
+      showAlert("Club désactivé avec succès", "success");
     } catch {
-      showAlert("Erreur lors de la suppression", "error");
+      showAlert("Erreur lors de la désactivation", "error");
     }
+  };
+
+  const handleReactivate = async (club: any) => {
+    try {
+      await api.patch(`/clubs/${club.id}/activate`, {}, { headers });
+      await loadAllData();
+      showAlert("Club réactivé avec succès", "success");
+    } catch {
+      showAlert("Erreur lors de la réactivation", "error");
+    }
+  };
+
+  const handleToggleActive = async (club: any) => {
+    if (club.est_actif) {
+      setDeletingClub(club);
+      return;
+    }
+    await handleReactivate(club);
   };
 
   const handleUpdateStatus = async (
@@ -321,6 +352,8 @@ export default function ClubsPage() {
         setSelectedGouvernorat={setSelectedGouvernorat}
         selectedCentre={selectedCentre}
         setSelectedCentre={setSelectedCentre}
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
         categories={allCategories}
         gouvernorats={gouvernorats}
         centres={centresPourFiltre}
@@ -337,7 +370,7 @@ export default function ClubsPage() {
               club={club}
               onViewMembers={(c) => setViewingClubDetails(c)}
               onEdit={(c) => handleEditOpen(c)}
-              onDelete={(c) => setDeletingClub(c)}
+              onDelete={(c) => handleToggleActive(c)}
             />
           ))}
         </div>

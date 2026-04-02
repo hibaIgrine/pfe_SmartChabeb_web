@@ -1,6 +1,6 @@
 import {
   Users,
-  Trash2,
+  Power,
   Edit,
   Eye,
   MapPin,
@@ -155,6 +155,12 @@ export const ClubCard = ({
           </p>
         )}
 
+        {!club.est_actif && (
+          <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.3em] text-red-600 bg-red-50 mb-4">
+            Désactivé
+          </span>
+        )}
+
         {/* Méta : salle, coach, planning */}
         <div className="space-y-1.5 mb-4">
           {club.centre && (
@@ -205,10 +211,14 @@ export const ClubCard = ({
             </button>
             <button
               onClick={() => onDelete(club)}
-              title="Supprimer"
-              className="p-2 rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all"
+              title={club.est_actif ? "Désactiver" : "Réactiver"}
+              className={`p-2 rounded-xl transition-all ${
+                club.est_actif
+                  ? "bg-red-50 text-red-400 hover:bg-red-500 hover:text-white"
+                  : "bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white"
+              }`}
             >
-              <Trash2 size={14} />
+              <Power size={14} />
             </button>
           </div>
         </div>

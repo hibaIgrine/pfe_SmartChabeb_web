@@ -1,4 +1,4 @@
-import { Trash2, X, AlertTriangle } from "lucide-react";
+import { Power, X, AlertTriangle } from "lucide-react";
 
 interface DeleteConfirmModalProps {
   club: any;
@@ -20,13 +20,17 @@ export const DeleteConfirmModal = ({
           <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-6">
             <AlertTriangle className="text-red-400" size={34} />
           </div>
-          <h3 className="text-2xl font-black text-smart-teal mb-2">Supprimer ce club ?</h3>
+          <h3 className="text-2xl font-black text-smart-teal mb-2">
+            Désactiver ce club ?
+          </h3>
           <p className="text-gray-400 text-sm font-medium mb-2">
-            Vous êtes sur le point de supprimer définitivement le club :
+            Le club restera dans l’historique pour garantir la traçabilité :
           </p>
-          <p className="text-smart-teal font-black text-lg mb-6 italic">"{club.nom}"</p>
+          <p className="text-smart-teal font-black text-lg mb-6 italic">
+            "{club.nom}"
+          </p>
           <p className="text-red-400 text-xs font-bold mb-8">
-            ⚠️ Cette action est irréversible et supprimera toutes les inscriptions liées.
+            ⚠️ Le club sera désactivé mais conservé dans le registre.
           </p>
           <div className="flex gap-3 w-full">
             <button
@@ -39,7 +43,7 @@ export const DeleteConfirmModal = ({
               onClick={onConfirm}
               className="flex-1 bg-red-500 text-white py-4 rounded-[20px] font-black text-sm hover:bg-red-600 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg"
             >
-              <Trash2 size={16} /> Supprimer
+              <Power size={16} /> Désactiver
             </button>
           </div>
         </div>

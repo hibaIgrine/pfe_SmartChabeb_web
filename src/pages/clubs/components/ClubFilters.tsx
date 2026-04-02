@@ -9,6 +9,8 @@ interface ClubFiltersProps {
   setSelectedGouvernorat: (g: string) => void;
   selectedCentre: string;
   setSelectedCentre: (c: string) => void;
+  selectedStatus: string;
+  setSelectedStatus: (s: string) => void;
   categories: any[];
   gouvernorats: string[];
   centres: any[];
@@ -26,8 +28,15 @@ export const ClubFilters = ({
   categories,
   gouvernorats,
   centres,
+  selectedStatus,
+  setSelectedStatus,
 }: ClubFiltersProps) => {
-  const hasFilter = searchQuery || selectedCategory !== "ALL" || selectedGouvernorat || selectedCentre;
+  const hasFilter =
+    searchQuery ||
+    selectedCategory !== "ALL" ||
+    selectedGouvernorat ||
+    selectedCentre ||
+    selectedStatus !== "ALL";
 
   return (
     <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm p-6 space-y-5 mb-6">
@@ -67,15 +76,17 @@ export const ClubFilters = ({
         >
           <option value="">🗺️ Tous les gouvernorats</option>
           {gouvernorats.map((gov) => (
-            <option key={gov} value={gov}>{gov}</option>
+            <option key={gov} value={gov}>
+              {gov}
+            </option>
           ))}
         </select>
 
         {/* Filtre Centre (Salle) */}
         <select
           className={`w-full px-4 py-3 rounded-2xl font-bold text-[11px] border outline-none transition-all ${
-            !selectedGouvernorat 
-              ? "bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed" 
+            !selectedGouvernorat
+              ? "bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed"
               : "bg-[#F7F3E9] text-smart-teal border-transparent focus:border-smart-teal cursor-pointer"
           }`}
           value={selectedCentre}
@@ -84,7 +95,9 @@ export const ClubFilters = ({
         >
           <option value="">🏛️ Tous les centres</option>
           {centres.map((centre) => (
-            <option key={centre.id} value={centre.id}>{centre.nom}</option>
+            <option key={centre.id} value={centre.id}>
+              {centre.nom}
+            </option>
           ))}
         </select>
       </div>
@@ -94,7 +107,7 @@ export const ClubFilters = ({
       {/* Ligne 2 : Catégories et Reset */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         {/* Filtre Catégorie (pills horizontaux avec scroll sur mobile) */}
-        <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto custom-scrollbar">
+        <div className="flex flex-wrap gap-2 items-center w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 custom-scrollbar">
           <button
             onClick={() => setSelectedCategory("ALL")}
             className={`shrink-0 px-4 py-2 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all border ${
@@ -116,9 +129,20 @@ export const ClubFilters = ({
               }`}
             >
               <span>{cat.icon}</span>
-              {cat.label.split(" & ")[0]} {/* Raccourcir le label pour les filtres */}
+              {cat.label.split(" & ")[0]}{" "}
+              {/* Raccourcir le label pour les filtres */}
             </button>
           ))}
+
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="shrink-0 px-4 py-2 rounded-xl font-bold text-[10px] uppercase tracking-wider border bg-white text-smart-teal transition-all border-gray-100 hover:border-smart-teal hover:text-smart-teal"
+          >
+            <option value="ALL">Tous les statuts</option>
+            <option value="ACTIVE">Actifs</option>
+            <option value="INACTIVE">Désactivés</option>
+          </select>
         </div>
 
         {/* Réinitialiser */}
