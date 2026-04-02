@@ -2,7 +2,6 @@ import {
   Users,
   Power,
   Edit,
-  Eye,
   MapPin,
   User,
   Calendar,
@@ -90,14 +89,16 @@ const safePlanning = (planning: any): string => {
 
 interface ClubCardProps {
   club: any;
-  onViewMembers: (club: any) => void;
+  onViewRequests: (club: any) => void;
+  onViewStaff: (club: any) => void;
   onEdit: (club: any) => void;
   onDelete: (club: any) => void;
 }
 
 export const ClubCard = ({
   club,
-  onViewMembers,
+  onViewRequests,
+  onViewStaff,
   onEdit,
   onDelete,
 }: ClubCardProps) => {
@@ -190,15 +191,21 @@ export const ClubCard = ({
         </div>
 
         {/* Actions */}
-        <div className="pt-4 border-t border-gray-50 flex items-center justify-between mt-auto">
-          <button
-            onClick={() => onViewMembers(club)}
-            className="text-smart-teal font-bold text-xs flex items-center gap-1 hover:underline cursor-pointer"
-          >
-            <Eye size={13} />
-            Voir les membres
-            <ChevronRight size={12} />
-          </button>
+        <div className="pt-4 border-t border-gray-50 flex flex-col gap-4 mt-auto">
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => onViewRequests(club)}
+              className="px-4 py-3 bg-smart-teal text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition hover:bg-black"
+            >
+              Gérer les demandes
+            </button>
+            <button
+              onClick={() => onViewStaff(club)}
+              className="px-4 py-3 bg-white text-smart-teal rounded-2xl text-xs font-black uppercase tracking-[0.2em] border border-smart-teal transition hover:bg-smart-teal hover:text-white"
+            >
+              Voir le personnel
+            </button>
+          </div>
           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={() => onEdit(club)}

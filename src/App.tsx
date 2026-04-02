@@ -12,6 +12,8 @@ import CoachMembers from "./pages/coach/CoachMembers";
 import CreateProgram from "./pages/coach/CreateProgram";
 import MemberDetails from "./pages/coach/MembreDetails";
 import ClubsPage from "./pages/clubs/ClubsPage";
+import ClubStaffPage from "./pages/clubs/ClubStaffPage";
+import ClubRequestsPage from "./pages/clubs/ClubRequestsPage";
 import RolesPage from "./pages/admin/roles/RolesPage";
 import LocauxPage from "./pages/locaux/LocauxPage";
 import ReservationsPage from "./pages/reservations/ReservationPage";
@@ -86,6 +88,22 @@ function App() {
           element={
             <Layout>
               <ClubsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/clubs/:clubId/requests"
+          element={
+            <Layout>
+              <ClubRequestsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/clubs/:clubId/staff"
+          element={
+            <Layout>
+              <ClubStaffPage />
             </Layout>
           }
         />

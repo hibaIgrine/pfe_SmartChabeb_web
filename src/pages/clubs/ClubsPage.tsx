@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { Loader2, Plus, CheckCircle2, AlertCircle } from "lucide-react";
 
@@ -8,9 +9,6 @@ import { ClubFilters } from "./components/ClubFilters";
 import { AddClubModal, ALL_CATEGORIES } from "./components/AddClubModal";
 import { EditClubModal } from "./components/EditClubModal";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
-
-import { ClubManagementView } from "./management/ClubManagementView";
-import { SuspensionModal } from "./management/components/members/SuspensionModal";
 
 const EMPTY_FORM = {
   nom: "",
@@ -45,13 +43,10 @@ export default function ClubsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingClub, setEditingClub] = useState<any>(null);
   const [deletingClub, setDeletingClub] = useState<any>(null);
-  const [viewingClubDetails, setViewingClubDetails] = useState<any>(null);
 
   const [addFormData, setAddFormData] = useState({ ...EMPTY_FORM });
   const [editFormData, setEditFormData] = useState({ ...EMPTY_FORM });
-  // Dans ClubsPage.tsx
-  const [memberToSuspend, setMemberToSuspend] = useState<any>(null); // Stocke l'inscription à suspendre
-  const [isSuspensionModalOpen, setIsSuspensionModalOpen] = useState(false);
+  const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
@@ -227,88 +222,6 @@ export default function ClubsPage() {
     await handleReactivate(club);
   };
 
-  const handleUpdateStatus = async (
-    inscriptionId: string,
-    nouveauStatut: string,
-  ) => {
-    try {
-      await api.patch(
-        `/clubs/inscription/${inscriptionId}/status`,
-        { statut: nouveauStatut },
-        { headers },
-      );
-      showAlert(
-        `Demande ${nouveauStatut === "ACCEPTE" ? "acceptée" : "refusée"} avec succès`,
-        "success",
-      );
-      await loadAllData();
-      setViewingClubDetails(null);
-    } catch (err: any) {
-      // 💡 On intercepte l'erreur du Backend si le club est plein
-      if (err.response && err.response.status === 409) {
-        showAlert(
-          "Impossible : La capacité maximale de ce club est déjà atteinte.",
-          "error",
-        );
-      } else {
-        showAlert("Erreur lors du traitement de la demande", "error");
-      }
-    }
-  };
-
-  // Fichier : ClubsPage.tsx
-
-  const handleMemberAction = async (
-    inscriptionId: string,
-    type: string,
-    data?: any,
-  ) => {
-    const token = localStorage.getItem("token");
-    const headers = { Authorization: `Bearer ${token}` };
-
-    // 💡 CAS 1 : On veut suspendre -> On ouvre juste la modale
-    if (type === "OPEN_SUSPEND_MODAL") {
-      // On trouve l'inscription dans le club actuel pour avoir le nom de l'utilisateur
-      const ins = viewingClubDetails.inscriptions.find(
-        (i: any) => i.id === inscriptionId,
-      );
-      setMemberToSuspend(ins);
-      setIsSuspensionModalOpen(true);
-      return; // On s'arrête ici, on n'appelle pas l'API tout de suite
-    }
-
-    // 💡 CAS 2 : On confirme la suspension depuis la modale
-    try {
-      if (type === "SUSPEND") {
-        await api.patch(`/clubs/inscription/${inscriptionId}/suspend`, data, {
-          headers,
-        });
-        setIsSuspensionModalOpen(false);
-        setMemberToSuspend(null);
-      } else if (type === "REACTIVATE") {
-        await api.patch(
-          `/clubs/inscription/${inscriptionId}/reactivate`,
-          {},
-          { headers },
-        );
-      } else if (type === "DELETE") {
-        if (!window.confirm("Supprimer ce membre ?")) return;
-        await api.delete(`/clubs/inscription/${inscriptionId}`, { headers });
-      }
-
-      // RAFRAICHISSEMENT SANS QUITTER LA PAGE
-      const freshClubs = await loadAllData();
-      const updatedClub = freshClubs.find(
-        (c: any) => c.id === viewingClubDetails.id,
-      );
-      setViewingClubDetails(updatedClub);
-
-      showAlert("Action effectuée avec succès", "success");
-    } catch (err) {
-      showAlert("Erreur lors de l'action", "error");
-    }
-  };
-
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-in fade-in duration-500">
       {notification && (
@@ -368,7 +281,8 @@ export default function ClubsPage() {
             <ClubCard
               key={club.id}
               club={club}
-              onViewMembers={(c) => setViewingClubDetails(c)}
+              onViewRequests={(c) => navigate(`/clubs/${c.id}/requests`)}
+              onViewStaff={(c) => navigate(`/clubs/${c.id}/staff`)}
               onEdit={(c) => handleEditOpen(c)}
               onDelete={(c) => handleToggleActive(c)}
             />
@@ -407,25 +321,6 @@ export default function ClubsPage() {
         onClose={() => setDeletingClub(null)}
         onConfirm={handleDelete}
       />
-
-      {viewingClubDetails && (
-        <ClubManagementView
-          club={viewingClubDetails}
-          onBack={() => setViewingClubDetails(null)}
-          onUpdateStatus={handleUpdateStatus}
-          onMemberAction={handleMemberAction}
-        />
-      )}
-      {isSuspensionModalOpen && memberToSuspend && (
-        <SuspensionModal
-          isOpen={isSuspensionModalOpen}
-          onClose={() => setIsSuspensionModalOpen(false)}
-          memberName={`${memberToSuspend.utilisateur.nom} ${memberToSuspend.utilisateur.prenom}`}
-          onConfirm={(data: any) =>
-            handleMemberAction(memberToSuspend.id, "SUSPEND", data)
-          }
-        />
-      )}
     </div>
   );
 }
