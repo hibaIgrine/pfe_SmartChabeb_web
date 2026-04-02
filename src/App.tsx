@@ -1,7 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/auth/Home";
 import Layout from "./components/layout/Layout";
 import CentresPage from "./pages/admin/centres/CentresPage";
+import ResponsableCentrePage from "./pages/centres/ResponsableCentrePage";
 import Dashboard from "./pages/admin/Dashboard";
 import MembresPage from "./pages/admin/MembresPage";
 import AdherentAccessPage from "./pages/auth/AdherentAccessPage";
@@ -11,11 +12,21 @@ import CoachMembers from "./pages/coach/CoachMembers";
 import CreateProgram from "./pages/coach/CreateProgram";
 import MemberDetails from "./pages/coach/MembreDetails";
 import ClubsPage from "./pages/clubs/ClubsPage";
-import RolesPage from "./pages/admin/RolesPage";
+import RolesPage from "./pages/admin/roles/RolesPage";
 import LocauxPage from "./pages/locaux/LocauxPage";
 import ReservationsPage from "./pages/reservations/ReservationPage";
 
 function App() {
+  const getCentrePage = () => {
+    const userStr = localStorage.getItem("user");
+    const user = userStr ? JSON.parse(userStr) : null;
+    return user?.role === "RESPONSABLE_CENTRE" ? (
+      <ResponsableCentrePage />
+    ) : (
+      <CentresPage />
+    );
+  };
+
   return (
     <BrowserRouter>
       <Routes>
@@ -36,14 +47,7 @@ function App() {
             </Layout>
           }
         />
-        <Route
-          path="/centres"
-          element={
-            <Layout>
-              <CentresPage />
-            </Layout>
-          }
-        />
+        <Route path="/centres" element={<Layout>{getCentrePage()}</Layout>} />
         <Route
           path="/membres"
           element={

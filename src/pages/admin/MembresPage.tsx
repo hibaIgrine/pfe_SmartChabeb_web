@@ -10,6 +10,7 @@ import { BanModal } from "./components/membres/BanModal";
 import { RoleModal } from "./components/membres/RoleModal";
 import { AssignCentreModal } from "./components/membres/AssignCentreModal"; // 💡 Renommé
 import { DeleteUserModal } from "./components/membres/DeleteUserModal";
+import { AssignClubModal } from "./components/membres/AssignClubModal";
 
 const AGE_RANGES = [
   { id: "CHILD", label: "Enfants (< 12)", min: 0, max: 12 },
@@ -38,16 +39,27 @@ export default function MembresPage() {
   const [selectedCentreId, setSelectedCentreId] = useState(""); // 💡 Renommé
   const [selectedClubId, setSelectedClubId] = useState("");
   const [selectedAgeRange, setSelectedAgeRange] = useState("");
-
   const [activeUser, setActiveUser] = useState<any>(null);
   const [modals, setModals] = useState({
     role: false,
     ban: false,
     delete: false,
     assign: false,
+    assignClub: false, // 💡 Nouveau
   });
 
-  const token = localStorage.getItem("token");
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const normalizeArrayResponse = (data: any) =>
+    Array.isArray(data) ? data : data?.users || [];
+
+  const showAlert = (msg: string, type: "error" | "success") => {
+    setNotification({ msg, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
   useEffect(() => {
     loadPageData();
@@ -55,45 +67,82 @@ export default function MembresPage() {
 
   const loadPageData = async () => {
     setLoading(true);
-    const headers = { Authorization: `Bearer ${token}` };
-    try {
-      const [resU, resC, resRoles, resClubs] = await Promise.all([
-        api.get("/users", { headers }),
-        api.get("/centres", { headers }), // 💡 route /centres
-        api.get("/roles", { headers }),
-        api.get("/clubs", { headers }),
-      ]);
-      setUsers(resU.data);
-      setCentres(resC.data);
-      setAvailableRoles(resRoles.data);
-      setClubs(resClubs.data);
-    } catch (err) {
-      showAlert("Erreur de synchronisation des données", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const headers = getAuthHeaders();
 
-  const showAlert = (msg: string, type: "error" | "success") => {
-    setNotification({ msg, type });
-    setTimeout(() => setNotification(null), 3000);
+    if (!headers.Authorization) {
+      showAlert(
+        "Veuillez vous reconnecter pour consulter les membres.",
+        "error",
+      );
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const resU = await api.get("/users", { headers });
+      setUsers(normalizeArrayResponse(resU.data));
+    } catch (err: any) {
+      console.error(
+        "Erreur chargement des utilisateurs :",
+        err.response || err.message || err,
+      );
+      setUsers([]);
+      const msg =
+        err.response?.data?.message || "Impossible de charger les membres";
+      showAlert(msg, "error");
+    }
+
+    try {
+      const resC = await api.get("/centres", { headers });
+      setCentres(normalizeArrayResponse(resC.data));
+    } catch (err) {
+      console.error("Erreur chargement des centres :", err);
+      setCentres([]);
+    }
+
+    try {
+      const resRoles = await api.get("/roles", { headers });
+      setAvailableRoles(normalizeArrayResponse(resRoles.data));
+    } catch (err) {
+      console.error("Erreur chargement des rôles :", err);
+      setAvailableRoles([]);
+    }
+
+    try {
+      const resClubs = await api.get("/clubs", { headers });
+      setClubs(normalizeArrayResponse(resClubs.data));
+    } catch (err) {
+      console.error("Erreur chargement des clubs :", err);
+      setClubs([]);
+    }
+
+    setLoading(false);
   };
 
   const handleAction = async (url: string, data: any, msg: string) => {
     try {
-      await api.patch(url, data, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await api.patch(url, data, {
+        headers: getAuthHeaders(),
       });
+
+      console.log("✅ Réponse serveur (User mis à jour) :", response.data);
       await loadPageData(); // Rechargement complet pour garantir la cohérence
       showAlert(msg, "success");
       closeAllModals();
     } catch (err) {
+      console.error("❌ Erreur action :", err);
       showAlert("Action refusée par le serveur", "error");
     }
   };
 
   const closeAllModals = () => {
-    setModals({ role: false, ban: false, delete: false, assign: false });
+    setModals({
+      role: false,
+      ban: false,
+      delete: false,
+      assign: false,
+      assignClub: false, // 💡 AJOUTE CETTE LIGNE ICI
+    });
     setActiveUser(null);
   };
 
@@ -175,6 +224,37 @@ export default function MembresPage() {
       );
     }
   };
+  // Dans MembresPage.tsx
+
+  const handleRoleChange = async (roleName: string) => {
+    try {
+      // 1. On met à jour le rôle via l'API
+      await api.patch(
+        `/users/${activeUser.id}/role`,
+        { role: roleName },
+        { headers: getAuthHeaders() },
+      );
+
+      // 2. On recharge les données pour que la carte affiche le nouveau rôle
+      await loadPageData();
+
+      // 3. LOGIQUE SMART : Branchement selon le rôle choisi
+      if (roleName === "RESPONSABLE_CLUB") {
+        // On ferme la modale des rôles et on ouvre celle des clubs
+        setModals((prev) => ({ ...prev, role: false, assignClub: true }));
+        showAlert(
+          "Grade mis à jour. Veuillez maintenant affecter le club.",
+          "success",
+        );
+      } else {
+        // Pour les autres rôles, on ferme tout
+        closeAllModals();
+        showAlert("Grade mis à jour avec succès !", "success");
+      }
+    } catch (err) {
+      showAlert("Erreur lors du changement de grade", "error");
+    }
+  };
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-20">
@@ -195,13 +275,15 @@ export default function MembresPage() {
       )}
 
       {/* TITRE DE LA PAGE */}
-      <div className="pt-6">
-        <h1 className="text-6xl font-black text-smart-teal tracking-tighter leading-none uppercase italic">
-          Membres
-        </h1>
-        <p className="text-gray-400 font-bold uppercase text-[9px] tracking-[0.5em] mt-4 ml-1">
-          Pilotage du registre national SmartChabeb
-        </p>
+      <div className="bg-white/90 border border-gray-100 shadow-sm rounded-[40px] p-6 flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-4xl sm:text-5xl font-black text-smart-teal uppercase tracking-tight">
+            Membres
+          </h1>
+          <p className="max-w-2xl text-sm text-gray-500">
+            Pilotage du registre national SmartChabeb
+          </p>
+        </div>
       </div>
 
       {/* STATISTIQUES */}
@@ -230,7 +312,7 @@ export default function MembresPage() {
       />
 
       {/* LISTE DES CARTES MEMBRES */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {loading ? (
           <div className="col-span-full flex flex-col items-center justify-center py-32 space-y-4">
             <Loader2 className="animate-spin text-smart-teal/20" size={60} />
@@ -259,6 +341,10 @@ export default function MembresPage() {
                 setActiveUser(user);
                 setModals({ ...modals, assign: true });
               }}
+              onAssignClub={(user: any) => {
+                setActiveUser(user);
+                setModals({ ...modals, assignClub: true });
+              }}
               onToggleStatus={toggleUserStatus}
             />
           ))
@@ -278,13 +364,7 @@ export default function MembresPage() {
         onClose={closeAllModals}
         user={activeUser}
         availableRoles={availableRoles}
-        onSelect={(roleName) =>
-          handleAction(
-            `/users/${activeUser.id}/role`,
-            { role: roleName },
-            "Le grade a été mis à jour !",
-          )
-        }
+        onSelect={handleRoleChange} // 💡 On appelle notre nouvelle fonction de gestion
       />
 
       <BanModal
@@ -325,6 +405,28 @@ export default function MembresPage() {
             "Compte supprimé du système",
           )
         }
+      />
+      {/* ... tes autres modales ... */}
+
+      <AssignClubModal
+        isOpen={modals.assignClub}
+        onClose={() => setModals((prev) => ({ ...prev, assignClub: false }))}
+        userName={`${activeUser?.nom} ${activeUser?.prenom}`}
+        clubs={clubs}
+        onConfirm={async (clubId: string) => {
+          try {
+            await api.patch(
+              `/clubs/${clubId}`,
+              { id_coach: activeUser.id },
+              { headers: getAuthHeaders() },
+            );
+            setModals((prev) => ({ ...prev, assignClub: false }));
+            await loadPageData();
+            showAlert("Responsable rattaché au club avec succès !", "success");
+          } catch (e) {
+            showAlert("Erreur lors de l'affectation du club", "error");
+          }
+        }}
       />
     </div>
   );

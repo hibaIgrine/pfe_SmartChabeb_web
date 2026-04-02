@@ -1,45 +1,65 @@
-import { Users, Trash2, Edit, Eye, MapPin, User, Calendar, ChevronRight } from "lucide-react";
+import {
+  Users,
+  Trash2,
+  Edit,
+  Eye,
+  MapPin,
+  User,
+  Calendar,
+  ChevronRight,
+} from "lucide-react";
 import api from "../../../api/axios";
 
-const CATEGORY_MAP: Record<string, { bg: string; text: string; icon: string }> = {
-  Technologie:  { bg: "bg-blue-50",   text: "text-blue-600",   icon: "💻" },
-  Art:          { bg: "bg-purple-50", text: "text-purple-600", icon: "🎭" },
-  Musique:      { bg: "bg-pink-50",   text: "text-pink-600",   icon: "🎵" },
-  Sport:        { bg: "bg-orange-50", text: "text-orange-600", icon: "⚽" },
-  Science:      { bg: "bg-cyan-50",   text: "text-cyan-600",   icon: "🔭" },
-  Litterature:  { bg: "bg-amber-50",  text: "text-amber-600",  icon: "📚" },
-  Photographie: { bg: "bg-slate-50",  text: "text-slate-600",  icon: "📷" },
-  EnvironmentClub: { bg: "bg-green-50", text: "text-green-600", icon: "🌿" },
-  Cuisine:      { bg: "bg-yellow-50", text: "text-yellow-600", icon: "👨‍🍳" },
-  Numismatique: { bg: "bg-rose-50",   text: "text-rose-600",   icon: "🏛️" },
-};
+const CATEGORY_MAP: Record<string, { bg: string; text: string; icon: string }> =
+  {
+    Technologie: { bg: "bg-blue-50", text: "text-blue-600", icon: "💻" },
+    Art: { bg: "bg-purple-50", text: "text-purple-600", icon: "🎭" },
+    Musique: { bg: "bg-pink-50", text: "text-pink-600", icon: "🎵" },
+    Sport: { bg: "bg-orange-50", text: "text-orange-600", icon: "⚽" },
+    Science: { bg: "bg-cyan-50", text: "text-cyan-600", icon: "🔭" },
+    Litterature: { bg: "bg-amber-50", text: "text-amber-600", icon: "📚" },
+    Photographie: { bg: "bg-slate-50", text: "text-slate-600", icon: "📷" },
+    EnvironmentClub: { bg: "bg-green-50", text: "text-green-600", icon: "🌿" },
+    Cuisine: { bg: "bg-yellow-50", text: "text-yellow-600", icon: "👨‍🍳" },
+    Numismatique: { bg: "bg-rose-50", text: "text-rose-600", icon: "🏛️" },
+  };
 
 const getCategoryStyle = (category: string) => {
   if (CATEGORY_MAP[category]) return CATEGORY_MAP[category];
-  
+
   // Logic for custom category emojis
   const lower = category.toLowerCase();
   let icon = "✨";
-  if (lower.includes("foot") || lower.includes("sport") || lower.includes("gym")) icon = "⚽";
-  else if (lower.includes("code") || lower.includes("web") || lower.includes("dev")) icon = "💻";
+  if (
+    lower.includes("foot") ||
+    lower.includes("sport") ||
+    lower.includes("gym")
+  )
+    icon = "⚽";
+  else if (
+    lower.includes("code") ||
+    lower.includes("web") ||
+    lower.includes("dev")
+  )
+    icon = "💻";
   else if (lower.includes("danse") || lower.includes("art")) icon = "🎭";
   else if (lower.includes("livre") || lower.includes("ecole")) icon = "📚";
   else if (lower.includes("nature") || lower.includes("plage")) icon = "🌿";
   else if (lower.includes("photo") || lower.includes("video")) icon = "📷";
-  
+
   return { bg: "bg-smart-sage/30", text: "text-smart-teal", icon };
 };
 
 const getFullImageUrl = (url?: string, seed: string = "default") => {
   if (!url || url === "null" || url.trim() === "") return null;
-  
+
   if (url.startsWith("assets/")) {
     return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=436d75&fontFamily=Inter&fontWeight=900`;
   }
-  
+
   if (url.startsWith("http")) return url;
   if (url.startsWith("data:")) return url;
-  
+
   const baseURL = api.defaults.baseURL || "http://192.168.1.17:3000";
   const cleanPath = url.startsWith("/") ? url : `/${url}`;
   return `${baseURL}${cleanPath}`;
@@ -48,15 +68,17 @@ const getFullImageUrl = (url?: string, seed: string = "default") => {
 /** Convertit sécurisément le champ planning (JSON structuré) en string affichable */
 const safePlanning = (planning: any): string => {
   if (!planning) return "";
-  
+
   try {
     let parsed = typeof planning === "string" ? JSON.parse(planning) : planning;
     const slots = parsed.slots || (Array.isArray(parsed) ? parsed : null);
-    
+
     if (slots && Array.isArray(slots) && slots.length > 0) {
-      return slots.map((s: any) => `${s.day}: ${s.startTime}-${s.endTime}`).join(" | ");
+      return slots
+        .map((s: any) => `${s.day}: ${s.startTime}-${s.endTime}`)
+        .join(" | ");
     }
-    
+
     if (typeof parsed === "string") return parsed;
     return "";
   } catch (e) {
@@ -72,9 +94,15 @@ interface ClubCardProps {
   onDelete: (club: any) => void;
 }
 
-export const ClubCard = ({ club, onViewMembers, onEdit, onDelete }: ClubCardProps) => {
+export const ClubCard = ({
+  club,
+  onViewMembers,
+  onEdit,
+  onDelete,
+}: ClubCardProps) => {
   const cat = getCategoryStyle(club.categorie);
-  const totalMembers = club._count?.inscriptions ?? club.inscriptions?.length ?? 0;
+  const totalMembers =
+    club._count?.inscriptions ?? club.inscriptions?.length ?? 0;
   const planningText = safePlanning(club.planning);
   const imageUrl = getFullImageUrl(club.logo_url, club.nom);
 
@@ -129,16 +157,16 @@ export const ClubCard = ({ club, onViewMembers, onEdit, onDelete }: ClubCardProp
 
         {/* Méta : salle, coach, planning */}
         <div className="space-y-1.5 mb-4">
-          {club.salles && (
+          {club.centre && (
             <div className="flex items-center gap-1.5 text-gray-400">
               <MapPin size={11} className="text-smart-salmon shrink-0" />
               <span className="text-[10px] font-bold">
-                {club.salles.nom}
-                {club.salles.gouvernorat ? ` — ${club.salles.gouvernorat}` : ""}
+                {club.centre.nom}
+                {club.centre.gouvernorat ? ` — ${club.centre.gouvernorat}` : ""}
               </span>
             </div>
           )}
-          
+
           <div className="flex items-center gap-1.5 text-gray-400">
             <User size={11} className="text-smart-teal shrink-0" />
             <span className="text-[10px] font-bold">

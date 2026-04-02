@@ -41,25 +41,25 @@ export const UserStats = ({ users }: UserStatsProps) => {
   }, [users]);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in duration-700">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 animate-in fade-in duration-700">
       {statsData.map((s, idx) => (
         <div
           key={idx}
-          className={`${s.color} p-8 rounded-[45px] border border-white shadow-sm flex items-center space-x-6 group hover:shadow-xl hover:-translate-y-1 transition-all duration-300`}
+          className={`${s.color} p-6 rounded-[40px] border border-white shadow-sm flex items-center space-x-4 group hover:shadow-lg transition-all duration-300`}
         >
           {/* Container Icône */}
-          <div className="bg-smart-bg p-4 rounded-2xl text-smart-teal group-hover:scale-110 group-hover:bg-white transition-all duration-500 shadow-inner">
+          <div className="bg-smart-bg p-3 rounded-2xl text-smart-teal group-hover:bg-white transition-all duration-500 shadow-inner">
             {s.icon}
           </div>
 
           {/* Textes */}
           <div className="flex flex-col">
             <p
-              className={`text-4xl font-black italic tracking-tighter ${s.textColor} leading-none`}
+              className={`text-3xl font-black italic tracking-tighter ${s.textColor} leading-none`}
             >
               {s.val}
             </p>
-            <p className="text-[10px] font-black uppercase text-gray-400 mt-2 tracking-widest leading-none">
+            <p className="text-[9px] font-black uppercase text-gray-400 mt-2 tracking-widest leading-none">
               {s.label}
             </p>
           </div>

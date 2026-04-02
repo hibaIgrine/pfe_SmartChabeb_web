@@ -1,4 +1,4 @@
-import { X, AlertTriangle, Trash2 } from "lucide-react";
+import { X, AlertTriangle, Power } from "lucide-react";
 
 export const DeleteCentreModal = ({
   isOpen,
@@ -26,19 +26,18 @@ export const DeleteCentreModal = ({
           Attention
         </h3>
         <p className="text-gray-400 font-medium text-sm leading-relaxed mb-10 italic">
-          Voulez-vous vraiment retirer l'institution <br />
-          <span className="text-[#E98A7D] font-black uppercase break-words">
+          Voulez-vous vraiment désactiver l'institution suivante ? <br />
+          <span className="text-[#D97706] font-black uppercase break-words">
             "{centreName}"
-          </span>{" "}
-          du réseau national ?
+          </span>
         </p>
 
         <div className="space-y-4">
           <button
             onClick={onConfirm}
-            className="w-full bg-[#E98A7D] text-white py-6 rounded-[30px] font-black text-xl hover:bg-red-600 shadow-xl shadow-red-100 active:scale-95 transition-all uppercase tracking-tighter flex items-center justify-center gap-3"
+            className="w-full bg-[#D97706] text-white py-6 rounded-[30px] font-black text-xl hover:bg-orange-700 shadow-xl shadow-orange-100 active:scale-95 transition-all uppercase tracking-tighter flex items-center justify-center gap-3"
           >
-            <Trash2 size={20} /> OUI, SUPPRIMER
+            <Power size={20} /> OUI, DÉSACTIVER
           </button>
           <button
             onClick={onClose}

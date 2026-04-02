@@ -35,7 +35,7 @@ const ROLES_INFO: any = {
     icon: <ShieldCheck size={14} />,
     color: "bg-smart-teal text-white",
   },
-  RESPONSABLE_MAISON_JEUNE: {
+  RESPONSABLE_CENTRE: {
     label: "Directeur Centre",
     icon: <Building2 size={14} />,
     color: "bg-[#2c4e54] text-white",
@@ -60,6 +60,12 @@ const ROLES_INFO: any = {
     icon: <UserIcon size={14} />,
     color: "bg-smart-sage text-smart-teal",
   },
+  ANIMATEUR: {
+    // 💡 AJOUTÉ
+    label: "Animateur",
+    icon: <UserCog size={14} />,
+    color: "bg-orange-400 text-white",
+  },
 };
 
 export const UserCard = ({
@@ -69,6 +75,7 @@ export const UserCard = ({
   onDeleteClick,
   onAssignClick,
   onToggleStatus,
+  onAssignClub,
 }: any) => {
   const role = user.role as keyof typeof ROLES_INFO;
   const info = ROLES_INFO[role] || ROLES_INFO.ADHERENT;
@@ -114,6 +121,24 @@ export const UserCard = ({
           </div>
         </div>
       </div>
+
+      {/* 💡 LOGIQUE AJOUTÉE : Afficher le club rattaché */}
+      {user.role === "RESPONSABLE_CLUB" && user.clubs_diriges?.length > 0 && (
+        <span className="px-3 py-1 rounded-full text-[8px] font-black uppercase bg-smart-sage text-smart-teal border border-smart-teal/10 flex items-center gap-1">
+          <LayoutGrid size={10} /> Gère : {user.clubs_diriges[0].nom}
+        </span>
+      )}
+      {/* Si c'est un responsable mais sans club affecté */}
+      {user.role === "RESPONSABLE_CLUB" &&
+        (!user.clubs_diriges || user.clubs_diriges.length === 0) && (
+          <button
+            onClick={() => onAssignClub(user)} // 💡 Rend l'alerte cliquable
+            className="px-3 py-1 rounded-full text-[8px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-200 animate-pulse hover:bg-amber-500 hover:text-white transition-all cursor-pointer"
+            title="Cliquer pour assigner un club"
+          >
+            ⚠️ Aucun club assigné - Fixer
+          </button>
+        )}
 
       {/* 2. SECTION ÉTABLISSEMENT (id_salle -> id_centre) */}
       <div className="flex flex-col items-center gap-2 md:flex-1">

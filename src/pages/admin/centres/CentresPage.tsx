@@ -51,6 +51,7 @@ export default function CentresPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedGouv, setSelectedGouv] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
 
   // États pour les fenêtres
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -97,11 +98,11 @@ export default function CentresPage() {
     if (!centreToDelete) return;
     try {
       await api.delete(`/centres/${centreToDelete.id}`, { headers });
-      showToast("Institution retirée du réseau", "success");
+      showToast("Centre désactivé avec succès", "success");
       setCentreToDelete(null);
       loadData();
     } catch (err) {
-      showToast("Action refusée : centre occupé", "error");
+      showToast("Impossible de désactiver ce centre", "error");
       setCentreToDelete(null);
     }
   };
@@ -114,9 +115,12 @@ export default function CentresPage() {
         c.nom.toLowerCase().includes(q) ||
         c.delegation?.toLowerCase().includes(q);
       const matchesGouv = !selectedGouv || c.gouvernorat === selectedGouv;
-      return matchesSearch && matchesGouv;
+      const matchesStatus =
+        !selectedStatus ||
+        (selectedStatus === "ACTIVE" ? c.est_actif : !c.est_actif);
+      return matchesSearch && matchesGouv && matchesStatus;
     });
-  }, [centres, search, selectedGouv]);
+  }, [centres, search, selectedGouv, selectedStatus]);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 max-w-7xl mx-auto pb-20 relative">
@@ -177,6 +181,8 @@ export default function CentresPage() {
         setSearch={setSearch}
         selectedGouv={selectedGouv}
         setSelectedGouv={setSelectedGouv}
+        statusFilter={selectedStatus}
+        setStatusFilter={setSelectedStatus}
         gouvernorats={GOUVERNORATS_AR}
       />
 

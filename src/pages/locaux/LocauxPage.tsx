@@ -31,6 +31,9 @@ export default function LocauxPage() {
     () => ({ Authorization: `Bearer ${token}` }),
     [token],
   );
+   const user = JSON.parse(localStorage.getItem("user") || "{}");
+   const isAdmin = user.role === "ADMIN";
+
   const showAlert = (msg: string, type: "error" | "success") => {
     setNotification({ msg, type });
     // L'alerte disparaît automatiquement après 4 secondes
@@ -107,10 +110,12 @@ export default function LocauxPage() {
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-6">
         <div>
           <h1 className="text-7xl font-black text-smart-teal tracking-tighter italic leading-none">
-            Patrimoine
+            {isAdmin ? "Gestion Patrimoine" : "Nos Espaces"}
           </h1>
           <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.5em] mt-4 ml-1 italic">
-            Inventaire des locaux et terrains ministériels
+            {isAdmin
+              ? "Inventaire national ministériel"
+              : `Espaces de : ${user.centre?.nom || "votre centre"}`}
           </p>
         </div>
         <button
@@ -134,6 +139,7 @@ export default function LocauxPage() {
         centres={centres}
         selectedCentre={selectedCentre}
         setCentre={setSelectedCentre}
+        isAdmin={isAdmin}
       />
 
       {/* 4. GRILLE DES CARTES (LISTE FILTRÉE) */}

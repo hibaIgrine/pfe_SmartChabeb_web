@@ -5,6 +5,8 @@ export const CentreFilters = ({
   setSearch,
   selectedGouv,
   setSelectedGouv,
+  statusFilter,
+  setStatusFilter,
   gouvernorats,
 }: any) => {
   return (
@@ -44,12 +46,27 @@ export const CentreFilters = ({
         </select>
       </div>
 
+      {/* Statut */}
+      <div className="relative w-full md:w-56 group">
+        <select
+          dir="rtl"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="w-full pl-6 pr-12 py-4 bg-smart-bg rounded-2xl outline-none font-bold text-xs text-smart-teal border-none appearance-none cursor-pointer hover:bg-gray-100 transition-colors"
+        >
+          <option value="">Status : Tous</option>
+          <option value="ACTIVE">Actifs</option>
+          <option value="INACTIVE">Désactivés</option>
+        </select>
+      </div>
+
       {/* Reset Rapide */}
-      {(search || selectedGouv) && (
+      {(search || selectedGouv || statusFilter) && (
         <button
           onClick={() => {
             setSearch("");
             setSelectedGouv("");
+            setStatusFilter("");
           }}
           className="p-4 text-smart-salmon hover:bg-red-50 rounded-2xl transition-all active:scale-90"
         >

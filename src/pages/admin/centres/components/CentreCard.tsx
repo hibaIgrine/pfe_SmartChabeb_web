@@ -1,4 +1,4 @@
-import { MapPin, Phone, Eye, Edit, Trash2 } from "lucide-react";
+import { Eye, Edit, Power } from "lucide-react";
 
 export const CentreCard = ({ centre, onView, onEdit, onDelete }: any) => {
   return (
@@ -46,12 +46,18 @@ export const CentreCard = ({ centre, onView, onEdit, onDelete }: any) => {
           >
             <Edit size={16} />
           </button>
-          <button
-            onClick={() => onDelete(centre.id)}
-            className="p-2.5 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all"
-          >
-            <Trash2 size={16} />
-          </button>
+          {centre.est_actif !== false ? (
+            <button
+              onClick={() => onDelete(centre.id)}
+              className="p-2.5 bg-[#FFF4EB] text-[#D97706] rounded-xl hover:bg-orange-500 hover:text-white transition-all"
+            >
+              <Power size={16} />
+            </button>
+          ) : (
+            <span className="px-3 py-2 rounded-xl bg-gray-100 text-gray-500 text-[10px] uppercase tracking-[0.2em] font-black">
+              désactivé
+            </span>
+          )}
         </div>
       </td>
     </tr>

@@ -59,7 +59,7 @@ export default function ClubsPage() {
     try {
       const [resC, resS, resU] = await Promise.all([
         api.get("/clubs", { headers }),
-        api.get("/salles", { headers }),
+        api.get("/centres", { headers }),
         api.get("/users", { headers }),
       ]);
       setClubs(resC.data);
@@ -115,8 +115,8 @@ export default function ClubsPage() {
         const matchCat =
           selectedCategory === "ALL" || c.categorie === selectedCategory;
         const matchGov =
-          !selectedGouvernorat || c.salles?.gouvernorat === selectedGouvernorat;
-        const matchCentre = !selectedCentre || c.id_salle === selectedCentre;
+          !selectedGouvernorat || c.centre?.gouvernorat === selectedGouvernorat;
+        const matchCentre = !selectedCentre || c.id_centre === selectedCentre;
         return matchSearch && matchCat && matchGov && matchCentre;
       }),
     [clubs, searchQuery, selectedCategory, selectedGouvernorat, selectedCentre],
@@ -130,7 +130,15 @@ export default function ClubsPage() {
   const handleCreate = async (e: any, payload: any) => {
     e.preventDefault();
     try {
-      await api.post("/clubs", payload, { headers });
+      await api.post(
+        "/clubs",
+        {
+          ...payload,
+          id_centre: payload.id_salle,
+          locale_fixe: payload.locale,
+        },
+        { headers },
+      );
       setIsAddModalOpen(false);
       setAddFormData({ ...EMPTY_FORM });
       await loadAllData();
@@ -145,13 +153,13 @@ export default function ClubsPage() {
       nom: club.nom ?? "",
       description: club.description ?? "",
       categorie: club.categorie ?? "",
-      id_salle: club.id_salle ?? "",
+      id_salle: club.id_salle ?? club.id_centre ?? "",
       id_coach: club.id_coach ?? "",
       logo_url: club.logo_url ?? "",
       planning: club.planning ?? "",
-      capacite: club.capacite ?? "", // 💡
-      locale: club.locale ?? "", // 💡
-      staff: club.staff ?? [], // 💡
+      capacite: club.capacite ?? "",
+      locale: club.locale ?? club.locale_fixe ?? "",
+      staff: club.staff ?? [],
     });
     setEditingClub(club);
   };
@@ -159,7 +167,15 @@ export default function ClubsPage() {
   const handleUpdate = async (e: any, updatedData: any) => {
     e.preventDefault();
     try {
-      await api.patch(`/clubs/${editingClub.id}`, updatedData, { headers });
+      await api.patch(
+        `/clubs/${editingClub.id}`,
+        {
+          ...updatedData,
+          id_centre: updatedData.id_salle,
+          locale_fixe: updatedData.locale,
+        },
+        { headers },
+      );
       setEditingClub(null);
       setEditFormData({ ...EMPTY_FORM });
       await loadAllData();
