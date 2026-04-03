@@ -157,7 +157,7 @@ export default function ClubStaffPage() {
 
       try {
         const response = await api.get(
-          `/users/staff-by-centre/${club.centre.id}`,
+          `/users/adherents-by-centre/${club.centre.id}`,
           { headers: getAuthHeaders() },
         );
         const existingStaffIds = new Set(
@@ -361,7 +361,7 @@ export default function ClubStaffPage() {
 
           {!availableStaff.length && (
             <div className="mt-6 rounded-3xl border border-dashed border-gray-200 bg-slate-50 px-5 py-4 text-sm text-gray-500">
-              Aucun membre disponible dans ce centre, ou tous les membres
+              Aucun adhérent disponible dans ce centre, ou tous les membres
               valides sont déjà assignés au club.
             </div>
           )}
