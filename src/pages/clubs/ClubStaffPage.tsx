@@ -68,7 +68,19 @@ export default function ClubStaffPage() {
 
         <div className="mt-12 grid gap-8 lg:grid-cols-[2.1fr_1fr]">
           <div className="space-y-8">
-            <ClubResponsableSection responsable={state.club?.responsable} />
+            <ClubResponsableSection
+              responsable={state.club?.responsable}
+              responsableRole={
+                state.club?.responsable?.role_dans_club || "COACH"
+              }
+              availableRoles={state.availableRoles}
+              updatingStaffRoleId={state.updatingStaffRoleId}
+              staffRoleChanges={state.staffRoleChanges}
+              onSetRoleChange={(userId, role) =>
+                setStaffRoleChanges((prev) => ({ ...prev, [userId]: role }))
+              }
+              onUpdateStaffRole={handleUpdateStaffRole}
+            />
             <StaffTeamSection
               search={state.search}
               onSearchChange={setSearch}

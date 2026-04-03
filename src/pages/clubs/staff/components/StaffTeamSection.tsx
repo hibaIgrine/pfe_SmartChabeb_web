@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ListFilter, Search, Users } from "lucide-react";
+import { ListFilter, Power, Search, ShieldCheck, Users } from "lucide-react";
 import { formatRoleLabel } from "../utils";
 
 type Props = {
@@ -66,12 +66,9 @@ export function StaffTeamSection({
 
       {filteredStaff.length > 0 ? (
         <div className="space-y-2">
-          <div className="hidden md:grid md:grid-cols-[minmax(0,1.7fr)_minmax(220px,1fr)_auto] md:items-center md:px-4 md:pb-1">
+          <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:px-4 md:pb-1">
             <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">
               Staff
-            </div>
-            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">
-              Rôle
             </div>
             <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">
               Actions
@@ -91,11 +88,15 @@ export function StaffTeamSection({
                 key={item.id}
                 className={`rounded-xl border px-4 py-3 ${isInactive ? "border-gray-200 bg-gray-50" : "border-gray-100 bg-white"}`}
               >
-                <div className="grid gap-3 md:grid-cols-[minmax(0,1.7fr)_minmax(220px,1fr)_auto] md:items-center">
+                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <span className="font-bold text-smart-teal break-words">
                         {item.utilisateur?.email ?? "—"}
+                      </span>
+                      <span className="text-gray-300">|</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-gray-700">
+                        {formatRoleLabel(item.role_dans_club || "Staff")}
                       </span>
                       <span className="text-gray-300">|</span>
                       <span className="font-black text-gray-900 break-words">
@@ -114,7 +115,7 @@ export function StaffTeamSection({
                     </div>
                   </div>
 
-                  <div className="relative flex items-center gap-2">
+                  <div className="relative flex items-center justify-start gap-2 md:justify-end">
                     <button
                       type="button"
                       disabled={isInactive || !utilisateurId}
@@ -125,12 +126,56 @@ export function StaffTeamSection({
                       }
                       className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-smart-teal transition hover:border-smart-teal hover:bg-smart-teal/5 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                       title="Choisir un rôle"
+                      aria-label="Choisir un rôle"
                     >
                       <ListFilter size={16} />
                     </button>
 
+                    <button
+                      type="button"
+                      onClick={() => onUpdateStaffRole(utilisateurId, selectedRoleValue)}
+                      disabled={updatingStaffRoleId === utilisateurId || isInactive || !utilisateurId}
+                      title="Mettre à jour le rôle"
+                      aria-label="Mettre à jour le rôle"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-smart-teal text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {updatingStaffRoleId === utilisateurId ? (
+                        <span className="text-xs font-black">...</span>
+                      ) : (
+                        <ShieldCheck size={15} />
+                      )}
+                    </button>
+
+                    {utilisateurId && !isResponsable ? (
+                      <button
+                        type="button"
+                        onClick={() => onChangeResponsable(utilisateurId)}
+                        disabled={updatingClubResponsable || isInactive}
+                        title="Définir comme responsable"
+                        aria-label="Définir comme responsable"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-smart-sage text-smart-teal transition hover:bg-black/5 disabled:opacity-40"
+                      >
+                        <Users size={15} />
+                      </button>
+                    ) : null}
+
+                    {!isResponsable ? (
+                      <button
+                        type="button"
+                        onClick={() => onToggleStaffActive(item.id, isInactive)}
+                        disabled={updatingStaffActiveId === item.id}
+                        title={isInactive ? "Activer le staff" : "Désactiver le staff"}
+                        aria-label={isInactive ? "Activer le staff" : "Désactiver le staff"}
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg transition disabled:opacity-40 ${isInactive ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-700 hover:bg-red-200"}`}
+                      >
+                        {updatingStaffActiveId === item.id
+                          ? <span className="text-xs font-black">...</span>
+                          : <Power size={15} />}
+                      </button>
+                    ) : null}
+
                     {roleMenuOpenFor === item.id && !isInactive ? (
-                      <div className="absolute left-0 top-[calc(100%+6px)] z-20 w-[240px] rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
+                      <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-[240px] rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
                         {(availableRoles.length > 0
                           ? availableRoles
                           : ["COACH", "ANIMATEUR"]
@@ -156,43 +201,6 @@ export function StaffTeamSection({
                           );
                         })}
                       </div>
-                    ) : null}
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
-                    <button
-                      type="button"
-                      onClick={() => onUpdateStaffRole(utilisateurId, selectedRoleValue)}
-                      disabled={updatingStaffRoleId === utilisateurId || isInactive || !utilisateurId}
-                      className="rounded-lg bg-smart-teal px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {updatingStaffRoleId === utilisateurId ? "..." : "Mettre à jour"}
-                    </button>
-
-                    {utilisateurId && !isResponsable ? (
-                      <button
-                        type="button"
-                        onClick={() => onChangeResponsable(utilisateurId)}
-                        disabled={updatingClubResponsable || isInactive}
-                        className="rounded-lg bg-smart-sage px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-smart-teal transition hover:bg-black/5 disabled:opacity-40"
-                      >
-                        Responsable
-                      </button>
-                    ) : null}
-
-                    {!isResponsable ? (
-                      <button
-                        type="button"
-                        onClick={() => onToggleStaffActive(item.id, isInactive)}
-                        disabled={updatingStaffActiveId === item.id}
-                        className={`rounded-lg px-3 py-2 text-xs font-black uppercase tracking-[0.16em] transition disabled:opacity-40 ${isInactive ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-700 hover:bg-red-200"}`}
-                      >
-                        {updatingStaffActiveId === item.id
-                          ? "..."
-                          : isInactive
-                            ? "Activer"
-                            : "Désactiver"}
-                      </button>
                     ) : null}
                   </div>
                 </div>
