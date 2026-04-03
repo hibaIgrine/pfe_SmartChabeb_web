@@ -1,12 +1,25 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Users, User, Search, Calendar } from "lucide-react";
+import { Users, User, Search, Calendar, PencilLine, Power } from "lucide-react";
 import api from "../../api/axios";
 import { ClubPageShell } from "./components/ClubPageShell";
 import { getAuthHeaders } from "./clubUtils";
 
 export default function ClubStaffPage() {
+  const blockedStaffRole = "RESPONSABLE_CLUB";
+  const normalizeRoleKey = (value: string) =>
+    value
+      .toUpperCase()
+      .trim()
+      .replace(/[\s-]+/g, "_");
   const { clubId } = useParams<{ clubId: string }>();
+  type ClubRoleItem = {
+    id: string;
+    nom: string;
+    description?: string | null;
+    is_active?: boolean;
+    staff?: any[];
+  };
   const [club, setClub] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -17,6 +30,11 @@ export default function ClubStaffPage() {
   } | null>(null);
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
   const [isAddRoleModalOpen, setIsAddRoleModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<ClubRoleItem | null>(null);
+  const [roleToDeactivate, setRoleToDeactivate] = useState<ClubRoleItem | null>(
+    null,
+  );
+  const [clubRoles, setClubRoles] = useState<ClubRoleItem[]>([]);
   const [availableStaff, setAvailableStaff] = useState<any[]>([]);
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
   const [roleLoadError, setRoleLoadError] = useState("");
@@ -73,19 +91,34 @@ export default function ClubStaffPage() {
       const response = await api.get(`/club-roles`, {
         headers: getAuthHeaders(),
       });
-      const roleNames = (response.data ?? [])
-        .map((role: any) =>
-          typeof role.nom === "string" ? role.nom.toUpperCase().trim() : "",
-        )
+      const allRoles: ClubRoleItem[] = (response.data ?? [])
+        .map((role: any) => ({
+          id: role.id,
+          nom:
+            typeof role.nom === "string" ? role.nom.toUpperCase().trim() : "",
+          description: role.description ?? "",
+          is_active: role.is_active !== false,
+          staff: Array.isArray(role.staff) ? role.staff : [],
+        }))
+        .filter((role: ClubRoleItem) => Boolean(role.nom));
+
+      setClubRoles(allRoles);
+
+      const roleNames = allRoles
+        .map((role: any) => (role.is_active ? role.nom : ""))
         .filter((role: string) => Boolean(role));
 
-      const uniqueRoleNames: string[] = Array.from(
-        new Set<string>(roleNames),
-      );
+      const uniqueRoleNames: string[] = Array.from(new Set<string>(roleNames))
+        .filter((roleName) => normalizeRoleKey(roleName) !== blockedStaffRole)
+        .filter(Boolean);
       setAvailableRoles(uniqueRoleNames);
       setRoleLoadError("");
 
-      if (!selectedRole && uniqueRoleNames.length > 0) {
+      if (
+        !selectedRole ||
+        selectedRole === blockedStaffRole ||
+        !uniqueRoleNames.includes(selectedRole)
+      ) {
         setSelectedRole(uniqueRoleNames[0]);
       }
     } catch (err: any) {
@@ -101,7 +134,14 @@ export default function ClubStaffPage() {
     loadAvailableRoles();
   }, []);
 
-  const handleCreateRole = async () => {
+  const openRoleModal = (role?: ClubRoleItem | null) => {
+    setEditingRole(role ?? null);
+    setNewRoleName(role?.nom ?? "");
+    setNewRoleDescription(role?.description ?? "");
+    setIsAddRoleModalOpen(true);
+  };
+
+  const handleSaveRole = async () => {
     const normalizedRole = newRoleName.trim().toUpperCase();
     const normalizedDescription = newRoleDescription.trim();
     if (!normalizedRole) {
@@ -109,7 +149,14 @@ export default function ClubStaffPage() {
       return;
     }
 
-    if (availableRoles.includes(normalizedRole)) {
+    const duplicateRole = clubRoles.find(
+      (role) => normalizeRoleKey(role.nom) === normalizeRoleKey(normalizedRole),
+    );
+
+    if (
+      duplicateRole &&
+      (!editingRole || duplicateRole.id !== editingRole.id)
+    ) {
       setSelectedRole(normalizedRole);
       setNewRoleName("");
       setNewRoleDescription("");
@@ -119,31 +166,105 @@ export default function ClubStaffPage() {
 
     try {
       setIsCreatingRole(true);
-      await api.post(
-        `/club-roles`,
-        {
-          nom: normalizedRole,
-          description:
-            normalizedDescription || `Rôle club ${normalizedRole}`,
-        },
-        { headers: getAuthHeaders() },
-      );
+      if (editingRole) {
+        await api.patch(
+          `/club-roles/${editingRole.id}`,
+          {
+            nom: normalizedRole,
+            description: normalizedDescription || `Rôle club ${normalizedRole}`,
+          },
+          { headers: getAuthHeaders() },
+        );
+      } else {
+        await api.post(
+          `/club-roles`,
+          {
+            nom: normalizedRole,
+            description: normalizedDescription || `Rôle club ${normalizedRole}`,
+          },
+          { headers: getAuthHeaders() },
+        );
+      }
 
       await loadAvailableRoles();
       setSelectedRole(normalizedRole);
       setNewRoleName("");
       setNewRoleDescription("");
       setIsAddRoleModalOpen(false);
+      setEditingRole(null);
       showNotification("Nouveau rôle club ajouté.", "success");
     } catch (err: any) {
       console.error("Erreur création rôle club :", err);
       showNotification(
-        err?.response?.data?.message ||
-          "Impossible de créer ce rôle club.",
+        err?.response?.data?.message || "Impossible de créer ce rôle club.",
         "error",
       );
     } finally {
       setIsCreatingRole(false);
+    }
+  };
+
+  const toggleRoleActiveState = async (role: ClubRoleItem) => {
+    try {
+      if (role.is_active !== false) {
+        setRoleToDeactivate(role);
+        return;
+      }
+
+      await api.patch(
+        `/club-roles/${role.id}/reactivate`,
+        {},
+        { headers: getAuthHeaders() },
+      );
+      setClubRoles((prev) =>
+        prev.map((item) =>
+          item.id === role.id ? { ...item, is_active: true } : item,
+        ),
+      );
+      setAvailableRoles((prev) => {
+        const nextRoles = prev.includes(role.nom) ? prev : [...prev, role.nom];
+        return Array.from(new Set(nextRoles));
+      });
+      await loadAvailableRoles();
+      showNotification("Rôle réactivé avec succès.", "success");
+    } catch (err: any) {
+      console.error("Erreur changement état rôle :", err);
+      showNotification(
+        err?.response?.data?.message || "Impossible de modifier ce rôle.",
+        "error",
+      );
+    }
+  };
+
+  const confirmDeactivateRole = async () => {
+    if (!roleToDeactivate) return;
+
+    try {
+      await api.patch(
+        `/club-roles/${roleToDeactivate.id}/deactivate`,
+        {},
+        { headers: getAuthHeaders() },
+      );
+      setClubRoles((prev) =>
+        prev.map((item) =>
+          item.id === roleToDeactivate.id
+            ? { ...item, is_active: false }
+            : item,
+        ),
+      );
+      setAvailableRoles((prev) =>
+        prev.filter((roleName) => roleName !== roleToDeactivate.nom),
+      );
+      await loadAvailableRoles();
+      showNotification("Rôle désactivé avec succès.", "success");
+    } catch (err: any) {
+      console.error("Erreur désactivation rôle :", err);
+      showNotification(
+        err?.response?.data?.message || "Impossible de désactiver ce rôle.",
+        "error",
+      );
+    } finally {
+      setRoleToDeactivate(null);
     }
   };
 
@@ -183,6 +304,14 @@ export default function ClubStaffPage() {
 
   const handleAddStaff = async () => {
     if (!clubId || !selectedStaffId || !selectedRole) return;
+
+    if (selectedRole === blockedStaffRole) {
+      showNotification(
+        "RESPONSABLE_CLUB ne peut pas être affecté comme rôle staff.",
+        "error",
+      );
+      return;
+    }
 
     try {
       await api.post(
@@ -231,6 +360,14 @@ export default function ClubStaffPage() {
 
   const handleUpdateStaffRole = async (utilisateurId: string, role: string) => {
     if (!clubId || !utilisateurId || !role) return;
+
+    if (role === blockedStaffRole) {
+      showNotification(
+        "RESPONSABLE_CLUB ne peut pas être utilisé dans le staff.",
+        "error",
+      );
+      return;
+    }
 
     try {
       setUpdatingStaffRoleId(utilisateurId);
@@ -351,7 +488,7 @@ export default function ClubStaffPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setIsAddRoleModalOpen(true)}
+                onClick={() => openRoleModal(null)}
                 className="inline-flex items-center justify-center rounded-2xl border border-smart-teal bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-smart-teal transition hover:bg-smart-teal hover:text-white"
               >
                 Ajouter un rôle
@@ -560,6 +697,88 @@ export default function ClubStaffPage() {
                 </div>
               </div>
             </div>
+
+            <div className="bg-white border border-gray-100 rounded-[32px] p-6">
+              <div className="flex items-center justify-between gap-4 mb-5">
+                <div>
+                  <div className="text-sm uppercase tracking-[0.35em] text-gray-400 font-black">
+                    Rôles du club
+                  </div>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Modifier, désactiver ou réactiver les rôles du club.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openRoleModal(null)}
+                  className="rounded-2xl bg-smart-teal px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-white transition hover:bg-black"
+                >
+                  Nouveau
+                </button>
+              </div>
+
+              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
+                {clubRoles.length > 0 ? (
+                  clubRoles.map((role) => {
+                    const isBlocked =
+                      normalizeRoleKey(role.nom) === blockedStaffRole;
+                    const isInactive = role.is_active === false;
+                    return (
+                      <div
+                        key={role.id}
+                        className={`rounded-3xl border p-4 ${isInactive ? "border-dashed border-gray-200 bg-gray-50" : "border-gray-100 bg-slate-50"}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-sm font-black text-gray-900">
+                                {role.nom.replace(/_/g, " ")}
+                              </h3>
+                              <span
+                                className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] ${isInactive ? "bg-gray-200 text-gray-600" : "bg-emerald-100 text-emerald-700"}`}
+                              >
+                                {isInactive ? "Désactivé" : "Actif"}
+                              </span>
+                              {isBlocked ? (
+                                <span className="rounded-full bg-smart-sage/20 px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-smart-teal">
+                                  Global
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="mt-2 text-xs text-gray-500">
+                              {role.description || "Aucune description."}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => openRoleModal(role)}
+                              className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.15em] text-smart-teal border border-gray-200 transition hover:bg-smart-teal hover:text-white"
+                            >
+                              <PencilLine size={14} />
+                            </button>
+                            {!isBlocked && (
+                              <button
+                                type="button"
+                                onClick={() => toggleRoleActiveState(role)}
+                                className={`inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-[0.15em] transition ${isInactive ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}
+                              >
+                                <Power size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-gray-200 bg-slate-50 px-4 py-6 text-sm text-gray-500">
+                    Aucun rôle club disponible.
+                  </div>
+                )}
+              </div>
+            </div>
           </aside>
         </div>
       </ClubPageShell>
@@ -649,7 +868,6 @@ export default function ClubStaffPage() {
                   <p className="mt-2 text-xs text-red-600">{roleLoadError}</p>
                 ) : null}
               </div>
-
             </div>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
@@ -691,11 +909,14 @@ export default function ClubStaffPage() {
                   id="add-role-title"
                   className="text-xl font-black text-smart-teal"
                 >
-                  Ajouter un rôle club
+                  {editingRole
+                    ? "Modifier le rôle club"
+                    : "Ajouter un rôle club"}
                 </h2>
                 <p className="mt-2 text-sm text-gray-500">
-                  Créez un rôle indépendant du staff. Il sera ensuite disponible
-                  dans toutes les listes déroulantes du club.
+                  {editingRole
+                    ? "Modifiez le nom et la description du rôle sélectionné."
+                    : "Créez un rôle indépendant du staff. Il sera ensuite disponible dans toutes les listes déroulantes du club."}
                 </p>
               </div>
               <button
@@ -751,11 +972,62 @@ export default function ClubStaffPage() {
               </button>
               <button
                 type="button"
-                onClick={handleCreateRole}
+                onClick={handleSaveRole}
                 disabled={isCreatingRole || !newRoleName.trim()}
                 className="inline-flex justify-center rounded-2xl bg-smart-teal px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {isCreatingRole ? "Ajout..." : "Créer le rôle"}
+                {isCreatingRole
+                  ? "Enregistrement..."
+                  : editingRole
+                    ? "Enregistrer"
+                    : "Créer le rôle"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {roleToDeactivate && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="deactivate-role-title"
+          onClick={() => setRoleToDeactivate(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-[32px] bg-white p-6 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2
+              id="deactivate-role-title"
+              className="text-xl font-black text-gray-900"
+            >
+              Désactiver le rôle
+            </h2>
+            <p className="mt-3 text-sm text-gray-600">
+              Voulez-vous vraiment désactiver le rôle{" "}
+              <span className="font-black text-smart-teal">
+                {roleToDeactivate.nom.replace(/_/g, " ")}
+              </span>{" "}
+              ? Il restera disponible dans la table des rôles mais n’apparaîtra
+              plus dans la liste d’ajout du staff.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setRoleToDeactivate(null)}
+                className="rounded-2xl border border-gray-200 bg-white px-6 py-3 text-sm font-black text-gray-700 transition hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeactivateRole}
+                className="rounded-2xl bg-red-600 px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-red-700"
+              >
+                Désactiver
               </button>
             </div>
           </div>
