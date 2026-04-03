@@ -12,6 +12,7 @@ import {
   Building2,
   CalendarCheck,
 } from "lucide-react";
+import { NotificationBell } from "./NotificationBell";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -165,7 +166,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 bg-white p-1 rounded-full pr-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <div className="flex items-center space-x-3 bg-white p-1 rounded-full pr-4 border border-gray-100 shadow-sm">
             <div className="w-8 h-8 bg-[#F7F3E9] rounded-full flex items-center justify-center text-[#436D75] shadow-inner">
               <UserCircle size={20} />
             </div>
@@ -176,6 +179,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest italic">
                 {role}
               </p>
+            </div>
             </div>
           </div>
         </header>
