@@ -11,6 +11,7 @@ import {
   UserCircle,
   Building2,
   CalendarCheck,
+  ClipboardCheck,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 
@@ -122,6 +123,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
+          {role === "RESPONSABLE_CLUB" && (
+            <SidebarItem
+              to="/presences"
+              icon={<ClipboardCheck size={18} />}
+              label="Présence"
+              active={location.pathname.startsWith("/presences")}
+            />
+          )}
+
           {role === "ADMIN" && (
             <SidebarItem
               to="/coaches"
@@ -169,17 +179,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3">
             <NotificationBell />
             <div className="flex items-center space-x-3 bg-white p-1 rounded-full pr-4 border border-gray-100 shadow-sm">
-            <div className="w-8 h-8 bg-[#F7F3E9] rounded-full flex items-center justify-center text-[#436D75] shadow-inner">
-              <UserCircle size={20} />
-            </div>
-            <div className="text-left">
-              <p className="text-[10px] font-black text-[#436D75] leading-none">
-                {user.nom} {user.prenom}
-              </p>
-              <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest italic">
-                {role}
-              </p>
-            </div>
+              <div className="w-8 h-8 bg-[#F7F3E9] rounded-full flex items-center justify-center text-[#436D75] shadow-inner">
+                <UserCircle size={20} />
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] font-black text-[#436D75] leading-none">
+                  {user.nom} {user.prenom}
+                </p>
+                <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest italic">
+                  {role}
+                </p>
+              </div>
             </div>
           </div>
         </header>
