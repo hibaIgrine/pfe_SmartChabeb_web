@@ -16,6 +16,7 @@ import ClubStaffPage from "./pages/clubs/ClubStaffPage";
 import ClubRequestsPage from "./pages/clubs/ClubRequestsPage";
 import RolesPage from "./pages/admin/roles/RolesPage";
 import LocauxPage from "./pages/locaux/LocauxPage";
+import LocauxPlanningPage from "./pages/locaux/LocauxPlanningPage";
 import ReservationsPage from "./pages/reservations/ReservationPage";
 import ClubReservationPage from "./pages/reservations/ClubReservationPage";
 import ClubMyReservationsPage from "./pages/reservations/ClubMyReservationsPage";
@@ -123,6 +124,14 @@ function App() {
           element={
             <Layout>
               <LocauxPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/locaux-planning"
+          element={
+            <Layout>
+              <LocauxPlanningPage />
             </Layout>
           }
         />

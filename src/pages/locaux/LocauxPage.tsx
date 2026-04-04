@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../../api/axios";
 import { Loader2, Plus } from "lucide-react";
 
@@ -9,15 +9,13 @@ import { EditLocalModal } from "./management/components/EditLocalModal";
 import { LocauxStats } from "./management/components/LocauxStats";
 import { LocalFilters } from "./management/components/LocalFilters";
 import { DeleteLocalModal } from "./management/components/DeleteLocalModal";
+
 export default function LocauxPage() {
-  // --- ÉTATS ---
   const [locaux, setLocaux] = useState<any[]>([]);
   const [centres, setCentres] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingLocal, setEditingLocal] = useState<any>(null);
-
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("ALL");
   const [selectedCentre, setSelectedCentre] = useState("");
@@ -26,20 +24,21 @@ export default function LocauxPage() {
     msg: string;
     type: "error" | "success";
   } | null>(null);
+
   const token = localStorage.getItem("token");
   const headers = useMemo(
     () => ({ Authorization: `Bearer ${token}` }),
     [token],
   );
-   const user = JSON.parse(localStorage.getItem("user") || "{}");
-   const isAdmin = user.role === "ADMIN";
+
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isAdmin = user.role === "ADMIN";
 
   const showAlert = (msg: string, type: "error" | "success") => {
     setNotification({ msg, type });
-    // L'alerte disparaît automatiquement après 4 secondes
     setTimeout(() => setNotification(null), 4000);
   };
-  // --- CHARGEMENT DES DONNÉES ---
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -60,7 +59,6 @@ export default function LocauxPage() {
     loadData();
   }, []);
 
-  // --- LOGIQUE DE FILTRAGE ---
   const filteredLocaux = locaux.filter((l: any) => {
     const matchesSearch = l.nom.toLowerCase().includes(search.toLowerCase());
     const matchesType = filterType === "ALL" || l.type === filterType;
@@ -68,31 +66,31 @@ export default function LocauxPage() {
     return matchesSearch && matchesType && matchesCentre;
   });
 
-  // --- ACTIONS ---
-  // 💡 État pour la suppression
-
   const executeDelete = async () => {
     if (!localToDelete) return;
-    const headers = {
+    const deleteHeaders = {
       Authorization: `Bearer ${localStorage.getItem("token")}`,
     };
+
     try {
-      await api.delete(`/locaux/${localToDelete.id}`, { headers });
-      setLocalToDelete(null); // Ferme la modale
-      loadData(); // Rafraîchit la liste
+      await api.delete(`/locaux/${localToDelete.id}`, {
+        headers: deleteHeaders,
+      });
+      setLocalToDelete(null);
+      loadData();
       showAlert("Espace supprimé du registre national", "success");
-    } catch (err) {
+    } catch {
       showAlert("Erreur lors de la suppression", "error");
     }
   };
-  // 💡 Extrait tous les types uniques présents dans la base de données
+
   const availableTypes = useMemo(() => {
     const types = locaux.map((l: any) => l.type);
-    return Array.from(new Set(types)); // Supprime les doublons
+    return Array.from(new Set(types));
   }, [locaux]);
+
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-20">
-      {/* 🔔 DESIGN DU TOAST PERSONNALISÉ (Michelle Style) */}
       {notification && (
         <div
           className={`fixed top-10 right-10 z-[1000] flex items-center space-x-4 p-5 rounded-[30px] shadow-2xl animate-in slide-in-from-right-10 border border-white/20 backdrop-blur-md ${
@@ -106,7 +104,7 @@ export default function LocauxPage() {
           </div>
         </div>
       )}
-      {/* 1. HEADER : Titre et Bouton Ajouter */}
+
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-6">
         <div>
           <h1 className="text-7xl font-black text-smart-teal tracking-tighter italic leading-none">
@@ -118,6 +116,7 @@ export default function LocauxPage() {
               : `Espaces de : ${user.centre?.nom || "votre centre"}`}
           </p>
         </div>
+
         <button
           onClick={() => setIsAddModalOpen(true)}
           className="bg-smart-teal text-white px-10 py-5 rounded-[35px] font-black shadow-xl hover:bg-black transition-all flex items-center gap-3 active:scale-95 cursor-pointer"
@@ -126,23 +125,20 @@ export default function LocauxPage() {
         </button>
       </div>
 
-      {/* 2. STATISTIQUES GLOBALES */}
       <LocauxStats locaux={locaux} />
 
-      {/* 3. BARRE DE RECHERCHE ET FILTRES */}
       <LocalFilters
         search={search}
         setSearch={setSearch}
         type={filterType}
         setType={setFilterType}
-        availableTypes={availableTypes} // 💡 La liste calculée
+        availableTypes={availableTypes}
         centres={centres}
         selectedCentre={selectedCentre}
         setCentre={setSelectedCentre}
         isAdmin={isAdmin}
       />
 
-      {/* 4. GRILLE DES CARTES (LISTE FILTRÉE) */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-40 gap-4">
           <Loader2 className="animate-spin text-smart-teal" size={50} />
@@ -173,7 +169,6 @@ export default function LocauxPage() {
         </>
       )}
 
-      {/* 5. MODALES (ADD & EDIT) */}
       <AddLocalModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -190,6 +185,7 @@ export default function LocauxPage() {
           onRefresh={loadData}
         />
       )}
+
       <DeleteLocalModal
         isOpen={!!localToDelete}
         localName={localToDelete?.nom}
