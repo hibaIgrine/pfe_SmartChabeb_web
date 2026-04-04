@@ -122,6 +122,41 @@ export default function EventFormModal({
             }
           />
 
+          <Select
+            label="Récurrence"
+            value={form.recurrence_type}
+            onChange={(v) =>
+              onChangeForm({
+                recurrence_type: v as "NONE" | "DAILY" | "WEEKLY" | "MONTHLY",
+              })
+            }
+            options={[
+              { value: "NONE", label: "Aucune" },
+              { value: "DAILY", label: "Quotidienne" },
+              { value: "WEEKLY", label: "Hebdomadaire" },
+              { value: "MONTHLY", label: "Mensuelle" },
+            ]}
+          />
+
+          <Input
+            label="Nb occurrences"
+            type="text"
+            value={form.recurrence_count}
+            inputMode="numeric"
+            pattern="[0-9]*"
+            onChange={(v) =>
+              onChangeForm({ recurrence_count: v.replace(/[^0-9]/g, "") })
+            }
+          />
+
+          <Input
+            label="Fin récurrence"
+            type="date"
+            value={form.recurrence_until}
+            min={form.date_event || today}
+            onChange={(v) => onChangeForm({ recurrence_until: v })}
+          />
+
           <div className="md:col-span-2">
             <label className="text-xs font-black uppercase tracking-widest text-gray-500">
               Description

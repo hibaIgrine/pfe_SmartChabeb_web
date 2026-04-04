@@ -26,6 +26,7 @@ export type EventItem = {
   club?: { id: string; nom: string; categorie?: string };
   local?: { id: string; nom: string; type?: string };
   _count?: { participants?: number };
+  durationMinutes?: number;
 };
 
 export type EventDetail = EventItem & {
@@ -47,6 +48,9 @@ export type EventForm = {
   club_id: string;
   locaux_id: string;
   capacity: string;
+  recurrence_type: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY";
+  recurrence_count: string;
+  recurrence_until: string;
 };
 
 export type AlertState = {

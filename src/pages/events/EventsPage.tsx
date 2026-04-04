@@ -3,9 +3,22 @@ import api from "../../api/axios";
 import EventDetailsPanel from "./components/EventDetailsPanel";
 import EventFormModal from "./components/EventFormModal";
 import EventHeader from "./components/EventHeader";
+import EventsCalendar from "./components/EventsCalendar";
 import EventsList from "./components/EventsList";
-import type { AlertState, ClubLite, EventDetail, EventForm, EventItem, LocalLite } from "./types";
-import { getEmptyForm, getTodayDate, toTimeHHMM, validateEventForm } from "./utils";
+import type {
+  AlertState,
+  ClubLite,
+  EventDetail,
+  EventForm,
+  EventItem,
+  LocalLite,
+} from "./types";
+import {
+  getEmptyForm,
+  getTodayDate,
+  toTimeHHMM,
+  validateEventForm,
+} from "./utils";
 
 export default function EventsPage() {
   const token = localStorage.getItem("token");
@@ -22,7 +35,9 @@ export default function EventsPage() {
 
   const [showInactive, setShowInactive] = useState(true);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [selectedDetail, setSelectedDetail] = useState<EventDetail | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<EventDetail | null>(
+    null,
+  );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
@@ -106,6 +121,9 @@ export default function EventsPage() {
       club_id: event.club_id,
       locaux_id: event.locaux_id,
       capacity: event.capacity ? String(event.capacity) : "",
+      recurrence_type: "NONE",
+      recurrence_count: "",
+      recurrence_until: "",
     });
     setFormAlert(null);
     setIsModalOpen(true);
@@ -122,6 +140,26 @@ export default function EventsPage() {
     setIsSaving(true);
 
     try {
+      const availabilityResponse = await api.get("/events/availability/check", {
+        headers,
+        params: {
+          id_local: form.locaux_id,
+          date: form.date_event,
+          start: form.start_time,
+          end: form.end_time,
+          excludeEventId: editingEvent?.id,
+        },
+      });
+
+      if (!availabilityResponse.data?.available) {
+        setFormAlert({
+          msg: "Conflit de planning: le local n'est pas disponible sur ce créneau.",
+          type: "error",
+        });
+        setIsSaving(false);
+        return;
+      }
+
       const payload: Record<string, any> = {
         nom: form.nom,
         description: form.description || undefined,
@@ -130,10 +168,19 @@ export default function EventsPage() {
         end_time: form.end_time,
         club_id: form.club_id,
         locaux_id: form.locaux_id,
+        recurrence_type: form.recurrence_type,
       };
 
       if (form.capacity.trim() !== "") {
         payload.capacity = Number(form.capacity);
+      }
+
+      if (form.recurrence_count.trim() !== "") {
+        payload.recurrence_count = Number(form.recurrence_count);
+      }
+
+      if (form.recurrence_until.trim() !== "") {
+        payload.recurrence_until = form.recurrence_until;
       }
 
       if (editingEvent) {
@@ -158,7 +205,8 @@ export default function EventsPage() {
         : apiMessage;
 
       setFormAlert({
-        msg: detailedMessage || "Action impossible. Vérifiez les données saisies.",
+        msg:
+          detailedMessage || "Action impossible. Vérifiez les données saisies.",
         type: "error",
       });
     } finally {
@@ -218,6 +266,8 @@ export default function EventsPage() {
 
         <EventDetailsPanel selectedDetail={selectedDetail} />
       </div>
+
+      <EventsCalendar events={events} onSelectEvent={loadDetail} />
 
       <EventFormModal
         isOpen={isModalOpen}

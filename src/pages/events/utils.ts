@@ -29,6 +29,9 @@ export function getEmptyForm(): EventForm {
     club_id: "",
     locaux_id: "",
     capacity: "",
+    recurrence_type: "NONE",
+    recurrence_count: "",
+    recurrence_until: "",
   };
 }
 
@@ -65,6 +68,20 @@ export function validateEventForm(form: EventForm, today: string) {
     const startMinutes = startH * 60 + startM;
     if (startMinutes <= currentMinutes) {
       return "L'heure de début doit être après l'heure actuelle du système.";
+    }
+  }
+
+  if (form.recurrence_type !== "NONE") {
+    if (form.recurrence_count && !/^\d+$/.test(form.recurrence_count)) {
+      return "Le nombre d'occurrences doit être un entier positif.";
+    }
+
+    if (form.recurrence_count && Number(form.recurrence_count) < 1) {
+      return "Le nombre d'occurrences doit être supérieur à 0.";
+    }
+
+    if (form.recurrence_until && form.recurrence_until < form.date_event) {
+      return "La date de fin de récurrence doit être >= à la date de l'événement.";
     }
   }
 
