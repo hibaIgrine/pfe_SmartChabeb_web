@@ -13,8 +13,24 @@ import {
   Loader2,
   CheckCircle2,
   User as UserIcon,
+  Building2,
+  CalendarCheck2,
+  Percent,
+  Wallet,
 } from "lucide-react";
 import { AreaChart, Area, Tooltip, ResponsiveContainer } from "recharts";
+
+type ReservationStats = {
+  reservationCount: number;
+  mostUsedRoom: { roomName: string; count: number };
+  occupancyRate: number;
+  revenueTotal: number;
+  monthContext?: {
+    month: number;
+    year: number;
+    localsCount: number;
+  };
+};
 
 const dataGrowth = [
   { name: "Lun", val: 400 },
@@ -55,6 +71,12 @@ export default function Dashboard() {
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [allClubs, setAllClubs] = useState<any[]>([]);
+  const [reservationStats, setReservationStats] = useState<ReservationStats>({
+    reservationCount: 0,
+    mostUsedRoom: { roomName: "Aucune salle", count: 0 },
+    occupancyRate: 0,
+    revenueTotal: 0,
+  });
   const [loading, setLoading] = useState(true);
 
   const token = localStorage.getItem("token");
@@ -67,11 +89,17 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const [resUsers, resSalles, resClubs] = await Promise.all([
-        api.get("/users", { headers: { Authorization: `Bearer ${token}` } }),
-        api.get("/centres", { headers: { Authorization: `Bearer ${token}` } }),
-        api.get("/clubs", { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
+      const [resUsers, resSalles, resClubs, resReservationStats] =
+        await Promise.all([
+          api.get("/users", { headers: { Authorization: `Bearer ${token}` } }),
+          api.get("/centres", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          api.get("/clubs", { headers: { Authorization: `Bearer ${token}` } }),
+          api.get("/reservations/stats/overview", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
       const clubsArray = Array.isArray(resClubs.data) ? resClubs.data : [];
       const usersArray = Array.isArray(resUsers.data) ? resUsers.data : [];
@@ -114,6 +142,7 @@ export default function Dashboard() {
       setRecentUsers(usersArray.slice(0, 5));
       setRecentActivity(allInscriptions.slice(0, 10));
       setAllClubs(clubsArray);
+      setReservationStats(resReservationStats.data);
     } catch (err) {
       console.error("❌ Error fetching dashboard data:", err);
     } finally {
@@ -228,6 +257,53 @@ export default function Dashboard() {
             />
           </>
         )}
+      </div>
+
+      {/* 2.b KPI RESERVATIONS */}
+      <div className="bg-white rounded-[45px] border border-gray-100 p-6 md:p-8 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
+          <div>
+            <h3 className="text-2xl font-black text-smart-teal italic tracking-tight">
+              Statistiques des Salles
+            </h3>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400 mt-1">
+              Salle la plus utilisee, reservations, taux d'occupation, revenus
+            </p>
+          </div>
+          {reservationStats.monthContext ? (
+            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-smart-teal bg-smart-bg px-3 py-1 rounded-full">
+              Occupation calculee sur{" "}
+              {reservationStats.monthContext.localsCount} salles
+            </span>
+          ) : null}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+          <KpiCard
+            icon={<Building2 />}
+            value={reservationStats.mostUsedRoom.roomName}
+            label={`Salle la plus utilisee (${reservationStats.mostUsedRoom.count})`}
+            color="bg-white"
+          />
+          <KpiCard
+            icon={<CalendarCheck2 />}
+            value={reservationStats.reservationCount}
+            label="Nombre reservations"
+            color="bg-smart-sage"
+          />
+          <KpiCard
+            icon={<Percent />}
+            value={`${reservationStats.occupancyRate}%`}
+            label="Taux occupation (mois)"
+            color="bg-white"
+          />
+          <KpiCard
+            icon={<Wallet />}
+            value={`${reservationStats.revenueTotal.toFixed(2)} DT`}
+            label="Revenus generaux"
+            color="bg-white"
+          />
+        </div>
       </div>
 
       {/* 3. MIDDLE SECTION (BENTO) */}
@@ -488,12 +564,15 @@ export default function Dashboard() {
 }
 
 function KpiCard({ icon, value, label, color }: any) {
+  const isLongText = typeof value === "string" && value.length > 14;
   return (
     <div
       className={`${color} p-8 rounded-[45px] shadow-sm border border-white/50 flex items-center justify-between group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500`}
     >
       <div className="space-y-1">
-        <p className="text-5xl font-black text-smart-teal tracking-tighter leading-none italic">
+        <p
+          className={`${isLongText ? "text-2xl" : "text-5xl"} font-black text-smart-teal tracking-tighter leading-none italic`}
+        >
           {value}
         </p>
         <p className="text-[9px] font-black uppercase text-gray-400 tracking-[0.2em] mt-2">

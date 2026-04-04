@@ -1,28 +1,38 @@
-import { LayoutGrid, CheckCircle, Ban, TrendingUp } from "lucide-react";
+import { Building2, CalendarCheck2, Percent, Wallet } from "lucide-react";
 
-export const LocauxStats = ({ locaux }: any) => {
-  const total = locaux.length;
-  const actifs = locaux.filter((l: any) => l.est_actif).length;
+export const LocauxStats = ({ reservationStats }: any) => {
+  const mostUsedRoom =
+    reservationStats?.mostUsedRoom?.roomName || "Aucune salle";
+  const mostUsedCount = reservationStats?.mostUsedRoom?.count || 0;
+  const reservationCount = reservationStats?.reservationCount ?? 0;
+  const occupancyRate = reservationStats?.occupancyRate ?? 0;
+  const revenueTotal = reservationStats?.revenueTotal ?? 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
       <StatItem
-        label="Total Espaces"
-        val={total}
-        icon={<LayoutGrid />}
-        color="bg-smart-teal text-white"
+        label={`Salle la plus utilisée (${mostUsedCount})`}
+        val={mostUsedRoom}
+        icon={<Building2 />}
+        color="bg-white text-smart-teal border border-gray-100"
       />
       <StatItem
-        label="Salles Actives"
-        val={actifs}
-        icon={<CheckCircle />}
+        label="Nombre réservations"
+        val={reservationCount}
+        icon={<CalendarCheck2 />}
         color="bg-smart-sage text-smart-teal"
       />
       <StatItem
-        label="Taux Occupation"
-        val="64%"
-        icon={<TrendingUp />}
+        label="Taux occupation"
+        val={`${occupancyRate}%`}
+        icon={<Percent />}
         color="bg-white text-smart-salmon border border-gray-100"
+      />
+      <StatItem
+        label="Revenus général"
+        val={`${Number(revenueTotal).toFixed(2)} DT`}
+        icon={<Wallet />}
+        color="bg-white text-smart-teal border border-gray-100"
       />
     </div>
   );
@@ -36,7 +46,11 @@ const StatItem = ({ label, val, icon, color }: any) => (
       <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">
         {label}
       </p>
-      <p className="text-5xl font-black italic tracking-tighter">{val}</p>
+      <p
+        className={`${typeof val === "string" && val.length > 16 ? "text-2xl" : "text-5xl"} font-black italic tracking-tighter`}
+      >
+        {val}
+      </p>
     </div>
     <div className="opacity-20 group-hover:opacity-100 transition-opacity">
       {icon}
