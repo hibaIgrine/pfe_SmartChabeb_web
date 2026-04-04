@@ -18,6 +18,7 @@ import RolesPage from "./pages/admin/roles/RolesPage";
 import LocauxPage from "./pages/locaux/LocauxPage";
 import ReservationsPage from "./pages/reservations/ReservationPage";
 import ClubReservationPage from "./pages/reservations/ClubReservationPage";
+import ClubMyReservationsPage from "./pages/reservations/ClubMyReservationsPage";
 import PresencePage from "./pages/presences/PresencePage";
 
 function App() {
@@ -138,6 +139,14 @@ function App() {
           element={
             <Layout>
               <ClubReservationPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/club-my-reservations"
+          element={
+            <Layout>
+              <ClubMyReservationsPage />
             </Layout>
           }
         />

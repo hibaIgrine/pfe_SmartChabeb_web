@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import api from "../../api/axios";
-import { CalendarDays, Clock3, PlusCircle, XCircle } from "lucide-react";
+import { CalendarDays, Clock3, PlusCircle } from "lucide-react";
 
 type LocalItem = {
   id: string;
@@ -11,21 +11,15 @@ type LocalItem = {
   centre?: { nom?: string };
 };
 
-type ReservationItem = {
-  id: string;
-  statut: string;
-  objet: string;
-  prix_total?: string | number | null;
-  date_reservation: string;
-  heure_debut: string;
-  heure_fin: string;
-  local?: { nom?: string; centre?: { nom?: string } };
-};
-
 type OccupiedSlot = {
   heure_debut: string;
   heure_fin: string;
   objet: string;
+};
+
+type SuggestedSlot = {
+  startMinutes: number;
+  endMinutes: number;
 };
 
 function toMoney(value?: string | number | null): string {
@@ -33,13 +27,6 @@ function toMoney(value?: string | number | null): string {
   const parsed = Number(value);
   if (Number.isNaN(parsed)) return "0.00";
   return parsed.toFixed(2);
-}
-
-function statusClass(status: string): string {
-  if (status === "VALIDEE") return "bg-emerald-100 text-emerald-700";
-  if (status === "REFUSEE") return "bg-rose-100 text-rose-700";
-  if (status === "ANNULEE") return "bg-slate-100 text-slate-600";
-  return "bg-amber-100 text-amber-700";
 }
 
 function getTodayLocalDateString(): string {
@@ -55,9 +42,16 @@ function parseTimeToMinutes(time: string): number {
   return h * 60 + m;
 }
 
+function formatMinutesToTime(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+    .toString()
+    .padStart(2, "0");
+  const m = (minutes % 60).toString().padStart(2, "0");
+  return `${h}:${m}`;
+}
+
 export default function ClubReservationPage() {
   const [locaux, setLocaux] = useState<LocalItem[]>([]);
-  const [reservations, setReservations] = useState<ReservationItem[]>([]);
   const [occupiedSlots, setOccupiedSlots] = useState<OccupiedSlot[]>([]);
   const [selectedLocalId, setSelectedLocalId] = useState<string>("");
   const [dateReservation, setDateReservation] = useState<string>(
@@ -78,16 +72,76 @@ export default function ClubReservationPage() {
     [locaux, selectedLocalId],
   );
 
+  const suggestedSlots = useMemo<SuggestedSlot[]>(() => {
+    if (!selectedLocalId || !dateReservation) return [];
+
+    const today = getTodayLocalDateString();
+    if (dateReservation < today) return [];
+
+    const start = parseTimeToMinutes(heureDebut);
+    const end = parseTimeToMinutes(heureFin);
+    const requestedDuration = end > start ? end - start : 60;
+
+    const dayStart = 8 * 60;
+    const dayEnd = 22 * 60;
+    let minStart = dayStart;
+
+    if (dateReservation === today) {
+      const now = new Date();
+      minStart = Math.max(
+        minStart,
+        now.getHours() * 60 + now.getMinutes() + 15,
+      );
+    }
+
+    if (minStart + requestedDuration > dayEnd) {
+      return [];
+    }
+
+    const occupiedIntervals = occupiedSlots
+      .map((slot) => {
+        const startDate = new Date(slot.heure_debut);
+        const endDate = new Date(slot.heure_fin);
+        return {
+          start: startDate.getHours() * 60 + startDate.getMinutes(),
+          end: endDate.getHours() * 60 + endDate.getMinutes(),
+        };
+      })
+      .filter((slot) => slot.end > slot.start)
+      .sort((a, b) => a.start - b.start);
+
+    const suggestions: SuggestedSlot[] = [];
+    const maxSuggestions = 3;
+    const step = 30;
+
+    for (
+      let candidateStart = Math.max(dayStart, minStart);
+      candidateStart + requestedDuration <= dayEnd &&
+      suggestions.length < maxSuggestions;
+      candidateStart += step
+    ) {
+      const candidateEnd = candidateStart + requestedDuration;
+      const overlaps = occupiedIntervals.some(
+        (slot) => candidateStart < slot.end && candidateEnd > slot.start,
+      );
+
+      if (!overlaps) {
+        suggestions.push({
+          startMinutes: candidateStart,
+          endMinutes: candidateEnd,
+        });
+      }
+    }
+
+    return suggestions;
+  }, [selectedLocalId, dateReservation, heureDebut, heureFin, occupiedSlots]);
+
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [locauxRes, reservationsRes] = await Promise.all([
-        api.get("/locaux"),
-        api.get("/reservations"),
-      ]);
+      const locauxRes = await api.get("/locaux");
 
       setLocaux(locauxRes.data || []);
-      setReservations(reservationsRes.data || []);
 
       if (!selectedLocalId && (locauxRes.data || []).length > 0) {
         setSelectedLocalId(locauxRes.data[0].id);
@@ -200,7 +254,8 @@ export default function ClubReservationPage() {
       } else if (status === 409) {
         setFeedback({
           type: "error",
-          message: "Ce creneau est deja reserve ou en attente.",
+          message:
+            "Ce creneau est deja reserve ou en attente. Choisissez un horaire propose.",
         });
       } else if (status === 400) {
         setFeedback({
@@ -220,18 +275,10 @@ export default function ClubReservationPage() {
     }
   };
 
-  const handleCancel = async (id: string) => {
-    try {
-      await api.patch(`/reservations/${id}/status`, { statut: "ANNULEE" });
-      setFeedback({
-        type: "success",
-        message: "Reservation annulee.",
-      });
-      await loadData();
-      await loadOccupiedSlots(selectedLocalId, dateReservation);
-    } catch {
-      setFeedback({ type: "error", message: "Annulation impossible." });
-    }
+  const applySuggestedSlot = (slot: SuggestedSlot) => {
+    setHeureDebut(formatMinutesToTime(slot.startMinutes));
+    setHeureFin(formatMinutesToTime(slot.endMinutes));
+    setFeedback(null);
   };
 
   return (
@@ -363,6 +410,36 @@ export default function ClubReservationPage() {
             <PlusCircle size={16} />
             {isSubmitting ? "Envoi..." : "Reserver"}
           </button>
+
+          <div className="rounded-2xl border border-[#D9E8D1] bg-white px-4 py-4">
+            <p className="text-[11px] font-black uppercase tracking-widest text-[#436D75]">
+              Horaires proposes
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Suggestions calculees selon l occupation du local et la duree
+              demandee.
+            </p>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {suggestedSlots.length > 0 ? (
+                suggestedSlots.map((slot, index) => (
+                  <button
+                    key={`${slot.startMinutes}-${slot.endMinutes}-${index}`}
+                    type="button"
+                    onClick={() => applySuggestedSlot(slot)}
+                    className="rounded-lg border border-[#436D75]/20 bg-[#F7F3E9] px-3 py-2 text-xs font-black text-[#436D75] hover:bg-[#D9E8D1]"
+                  >
+                    {formatMinutesToTime(slot.startMinutes)} -{" "}
+                    {formatMinutesToTime(slot.endMinutes)}
+                  </button>
+                ))
+              ) : (
+                <p className="text-xs text-gray-400 italic">
+                  Aucun horaire disponible pour cette duree sur la journee.
+                </p>
+              )}
+            </div>
+          </div>
         </form>
 
         <div className="bg-white rounded-[30px] p-6 border border-gray-100 shadow-sm">
@@ -397,93 +474,6 @@ export default function ClubReservationPage() {
               ))
             )}
           </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-[30px] border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-lg font-black text-[#436D75]">
-            Mes reservations
-          </h2>
-          <span className="text-xs text-gray-400 font-bold">
-            {reservations.length} elements
-          </span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50/70">
-              <tr className="text-[10px] uppercase tracking-widest text-gray-400 font-black">
-                <th className="px-6 py-3">Local</th>
-                <th className="px-6 py-3">Date</th>
-                <th className="px-6 py-3">Horaire</th>
-                <th className="px-6 py-3">Objet</th>
-                <th className="px-6 py-3">Statut</th>
-                <th className="px-6 py-3">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {isLoading ? (
-                <tr>
-                  <td className="px-6 py-5 text-sm text-gray-400" colSpan={6}>
-                    Chargement...
-                  </td>
-                </tr>
-              ) : reservations.length === 0 ? (
-                <tr>
-                  <td className="px-6 py-5 text-sm text-gray-400" colSpan={6}>
-                    Aucune reservation pour le moment.
-                  </td>
-                </tr>
-              ) : (
-                reservations.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="hover:bg-[#F7F3E9]/40 transition-colors"
-                  >
-                    <td className="px-6 py-4 text-sm font-bold text-[#436D75]">
-                      {item.local?.nom || "Local"}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(item.date_reservation).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(item.heure_debut).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                      {" - "}
-                      {new Date(item.heure_fin).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {item.objet}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase ${statusClass(item.statut)}`}
-                      >
-                        {item.statut}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {(item.statut === "EN_ATTENTE" ||
-                        item.statut === "VALIDEE") && (
-                        <button
-                          onClick={() => handleCancel(item.id)}
-                          className="inline-flex items-center gap-1 rounded-lg bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 hover:bg-rose-100"
-                        >
-                          <XCircle size={14} /> Annuler
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ import {
   Building2,
   CalendarCheck,
   CalendarPlus,
+  ClipboardList,
   ClipboardCheck,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
@@ -119,6 +120,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               icon={<CalendarPlus size={18} />}
               label="Réserver Local"
               active={location.pathname === "/club-reservations"}
+            />
+          )}
+
+          {role === "RESPONSABLE_CLUB" && (
+            <SidebarItem
+              to="/club-my-reservations"
+              icon={<ClipboardList size={18} />}
+              label="Mes Réservations"
+              active={location.pathname === "/club-my-reservations"}
             />
           )}
 
