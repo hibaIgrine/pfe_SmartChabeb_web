@@ -31,7 +31,10 @@ export function NotificationBell() {
 
   const hasUnread = unreadCount > 0;
 
-  const displayNotifications = useMemo(() => notifications.slice(0, 12), [notifications]);
+  const displayNotifications = useMemo(
+    () => notifications.slice(0, 12),
+    [notifications],
+  );
 
   const refreshUnreadCount = async () => {
     try {
@@ -67,7 +70,10 @@ export function NotificationBell() {
     }
   }, [isOpen]);
 
-  const handleMarkOneAsRead = async (notificationId: string, isRead: boolean) => {
+  const handleMarkOneAsRead = async (
+    notificationId: string,
+    isRead: boolean,
+  ) => {
     if (isRead) return;
     try {
       await markNotificationAsRead(notificationId);
@@ -85,7 +91,9 @@ export function NotificationBell() {
   const handleMarkAllAsRead = async () => {
     try {
       await markAllNotificationsAsRead();
-      setNotifications((prev) => prev.map((item) => ({ ...item, is_read: true })));
+      setNotifications((prev) =>
+        prev.map((item) => ({ ...item, is_read: true })),
+      );
       setUnreadCount(0);
     } catch (err) {
       console.error("Erreur mise a jour notifications:", err);
@@ -93,7 +101,7 @@ export function NotificationBell() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative z-50">
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
@@ -110,7 +118,7 @@ export function NotificationBell() {
       </button>
 
       {isOpen ? (
-        <div className="absolute right-0 top-[calc(100%+10px)] z-30 w-[360px] max-w-[90vw] rounded-2xl border border-gray-200 bg-white shadow-2xl">
+        <div className="absolute right-0 top-[calc(100%+10px)] z-[120] w-[360px] max-w-[90vw] rounded-2xl border border-gray-200 bg-white shadow-2xl">
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-[#436D75]">
               Notifications
