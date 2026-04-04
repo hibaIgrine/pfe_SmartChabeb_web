@@ -11,6 +11,7 @@ import {
   UserCircle,
   Building2,
   CalendarCheck,
+  CalendarPlus,
   ClipboardCheck,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
@@ -103,14 +104,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "ADMIN" ||
-            role === "RESPONSABLE_CENTRE" ||
-            role === "RESPONSABLE_CLUB") && (
+          {(role === "ADMIN" || role === "RESPONSABLE_CENTRE") && (
             <SidebarItem
               to="/reservations"
               icon={<CalendarCheck size={18} />}
               label={role === "ADMIN" ? "Réservations" : "Mes Résas"}
               active={location.pathname === "/reservations"}
+            />
+          )}
+
+          {role === "RESPONSABLE_CLUB" && (
+            <SidebarItem
+              to="/club-reservations"
+              icon={<CalendarPlus size={18} />}
+              label="Réserver Local"
+              active={location.pathname === "/club-reservations"}
             />
           )}
 
