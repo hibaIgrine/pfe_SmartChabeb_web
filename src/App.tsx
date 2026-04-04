@@ -21,6 +21,7 @@ import ReservationsPage from "./pages/reservations/ReservationPage";
 import ClubReservationPage from "./pages/reservations/ClubReservationPage";
 import ClubMyReservationsPage from "./pages/reservations/ClubMyReservationsPage";
 import PresencePage from "./pages/presences/PresencePage";
+import EventsPage from "./pages/events/EventsPage";
 
 function App() {
   const getCentrePage = () => {
@@ -164,6 +165,14 @@ function App() {
           element={
             <Layout>
               <PresencePage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/events"
+          element={
+            <Layout>
+              <EventsPage />
             </Layout>
           }
         />

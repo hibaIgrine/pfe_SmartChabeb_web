@@ -1,0 +1,72 @@
+import type { EventForm } from "./types";
+
+export function toTimeHHMM(value: string) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+export function getCurrentTimeHHMM() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+export function getTodayDate() {
+  return new Date().toISOString().split("T")[0];
+}
+
+export function getEmptyForm(): EventForm {
+  return {
+    nom: "",
+    description: "",
+    date_event: getTodayDate(),
+    start_time: "10:00",
+    end_time: "12:00",
+    club_id: "",
+    locaux_id: "",
+    capacity: "",
+  };
+}
+
+export function validateEventForm(form: EventForm, today: string) {
+  if (
+    !form.nom.trim() ||
+    !form.description.trim() ||
+    !form.date_event ||
+    !form.start_time ||
+    !form.end_time ||
+    !form.club_id ||
+    !form.locaux_id ||
+    !form.capacity.trim()
+  ) {
+    return "Tous les champs du formulaire sont obligatoires.";
+  }
+
+  if (!/^\d+$/.test(form.capacity.trim())) {
+    return "La capacité doit contenir uniquement des nombres entiers.";
+  }
+
+  if (form.date_event < today) {
+    return "La date de l'événement doit être à partir d'aujourd'hui.";
+  }
+
+  if (form.end_time <= form.start_time) {
+    return "L'heure de fin doit être strictement supérieure à l'heure de début.";
+  }
+
+  if (form.date_event === today) {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const [startH, startM] = form.start_time.split(":").map(Number);
+    const startMinutes = startH * 60 + startM;
+    if (startMinutes <= currentMinutes) {
+      return "L'heure de début doit être après l'heure actuelle du système.";
+    }
+  }
+
+  return null;
+}

@@ -1,0 +1,55 @@
+export type ClubLite = {
+  id: string;
+  nom: string;
+  id_centre?: string;
+};
+
+export type LocalLite = {
+  id: string;
+  nom: string;
+  type?: string;
+  capacite?: number | null;
+  id_centre?: string;
+};
+
+export type EventItem = {
+  id: string;
+  nom: string;
+  description?: string | null;
+  date_event: string;
+  start_time: string;
+  end_time: string;
+  capacity?: number | null;
+  is_active: boolean;
+  club_id: string;
+  locaux_id: string;
+  club?: { id: string; nom: string; categorie?: string };
+  local?: { id: string; nom: string; type?: string };
+  _count?: { participants?: number };
+};
+
+export type EventDetail = EventItem & {
+  participants?: Array<{
+    id: string;
+    status: string;
+    checkin: boolean;
+    user: { id: string; nom: string; prenom: string; email: string };
+  }>;
+  createur?: { id: string; nom: string; prenom: string; role: string };
+};
+
+export type EventForm = {
+  nom: string;
+  description: string;
+  date_event: string;
+  start_time: string;
+  end_time: string;
+  club_id: string;
+  locaux_id: string;
+  capacity: string;
+};
+
+export type AlertState = {
+  msg: string;
+  type: "success" | "error";
+} | null;

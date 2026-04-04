@@ -15,6 +15,7 @@ import {
   ClipboardList,
   ClipboardCheck,
   CalendarRange,
+  CalendarDays,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 
@@ -103,6 +104,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               icon={<Building2 size={18} />}
               label="Locaux"
               active={location.pathname === "/locaux"}
+            />
+          )}
+
+          {(role === "ADMIN" ||
+            role === "RESPONSABLE_CENTRE" ||
+            role === "RESPONSABLE_CLUB") && (
+            <SidebarItem
+              to="/events"
+              icon={<CalendarDays size={18} />}
+              label="Événements"
+              active={location.pathname === "/events"}
             />
           )}
 
