@@ -1,17 +1,65 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../api/axios";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   AlertCircle,
   BarChart3,
   CalendarDays,
   CheckCircle2,
   Download,
+  FileText,
   Users,
   XCircle,
 } from "lucide-react";
 
 function formatDate(date: Date) {
   return date.toISOString().slice(0, 10);
+}
+
+function hasArabic(text: string) {
+  return /[\u0600-\u06FF]/.test(text);
+}
+
+function textToImageDataUrl(
+  text: string,
+  options?: {
+    width?: number;
+    height?: number;
+    fontSize?: number;
+    align?: "left" | "center" | "right";
+  },
+) {
+  const width = options?.width ?? 520;
+  const height = options?.height ?? 34;
+  const fontSize = options?.fontSize ?? 18;
+  const align = options?.align ?? "right";
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) return "";
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = "#1f2937";
+  ctx.font = `${fontSize}px Arial`;
+  ctx.textBaseline = "middle";
+  ctx.direction = "rtl";
+
+  if (align === "left") {
+    ctx.textAlign = "left";
+    ctx.fillText(text, 2, height / 2);
+  } else if (align === "center") {
+    ctx.textAlign = "center";
+    ctx.fillText(text, width / 2, height / 2);
+  } else {
+    ctx.textAlign = "right";
+    ctx.fillText(text, width - 2, height / 2);
+  }
+
+  return canvas.toDataURL("image/png");
 }
 
 export default function PresencePage() {
@@ -26,6 +74,7 @@ export default function PresencePage() {
   const [stats, setStats] = useState<any>(null);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [notification, setNotification] = useState<{
     msg: string;
     type: "success" | "error";
@@ -112,20 +161,20 @@ export default function PresencePage() {
 
     setIsExporting(true);
     try {
-      const response = await api.get(`/presences/${club.id}/export?date=${selectedDate}`, {
-        responseType: "blob",
+      const response = await api.get(
+        `/presences/${club.id}/export?date=${selectedDate}`,
+      );
+      const fileName =
+        response.data?.fileName || `presence-${selectedDate}.csv`;
+      const csvContent = response.data?.csv;
+
+      if (!csvContent || typeof csvContent !== "string") {
+        throw new Error("Contenu d'export invalide.");
+      }
+
+      const blob = new Blob([`\uFEFF${csvContent}`], {
+        type: "text/csv;charset=utf-8;",
       });
-
-      const contentDisposition = response.headers["content-disposition"] as string | undefined;
-      const fallbackName = `presence-${selectedDate}.csv`;
-      const extractedName = contentDisposition
-        ?.split("filename=")
-        ?.pop()
-        ?.replace(/"/g, "")
-        ?.trim();
-
-      const fileName = extractedName || fallbackName;
-      const blob = new Blob([response.data], { type: "text/csv;charset=utf-8;" });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
 
@@ -141,11 +190,177 @@ export default function PresencePage() {
       console.error(error);
       showAlert(
         error?.response?.data?.message ||
+          error?.message ||
           "Impossible de télécharger le fichier d'export.",
         "error",
       );
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const exportDailyPdf = async () => {
+    if (!club?.id) return;
+
+    setIsExportingPdf(true);
+    try {
+      const response = await api.get(
+        `/presences/${club.id}/export?date=${selectedDate}`,
+      );
+
+      const records = Array.isArray(response.data?.records)
+        ? response.data.records
+        : [];
+      const metadata = response.data?.metadata || {};
+
+      if (records.length === 0) {
+        throw new Error("Aucune donnée à exporter pour cette date.");
+      }
+
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "pt",
+        format: "a4",
+      });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Bande institutionnelle sur une seule ligne
+      doc.setTextColor(31, 41, 55);
+      doc.setFontSize(14);
+      doc.text("République Tunisienne", 40, 46);
+      doc.setFontSize(11);
+      doc.text("Ministère de la Jeunesse et des Sports", 40, 62);
+
+      const centreName = String(metadata?.centre?.nom || "-");
+      if (centreName !== "-") {
+        if (hasArabic(centreName)) {
+          const centreImage = textToImageDataUrl(centreName, {
+            width: 280,
+            height: 30,
+            fontSize: 14,
+            align: "right",
+          });
+          if (centreImage) {
+            doc.addImage(centreImage, "PNG", pageWidth - 305, 35, 265, 22);
+          } else {
+            doc.text(centreName, pageWidth - 40, 52, { align: "right" });
+          }
+        } else {
+          doc.setFontSize(13);
+          doc.text(centreName, pageWidth - 40, 52, { align: "right" });
+        }
+      }
+
+      doc.setDrawColor(67, 109, 117);
+      doc.setLineWidth(1.2);
+      doc.line(40, 82, pageWidth - 40, 82);
+
+      // Titre centré
+      doc.setFontSize(16);
+      doc.setTextColor(67, 109, 117);
+      doc.text("Fiche Journalière de Présence", pageWidth / 2, 104, {
+        align: "center",
+      });
+
+      doc.setFontSize(10);
+      doc.setTextColor(31, 41, 55);
+      doc.text(
+        `Date de la fiche: ${metadata?.datePresence || selectedDate}`,
+        40,
+        124,
+      );
+      doc.text(`Club: ${metadata?.club?.nom || club.nom || "-"}`, 40, 138);
+
+      // Nom du centre déjà placé dans la bande institutionnelle
+
+      autoTable(doc, {
+        startY: 158,
+        styles: { fontSize: 8 },
+        head: [
+          [
+            "Nom",
+            "Prénom",
+            "Email",
+            "Rôle",
+            "Statut",
+            "Remarque",
+            "Marqué par",
+          ],
+        ],
+        body: records.map((row: any) => [
+          row.utilisateurNom || "",
+          row.utilisateurPrenom || "",
+          row.utilisateurEmail || "",
+          row.utilisateurRole || "",
+          row.statutPresence || "",
+          row.remarque || "",
+          `${row.marqueParPrenom || ""} ${row.marqueParNom || ""}`.trim(),
+        ]),
+      });
+
+      const finalY = ((doc as any).lastAutoTable?.finalY || 158) + 22;
+      doc.setFontSize(10);
+      doc.setTextColor(31, 41, 55);
+      doc.text(
+        `Date de la fiche: ${metadata?.datePresence || selectedDate}`,
+        pageWidth - 40,
+        finalY,
+        {
+          align: "right",
+        },
+      );
+
+      const presentsCount = records.filter(
+        (r: any) => r.statutPresence === "PRESENT",
+      ).length;
+      const absentsCount = records.filter(
+        (r: any) => r.statutPresence === "ABSENT",
+      ).length;
+      const nonMarquesCount = records.filter(
+        (r: any) => r.statutPresence === "NON_MARQUE",
+      ).length;
+      doc.text(
+        `Synthèse: Présents ${presentsCount} | Absents ${absentsCount} | Non marqués ${nonMarquesCount}`,
+        40,
+        finalY,
+      );
+
+      doc.setDrawColor(229, 231, 235);
+      doc.line(40, pageHeight - 38, pageWidth - 40, pageHeight - 38);
+      doc.setFontSize(9);
+      doc.setTextColor(107, 114, 128);
+      doc.text(
+        `Date d'exportation: ${new Date().toLocaleString("fr-FR")}`,
+        40,
+        pageHeight - 22,
+      );
+      doc.text(
+        "Document officiel - SmartChabeb",
+        pageWidth - 40,
+        pageHeight - 22,
+        {
+          align: "right",
+        },
+      );
+
+      const safeClubName = String(metadata?.club?.nom || club.nom || "club")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      doc.save(`presence-${safeClubName || "club"}-${selectedDate}.pdf`);
+      showAlert("Fichier PDF téléchargé avec succès.", "success");
+    } catch (error: any) {
+      console.error(error);
+      showAlert(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Impossible de télécharger le fichier PDF.",
+        "error",
+      );
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
@@ -215,6 +430,14 @@ export default function PresencePage() {
           >
             <Download size={14} />
             {isExporting ? "Export..." : "Exporter"}
+          </button>
+          <button
+            onClick={exportDailyPdf}
+            disabled={isExportingPdf || !club}
+            className="px-3 py-2 rounded-xl bg-[#E98A7D] text-white text-xs font-black hover:bg-[#d5766a] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <FileText size={14} />
+            {isExportingPdf ? "PDF..." : "Exporter PDF"}
           </button>
         </div>
       </div>
