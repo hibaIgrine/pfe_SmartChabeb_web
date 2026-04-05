@@ -122,6 +122,39 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             role === "RESPONSABLE_CENTRE" ||
             role === "RESPONSABLE_CLUB") && (
             <SidebarItem
+              to="/events-requests"
+              icon={<ClipboardList size={18} />}
+              label="Demandes Événements"
+              active={location.pathname === "/events-requests"}
+            />
+          )}
+
+          {(role === "ADMIN" ||
+            role === "RESPONSABLE_CENTRE" ||
+            role === "RESPONSABLE_CLUB") && (
+            <SidebarItem
+              to="/events-participants"
+              icon={<Users size={18} />}
+              label="Liste Participants"
+              active={location.pathname === "/events-participants"}
+            />
+          )}
+
+          {(role === "ADMIN" ||
+            role === "RESPONSABLE_CENTRE" ||
+            role === "RESPONSABLE_CLUB") && (
+            <SidebarItem
+              to="/events-waiting-list"
+              icon={<ClipboardCheck size={18} />}
+              label="Liste D'attente"
+              active={location.pathname === "/events-waiting-list"}
+            />
+          )}
+
+          {(role === "ADMIN" ||
+            role === "RESPONSABLE_CENTRE" ||
+            role === "RESPONSABLE_CLUB") && (
+            <SidebarItem
               to="/locaux-planning"
               icon={<CalendarRange size={18} />}
               label="Planning Salles"

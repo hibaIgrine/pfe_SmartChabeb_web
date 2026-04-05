@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import EventDetailsPanel from "./components/EventDetailsPanel";
 import EventFormModal from "./components/EventFormModal";
@@ -12,6 +13,7 @@ import type {
   EventForm,
   EventItem,
   LocalLite,
+  ParticipantStatus,
 } from "./types";
 import {
   getEmptyForm,
@@ -21,6 +23,13 @@ import {
 } from "./utils";
 
 export default function EventsPage() {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const canManageParticipants = [
+    "ADMIN",
+    "RESPONSABLE_CENTRE",
+    "RESPONSABLE_CLUB",
+  ].includes(user?.role);
+
   const token = localStorage.getItem("token");
   const headers = useMemo(
     () => ({ Authorization: `Bearer ${token}` }),
@@ -234,6 +243,51 @@ export default function EventsPage() {
     }
   };
 
+  const updateParticipantStatus = async (
+    eventId: string,
+    participantId: string,
+    status: ParticipantStatus,
+  ) => {
+    try {
+      await api.patch(
+        `/events/${eventId}/participants/${participantId}/status`,
+        { status },
+        { headers },
+      );
+      showAlert("Statut participant mis à jour.", "success");
+      await loadDetail(eventId);
+      await loadBaseData();
+    } catch (error: any) {
+      const apiMessage = error?.response?.data?.message;
+      const detailedMessage = Array.isArray(apiMessage)
+        ? apiMessage.join(" | ")
+        : apiMessage;
+      showAlert(detailedMessage || "Mise à jour impossible.", "error");
+    }
+  };
+
+  const toggleParticipantCheckin = async (
+    eventId: string,
+    participantId: string,
+    checkin: boolean,
+  ) => {
+    try {
+      await api.patch(
+        `/events/${eventId}/participants/${participantId}/checkin`,
+        { checkin },
+        { headers },
+      );
+      showAlert("Check-in mis à jour.", "success");
+      await loadDetail(eventId);
+    } catch (error: any) {
+      const apiMessage = error?.response?.data?.message;
+      const detailedMessage = Array.isArray(apiMessage)
+        ? apiMessage.join(" | ")
+        : apiMessage;
+      showAlert(detailedMessage || "Check-in impossible.", "error");
+    }
+  };
+
   return (
     <div className="space-y-8 pb-8">
       {notification && (
@@ -245,6 +299,17 @@ export default function EventsPage() {
           }`}
         >
           {notification.msg}
+        </div>
+      )}
+
+      {canManageParticipants && (
+        <div className="flex justify-end">
+          <Link
+            to="/events-requests"
+            className="px-4 py-2 rounded-xl bg-[#E98A7D] text-white text-xs font-black"
+          >
+            Gérer Les Demandes
+          </Link>
         </div>
       )}
 
@@ -264,7 +329,12 @@ export default function EventsPage() {
           onToggleActive={toggleActive}
         />
 
-        <EventDetailsPanel selectedDetail={selectedDetail} />
+        <EventDetailsPanel
+          selectedDetail={selectedDetail}
+          canManageParticipants={canManageParticipants}
+          onUpdateParticipantStatus={updateParticipantStatus}
+          onToggleCheckin={toggleParticipantCheckin}
+        />
       </div>
 
       <EventsCalendar events={events} onSelectEvent={loadDetail} />

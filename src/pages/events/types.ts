@@ -30,13 +30,23 @@ export type EventItem = {
 };
 
 export type EventDetail = EventItem & {
-  participants?: Array<{
-    id: string;
-    status: string;
-    checkin: boolean;
-    user: { id: string; nom: string; prenom: string; email: string };
-  }>;
+  participants?: EventParticipant[];
   createur?: { id: string; nom: string; prenom: string; role: string };
+};
+
+export type ParticipantStatus = "EN_ATTENTE" | "CONFIRME" | "REFUSE" | "ANNULE";
+
+export type EventParticipant = {
+  id: string;
+  status: ParticipantStatus;
+  checkin: boolean;
+  user: {
+    id: string;
+    nom: string;
+    prenom: string;
+    email: string;
+    role?: string;
+  };
 };
 
 export type EventForm = {

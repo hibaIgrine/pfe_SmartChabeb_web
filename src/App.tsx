@@ -22,6 +22,9 @@ import ClubReservationPage from "./pages/reservations/ClubReservationPage";
 import ClubMyReservationsPage from "./pages/reservations/ClubMyReservationsPage";
 import PresencePage from "./pages/presences/PresencePage";
 import EventsPage from "./pages/events/EventsPage";
+import EventRequestsPage from "./pages/events/EventRequestsPage";
+import EventParticipantsPage from "./pages/events/EventParticipantsPage";
+import EventWaitingListPage from "./pages/events/EventWaitingListPage";
 
 function App() {
   const getCentrePage = () => {
@@ -173,6 +176,30 @@ function App() {
           element={
             <Layout>
               <EventsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/events-requests"
+          element={
+            <Layout>
+              <EventRequestsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/events-participants"
+          element={
+            <Layout>
+              <EventParticipantsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/events-waiting-list"
+          element={
+            <Layout>
+              <EventWaitingListPage />
             </Layout>
           }
         />
