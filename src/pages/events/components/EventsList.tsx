@@ -1,5 +1,6 @@
 import {
   CalendarDays,
+  ClipboardCheck,
   Clock3,
   Eye,
   Loader2,
@@ -16,6 +17,7 @@ type Props = {
   events: EventItem[];
   selectedEventId: string | null;
   onView: (id: string) => void;
+  onPresence: (event: EventItem) => void;
   onEdit: (event: EventItem) => void;
   onToggleActive: (event: EventItem) => void;
 };
@@ -25,6 +27,7 @@ export default function EventsList({
   events,
   selectedEventId,
   onView,
+  onPresence,
   onEdit,
   onToggleActive,
 }: Props) {
@@ -83,6 +86,13 @@ export default function EventsList({
                       title="Détails"
                     >
                       <Eye size={16} />
+                    </button>
+                    <button
+                      onClick={() => onPresence(event)}
+                      className="p-2 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-500 hover:text-white transition"
+                      title="Présence"
+                    >
+                      <ClipboardCheck size={16} />
                     </button>
                     <button
                       onClick={() => onEdit(event)}

@@ -4,6 +4,7 @@ import api from "../../api/axios";
 import EventDetailsPanel from "./components/EventDetailsPanel";
 import EventFormModal from "./components/EventFormModal";
 import EventHeader from "./components/EventHeader";
+import EventPresenceModal from "./components/EventPresenceModal";
 import EventsCalendar from "./components/EventsCalendar";
 import EventsList from "./components/EventsList";
 import type {
@@ -50,6 +51,10 @@ export default function EventsPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
+  const [presenceEvent, setPresenceEvent] = useState<EventItem | null>(null);
+  const [presenceParticipants, setPresenceParticipants] = useState<any[]>([]);
+  const [isPresenceLoading, setIsPresenceLoading] = useState(false);
+  const [isPresenceUpdating, setIsPresenceUpdating] = useState(false);
   const [form, setForm] = useState<EventForm>(getEmptyForm());
 
   const [notification, setNotification] = useState<AlertState>(null);
@@ -288,6 +293,55 @@ export default function EventsPage() {
     }
   };
 
+  const openPresence = async (event: EventItem) => {
+    setPresenceEvent(event);
+    setPresenceParticipants([]);
+    setIsPresenceLoading(true);
+    try {
+      const response = await api.get(`/events/${event.id}/participants`, {
+        headers,
+      });
+      const all = Array.isArray(response.data?.all) ? response.data.all : [];
+      setPresenceParticipants(all);
+    } catch {
+      showAlert("Impossible de charger les présences.", "error");
+      setPresenceEvent(null);
+    } finally {
+      setIsPresenceLoading(false);
+    }
+  };
+
+  const togglePresence = async (participantId: string, checkin: boolean) => {
+    if (!presenceEvent) return;
+    setIsPresenceUpdating(true);
+    try {
+      await api.patch(
+        `/events/${presenceEvent.id}/participants/${participantId}/checkin`,
+        { checkin },
+        { headers },
+      );
+
+      const response = await api.get(
+        `/events/${presenceEvent.id}/participants`,
+        {
+          headers,
+        },
+      );
+      const all = Array.isArray(response.data?.all) ? response.data.all : [];
+      setPresenceParticipants(all);
+      await loadDetail(presenceEvent.id);
+      showAlert("Présence mise à jour.", "success");
+    } catch (error: any) {
+      const apiMessage = error?.response?.data?.message;
+      const detailedMessage = Array.isArray(apiMessage)
+        ? apiMessage.join(" | ")
+        : apiMessage;
+      showAlert(detailedMessage || "Mise à jour présence impossible.", "error");
+    } finally {
+      setIsPresenceUpdating(false);
+    }
+  };
+
   return (
     <div className="space-y-8 pb-8">
       {notification && (
@@ -325,6 +379,7 @@ export default function EventsPage() {
           events={events}
           selectedEventId={selectedEventId}
           onView={loadDetail}
+          onPresence={openPresence}
           onEdit={openEditModal}
           onToggleActive={toggleActive}
         />
@@ -354,6 +409,16 @@ export default function EventsPage() {
         }}
         onSubmit={submitForm}
         onChangeForm={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+      />
+
+      <EventPresenceModal
+        isOpen={Boolean(presenceEvent)}
+        eventName={presenceEvent?.nom ?? ""}
+        isLoading={isPresenceLoading}
+        isUpdating={isPresenceUpdating}
+        participants={presenceParticipants}
+        onClose={() => setPresenceEvent(null)}
+        onToggleCheckin={togglePresence}
       />
     </div>
   );

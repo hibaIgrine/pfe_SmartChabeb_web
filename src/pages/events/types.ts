@@ -40,6 +40,8 @@ export type EventParticipant = {
   id: string;
   status: ParticipantStatus;
   checkin: boolean;
+  created_at?: string;
+  updated_at?: string;
   user: {
     id: string;
     nom: string;
