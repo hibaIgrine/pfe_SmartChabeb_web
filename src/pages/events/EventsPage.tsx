@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 import api from "../../api/axios";
 import EventDetailsPanel from "./components/EventDetailsPanel";
 import EventFormModal from "./components/EventFormModal";
@@ -51,6 +52,7 @@ export default function EventsPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<EventItem | null>(null);
   const [presenceEvent, setPresenceEvent] = useState<EventItem | null>(null);
   const [presenceParticipants, setPresenceParticipants] = useState<any[]>([]);
   const [isPresenceLoading, setIsPresenceLoading] = useState(false);
@@ -248,6 +250,39 @@ export default function EventsPage() {
     }
   };
 
+  const openCancelConfirmation = (event: EventItem) => {
+    setCancelTarget(event);
+  };
+
+  const closeCancelConfirmation = () => {
+    if (isSaving) return;
+    setCancelTarget(null);
+  };
+
+  const confirmCancelEvent = async () => {
+    if (!cancelTarget) return;
+    setIsSaving(true);
+    try {
+      await api.patch(`/events/${cancelTarget.id}/cancel`, {}, { headers });
+      showAlert("Événement annulé et notifications envoyées.", "success");
+      await loadBaseData();
+
+      if (selectedEventId === cancelTarget.id) {
+        await loadDetail(cancelTarget.id);
+      }
+
+      setCancelTarget(null);
+    } catch (error: any) {
+      const apiMessage = error?.response?.data?.message;
+      const detailedMessage = Array.isArray(apiMessage)
+        ? apiMessage.join(" | ")
+        : apiMessage;
+      showAlert(detailedMessage || "Impossible d'annuler l'événement.", "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const updateParticipantStatus = async (
     eventId: string,
     participantId: string,
@@ -382,6 +417,7 @@ export default function EventsPage() {
           onPresence={openPresence}
           onEdit={openEditModal}
           onToggleActive={toggleActive}
+          onCancel={openCancelConfirmation}
         />
 
         <EventDetailsPanel
@@ -420,6 +456,49 @@ export default function EventsPage() {
         onClose={() => setPresenceEvent(null)}
         onToggleCheckin={togglePresence}
       />
+
+      {cancelTarget && (
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
+            onClick={closeCancelConfirmation}
+            aria-label="Fermer"
+          />
+
+          <div className="relative w-full max-w-md rounded-3xl border border-rose-100 bg-white p-6 shadow-2xl">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
+              <AlertTriangle size={28} />
+            </div>
+
+            <h3 className="text-center text-xl font-black text-[#203A43]">
+              Confirmer l'annulation
+            </h3>
+            <p className="mt-2 text-center text-sm text-gray-600 leading-relaxed">
+              Vous allez annuler l'événement <span className="font-black">{cancelTarget.nom}</span>. Les participants recevront une notification d'annulation.
+            </p>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeCancelConfirmation}
+                disabled={isSaving}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-50 transition disabled:opacity-60"
+              >
+                Retour
+              </button>
+              <button
+                type="button"
+                onClick={confirmCancelEvent}
+                disabled={isSaving}
+                className="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-black hover:bg-rose-700 transition disabled:opacity-60"
+              >
+                {isSaving ? "Annulation..." : "Oui, annuler"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

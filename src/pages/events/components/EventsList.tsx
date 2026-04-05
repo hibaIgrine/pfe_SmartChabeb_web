@@ -1,4 +1,5 @@
 import {
+  Ban,
   CalendarDays,
   ClipboardCheck,
   Clock3,
@@ -20,6 +21,7 @@ type Props = {
   onPresence: (event: EventItem) => void;
   onEdit: (event: EventItem) => void;
   onToggleActive: (event: EventItem) => void;
+  onCancel: (event: EventItem) => void;
 };
 
 export default function EventsList({
@@ -30,6 +32,7 @@ export default function EventsList({
   onPresence,
   onEdit,
   onToggleActive,
+  onCancel,
 }: Props) {
   return (
     <div className="xl:col-span-2 bg-white rounded-[30px] border border-gray-100 shadow-sm overflow-hidden">
@@ -101,6 +104,15 @@ export default function EventsList({
                     >
                       <Pencil size={16} />
                     </button>
+                    {event.is_active && (
+                      <button
+                        onClick={() => onCancel(event)}
+                        className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition"
+                        title="Annuler l'événement"
+                      >
+                        <Ban size={16} />
+                      </button>
+                    )}
                     <button
                       onClick={() => onToggleActive(event)}
                       className={`p-2 rounded-xl transition ${
