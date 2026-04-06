@@ -64,6 +64,12 @@ export default function EventDetailsPanel({
   const confirmed = participants.filter((p) => p.status === "CONFIRME");
   const waiting = participants.filter((p) => p.status === "EN_ATTENTE");
   const feedbacks = selectedDetail?.recentFeedbacks ?? [];
+  const timeline = Array.isArray(selectedDetail?.timeline)
+    ? selectedDetail.timeline
+    : [];
+  const timelineSorted = [...timeline].sort((a, b) =>
+    String(a.start_time ?? "").localeCompare(String(b.start_time ?? "")),
+  );
 
   // Find my participation
   const myParticipation = participants.find((p) => p.user?.id === user.id);
@@ -239,6 +245,60 @@ export default function EventDetailsPanel({
               {selectedDetail.participants?.length ?? 0}
             </p>
           </div>
+
+          {timeline.length > 0 && (
+            <div>
+              <p className="text-gray-400 text-[11px] uppercase font-black tracking-wider mb-2">
+                Timeline
+              </p>
+              <div className="rounded-2xl border border-[#D6E5E8] bg-[#F8FCFD] p-3 md:p-4 space-y-3">
+                {timelineSorted.map((step, index) => {
+                  const stepStart = String(step.start_time ?? "");
+                  const stepEnd = String(step.end_time ?? "");
+                  const [sh, sm] = stepStart.split(":").map(Number);
+                  const [eh, em] = stepEnd.split(":").map(Number);
+                  const durationMinutes =
+                    Number.isFinite(sh) &&
+                    Number.isFinite(sm) &&
+                    Number.isFinite(eh) &&
+                    Number.isFinite(em)
+                      ? Math.max(0, eh * 60 + em - (sh * 60 + sm))
+                      : 0;
+
+                  return (
+                    <div
+                      key={`${index}-${step.start_time}-${step.end_time}-${step.title}`}
+                      className="relative pl-7"
+                    >
+                      <span className="absolute left-2 top-2 h-2.5 w-2.5 rounded-full bg-[#436D75]" />
+                      {index < timelineSorted.length - 1 ? (
+                        <span className="absolute left-[14px] top-5 h-[calc(100%-8px)] w-[2px] bg-[#C7DCE1]" />
+                      ) : null}
+
+                      <div className="rounded-xl border border-[#E0ECEF] bg-white px-3 py-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-bold text-[#203A43] text-xs">
+                            {step.title}
+                          </p>
+                          <span className="text-[11px] font-black text-[#436D75]">
+                            {stepStart} - {stepEnd}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[#6B8790]">
+                          Duree: {durationMinutes} min
+                        </p>
+                        {step.details ? (
+                          <p className="text-[11px] text-gray-600 mt-1">
+                            {step.details}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="pt-2 border-t border-gray-100 space-y-3">
             <p className="text-[10px] uppercase font-black tracking-wider text-gray-400">

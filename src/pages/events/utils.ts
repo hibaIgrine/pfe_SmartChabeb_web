@@ -32,7 +32,13 @@ export function getEmptyForm(): EventForm {
     recurrence_type: "NONE",
     recurrence_count: "",
     recurrence_until: "",
+    timeline: [],
   };
+}
+
+function timeToMinutes(value: string) {
+  const [h, m] = value.split(":").map(Number);
+  return h * 60 + m;
 }
 
 export function validateEventForm(form: EventForm, today: string) {
@@ -82,6 +88,39 @@ export function validateEventForm(form: EventForm, today: string) {
 
     if (form.recurrence_until && form.recurrence_until < form.date_event) {
       return "La date de fin de récurrence doit être >= à la date de l'événement.";
+    }
+  }
+
+  if (form.timeline.length > 0) {
+    const eventStartMinutes = timeToMinutes(form.start_time);
+    const eventEndMinutes = timeToMinutes(form.end_time);
+
+    for (let i = 0; i < form.timeline.length; i++) {
+      const step = form.timeline[i];
+      if (!step.title.trim() || !step.start_time || !step.end_time) {
+        return `Étape ${i + 1}: titre, heure début et heure fin sont obligatoires.`;
+      }
+
+      if (step.end_time <= step.start_time) {
+        return `Étape ${i + 1}: l'heure de fin doit être supérieure à l'heure de début.`;
+      }
+
+      const stepStart = timeToMinutes(step.start_time);
+      const stepEnd = timeToMinutes(step.end_time);
+
+      if (stepStart < eventStartMinutes || stepEnd > eventEndMinutes) {
+        return `Étape ${i + 1}: doit être entre ${form.start_time} et ${form.end_time}.`;
+      }
+    }
+
+    const sorted = [...form.timeline].sort((a, b) =>
+      a.start_time.localeCompare(b.start_time),
+    );
+
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i].start_time < sorted[i - 1].end_time) {
+        return "Timeline invalide: certaines étapes se chevauchent.";
+      }
     }
   }
 

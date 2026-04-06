@@ -137,6 +137,15 @@ export default function EventsPage() {
   };
 
   const openEditModal = (event: EventItem) => {
+    const timeline = Array.isArray(event.timeline)
+      ? event.timeline.map((step) => ({
+          title: step.title ?? "",
+          start_time: step.start_time ?? "",
+          end_time: step.end_time ?? "",
+          details: step.details ?? "",
+        }))
+      : [];
+
     setEditingEvent(event);
     setForm({
       nom: event.nom,
@@ -150,6 +159,7 @@ export default function EventsPage() {
       recurrence_type: "NONE",
       recurrence_count: "",
       recurrence_until: "",
+      timeline,
     });
     setFormAlert(null);
     setIsModalOpen(true);
@@ -208,6 +218,13 @@ export default function EventsPage() {
       if (form.recurrence_until.trim() !== "") {
         payload.recurrence_until = form.recurrence_until;
       }
+
+      payload.timeline = form.timeline.map((step) => ({
+        title: step.title.trim(),
+        start_time: step.start_time,
+        end_time: step.end_time,
+        details: step.details?.trim() || undefined,
+      }));
 
       if (editingEvent) {
         await api.patch(`/events/${editingEvent.id}`, payload, { headers });

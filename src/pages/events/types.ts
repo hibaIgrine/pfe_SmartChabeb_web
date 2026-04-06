@@ -12,6 +12,13 @@ export type LocalLite = {
   id_centre?: string;
 };
 
+export type EventTimelineStep = {
+  title: string;
+  start_time: string;
+  end_time: string;
+  details?: string;
+};
+
 export type EventItem = {
   id: string;
   nom: string;
@@ -20,6 +27,7 @@ export type EventItem = {
   start_time: string;
   end_time: string;
   capacity?: number | null;
+  timeline?: EventTimelineStep[] | null;
   is_active: boolean;
   club_id: string;
   locaux_id: string;
@@ -81,6 +89,7 @@ export type EventForm = {
   recurrence_type: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY";
   recurrence_count: string;
   recurrence_until: string;
+  timeline: EventTimelineStep[];
 };
 
 export type AlertState = {
