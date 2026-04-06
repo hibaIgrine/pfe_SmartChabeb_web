@@ -380,6 +380,8 @@ export default function ClubsPage() {
         categories={allCategories}
         formData={editFormData}
         setFormData={setEditFormData}
+        lockedCentreId={isResponsableCentre ? myCentreId : ""}
+        lockedCentreName={isResponsableCentre ? myCentreName : ""}
         onSubmit={handleUpdate}
       />
       <DeleteConfirmModal
