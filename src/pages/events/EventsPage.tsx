@@ -390,6 +390,31 @@ export default function EventsPage() {
     }
   };
 
+  const selfCheckin = async (eventId: string) => {
+    setIsPresenceUpdating(true);
+    try {
+      await api.patch(
+        `/events/${eventId}/participants/me/checkin`,
+        {},
+        { headers },
+      );
+      await loadDetail(eventId);
+      await loadBaseData();
+      showAlert(
+        "Votre présence a été enregistrée! Vous avez gagné des points.",
+        "success",
+      );
+    } catch (error: any) {
+      const apiMessage = error?.response?.data?.message;
+      const detailedMessage = Array.isArray(apiMessage)
+        ? apiMessage.join(" | ")
+        : apiMessage;
+      showAlert(detailedMessage || "Check-in impossible.", "error");
+    } finally {
+      setIsPresenceUpdating(false);
+    }
+  };
+
   const submitFeedback = async (
     eventId: string,
     note: number,
@@ -472,6 +497,7 @@ export default function EventsPage() {
           canManageParticipants={canManageParticipants}
           onUpdateParticipantStatus={updateParticipantStatus}
           onToggleCheckin={toggleParticipantCheckin}
+          onSelfCheckin={selfCheckin}
           onSubmitFeedback={submitFeedback}
           isSubmittingFeedback={isSubmittingFeedback}
         />

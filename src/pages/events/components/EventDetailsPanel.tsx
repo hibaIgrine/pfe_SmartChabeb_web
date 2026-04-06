@@ -20,6 +20,7 @@ type Props = {
     participantId: string,
     checkin: boolean,
   ) => void;
+  onSelfCheckin: (eventId: string) => Promise<void>;
   onSubmitFeedback: (
     eventId: string,
     note: number,
@@ -40,11 +41,15 @@ export default function EventDetailsPanel({
   canManageParticipants,
   onUpdateParticipantStatus,
   onToggleCheckin,
+  onSelfCheckin,
   onSubmitFeedback,
   isSubmittingFeedback,
 }: Props) {
   const [myNote, setMyNote] = useState(0);
   const [myCommentaire, setMyCommentaire] = useState("");
+  const [isSelfCheckingIn, setIsSelfCheckingIn] = useState(false);
+
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   useEffect(() => {
     setMyNote(selectedDetail?.myFeedback?.note ?? 0);
@@ -59,6 +64,25 @@ export default function EventDetailsPanel({
   const confirmed = participants.filter((p) => p.status === "CONFIRME");
   const waiting = participants.filter((p) => p.status === "EN_ATTENTE");
   const feedbacks = selectedDetail?.recentFeedbacks ?? [];
+
+  // Find my participation
+  const myParticipation = participants.find((p) => p.user?.id === user.id);
+  const isMyStatusConfirmed = myParticipation?.status === "CONFIRME";
+  const isMyCheckInAlready = myParticipation?.checkin === true;
+
+  // Check if event is in time range
+  const now = new Date();
+  const eventStart = selectedDetail?.start_time
+    ? new Date(selectedDetail.start_time)
+    : null;
+  const eventEnd = selectedDetail?.end_time
+    ? new Date(selectedDetail.end_time)
+    : null;
+  const isEventOngoing =
+    eventStart && eventEnd && now >= eventStart && now <= eventEnd;
+
+  const canDoSelfCheckin =
+    isMyStatusConfirmed && !isMyCheckInAlready && isEventOngoing;
 
   const renderStars = (value: number, size = 16) => {
     return (
@@ -220,6 +244,25 @@ export default function EventDetailsPanel({
             <p className="text-[10px] uppercase font-black tracking-wider text-gray-400">
               Feedback & notation
             </p>
+
+            {canDoSelfCheckin && (
+              <div className="rounded-xl border border-green-200 bg-green-50 p-3">
+                <button
+                  onClick={async () => {
+                    setIsSelfCheckingIn(true);
+                    try {
+                      await onSelfCheckin(selectedDetail!.id);
+                    } finally {
+                      setIsSelfCheckingIn(false);
+                    }
+                  }}
+                  disabled={isSelfCheckingIn}
+                  className="w-full px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-black disabled:opacity-60 hover:bg-green-700 transition"
+                >
+                  {isSelfCheckingIn ? "Enregistrement..." : "✓ Je suis présent"}
+                </button>
+              </div>
+            )}
 
             <div className="flex items-center justify-between rounded-xl bg-[#F7FAFC] border border-gray-100 p-3">
               <div>

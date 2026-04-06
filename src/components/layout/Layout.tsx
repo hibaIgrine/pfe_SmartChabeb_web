@@ -118,6 +118,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
+          <SidebarItem
+            to="/profile"
+            icon={<UserCircle size={18} />}
+            label="Mon Profil"
+            active={location.pathname === "/profile"}
+          />
+
           {(role === "ADMIN" ||
             role === "RESPONSABLE_CENTRE" ||
             role === "RESPONSABLE_CLUB") && (
