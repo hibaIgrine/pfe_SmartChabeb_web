@@ -78,26 +78,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "ADMIN" ||
-            role === "RESPONSABLE_CENTRE" ||
-            role === "RESPONSABLE_CLUB") && (
-            <SidebarItem
-              to="/clubs"
-              icon={<LayoutGrid size={18} />}
-              label="Clubs & Activités"
-              active={location.pathname === "/clubs"}
-            />
-          )}
-
-          {(role === "ADMIN" || role === "RESPONSABLE_CENTRE") && (
-            <SidebarItem
-              to="/membres"
-              icon={<Users size={18} />}
-              label={role === "ADMIN" ? "Communauté" : "Membres Centre"}
-              active={location.pathname === "/membres"}
-            />
-          )}
-
           {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
               to="/locaux"
@@ -107,14 +87,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "ADMIN" ||
-            role === "RESPONSABLE_CENTRE" ||
-            role === "RESPONSABLE_CLUB") && (
+          {role === "RESPONSABLE_CENTRE" && (
             <SidebarItem
-              to="/events"
-              icon={<CalendarDays size={18} />}
-              label="Événements"
-              active={location.pathname === "/events"}
+              to="/reservations"
+              icon={<CalendarCheck size={18} />}
+              label="Réservation du local"
+              active={location.pathname === "/reservations"}
+            />
+          )}
+
+          {(role === "ADMIN" || role === "RESPONSABLE_CENTRE") && (
+            <SidebarItem
+              to="/membres"
+              icon={<Users size={18} />}
+              label={role === "ADMIN" ? "Communauté" : "Membres Centre"}
+              active={location.pathname === "/membres"}
             />
           )}
 
@@ -129,6 +116,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             role === "RESPONSABLE_CENTRE" ||
             role === "RESPONSABLE_CLUB") && (
             <SidebarItem
+              to="/clubs"
+              icon={<LayoutGrid size={18} />}
+              label="Clubs & Activités"
+              active={location.pathname === "/clubs"}
+            />
+          )}
+
+          {(role === "ADMIN" ||
+            role === "RESPONSABLE_CENTRE" ||
+            role === "RESPONSABLE_CLUB") && (
+            <SidebarItem
+              to="/events"
+              icon={<CalendarDays size={18} />}
+              label="Événements"
+              active={location.pathname === "/events"}
+            />
+          )}
+
+          {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
+            <SidebarItem
               to="/events-requests"
               icon={<ClipboardList size={18} />}
               label="Demandes Événements"
@@ -136,9 +143,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "ADMIN" ||
-            role === "RESPONSABLE_CENTRE" ||
-            role === "RESPONSABLE_CLUB") && (
+          {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
               to="/events-participants"
               icon={<Users size={18} />}
@@ -147,9 +152,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "ADMIN" ||
-            role === "RESPONSABLE_CENTRE" ||
-            role === "RESPONSABLE_CLUB") && (
+          {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
               to="/events-waiting-list"
               icon={<ClipboardCheck size={18} />}
@@ -158,23 +161,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "ADMIN" ||
-            role === "RESPONSABLE_CENTRE" ||
-            role === "RESPONSABLE_CLUB") && (
+          {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
               to="/locaux-planning"
               icon={<CalendarRange size={18} />}
               label="Planning Salles"
               active={location.pathname === "/locaux-planning"}
-            />
-          )}
-
-          {(role === "ADMIN" || role === "RESPONSABLE_CENTRE") && (
-            <SidebarItem
-              to="/reservations"
-              icon={<CalendarCheck size={18} />}
-              label={role === "ADMIN" ? "Réservations" : "Mes Résas"}
-              active={location.pathname === "/reservations"}
             />
           )}
 
