@@ -86,4 +86,23 @@ export type EventDashboardStats = {
   tauxParticipation: number;
   tauxRemplissage: number;
   evenementsPopulaires: EventPopularItem[];
+  participationParClub: {
+    clubId: string;
+    clubNom: string;
+    participants: number;
+    confirmed: number;
+    waiting: number;
+    evenements: number;
+  }[];
+  participationParUtilisateur: {
+    userId: string;
+    nom: string;
+    participations: number;
+    confirmees: number;
+    enAttente: number;
+  }[];
+  frequenceEvenements: {
+    periode: string;
+    evenements: number;
+  }[];
 };
