@@ -245,6 +245,13 @@ export default function MembresPage() {
           "Grade mis à jour. Veuillez maintenant affecter le club.",
           "success",
         );
+      } else if (roleName === "RESPONSABLE_CENTRE") {
+        // On ferme la modale des rôles et on ouvre celle des centres
+        setModals((prev) => ({ ...prev, role: false, assign: true }));
+        showAlert(
+          "Grade mis à jour. Veuillez choisir le gouvernorat puis le centre.",
+          "success",
+        );
       } else {
         // Pour les autres rôles, on ferme tout
         closeAllModals();

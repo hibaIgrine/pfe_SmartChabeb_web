@@ -241,7 +241,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* --- 🏛️ ZONE DE DROITE --- */}
       <main className="flex-1 flex flex-col overflow-hidden p-4">
-        <header className="relative z-40 bg-white/60 backdrop-blur-md h-16 px-6 flex justify-between items-center rounded-3xl border border-white shadow-sm mb-4 flex-shrink-0 overflow-visible">
+        <header className="relative z-0 bg-white/60 backdrop-blur-md h-16 px-6 flex justify-between items-center rounded-3xl border border-white shadow-sm mb-4 flex-shrink-0 overflow-visible">
           <div className="flex items-center space-x-4">
             <img
               src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Flag_of_Tunisia.svg"
@@ -276,7 +276,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <div className="relative z-10 flex-1 bg-white rounded-[40px] shadow-2xl border border-gray-50 overflow-hidden flex flex-col">
+        <div className="relative z-0 flex-1 bg-white rounded-[40px] shadow-2xl border border-gray-50 overflow-hidden flex flex-col">
           <div className="p-8 flex-1 overflow-y-auto custom-scrollbar">
             {children}
           </div>

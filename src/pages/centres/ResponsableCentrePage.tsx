@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
+  AlertTriangle,
   Building2,
-  CalendarCheck,
+  CalendarDays,
+  ClipboardCheck,
   Edit3,
-  Home,
   LayoutGrid,
   Loader2,
-  Map,
   MapPin,
+  Package,
   Phone,
-  Users,
-  Hash,
+  Warehouse,
 } from "lucide-react";
 import api from "../../api/axios";
 import { EditCentreModal } from "../admin/centres/components/EditCentreModal";
@@ -43,14 +44,17 @@ const GOUVERNORATS_AR = [
   "نابل",
 ];
 
+type Toast = {
+  msg: string;
+  type: "success" | "error";
+};
+
 export default function ResponsableCentrePage() {
   const [centre, setCentre] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [notification, setNotification] = useState<{
-    msg: string;
-    type: "success" | "error";
-  } | null>(null);
+  const [notification, setNotification] = useState<Toast | null>(null);
 
   const user = useMemo(() => {
     const raw = localStorage.getItem("user");
@@ -63,25 +67,40 @@ export default function ResponsableCentrePage() {
     [token],
   );
 
-  const centreId = user?.centre?.id;
+  const centreId =
+    currentUser?.centre?.id ??
+    currentUser?.id_centre ??
+    user?.centre?.id ??
+    user?.id_centre;
 
   const showToast = (msg: string, type: "success" | "error") => {
     setNotification({ msg, type });
-    setTimeout(() => setNotification(null), 4000);
+    window.setTimeout(() => setNotification(null), 4000);
   };
 
   const loadCentre = async () => {
-    if (!centreId) {
-      showToast("Aucun centre associé à votre compte.", "error");
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     try {
-      const res = await api.get(`/centres/${centreId}`, { headers });
+      const meRes = await api.get("/users/me/profile", { headers });
+      const freshUser = meRes.data;
+      setCurrentUser(freshUser);
+
+      const resolvedCentreId =
+        freshUser?.centre?.id ??
+        freshUser?.id_centre ??
+        user?.centre?.id ??
+        user?.id_centre;
+
+      if (!resolvedCentreId) {
+        setCentre(null);
+        showToast("Aucun centre associé à votre compte.", "error");
+        setLoading(false);
+        return;
+      }
+
+      const res = await api.get(`/centres/${resolvedCentreId}`, { headers });
       setCentre(res.data);
-    } catch (err) {
+    } catch {
       showToast("Impossible de charger les informations du centre.", "error");
     } finally {
       setLoading(false);
@@ -89,177 +108,240 @@ export default function ResponsableCentrePage() {
   };
 
   useEffect(() => {
-    loadCentre();
+    void loadCentre();
   }, [centreId]);
 
-  const metrics = useMemo(
-    () => ({
-      espaces: centre?.locaux?.length ?? 0,
-      clubs: centre?.clubs?.length ?? 0,
-      inventaire: centre?.inventaire?.length ?? 0,
-    }),
-    [centre],
-  );
+  const metrics = useMemo(() => {
+    const locaux = Array.isArray(centre?.locaux) ? centre.locaux : [];
+    const clubs = Array.isArray(centre?.clubs) ? centre.clubs : [];
+    const inventaire = Array.isArray(centre?.inventaire) ? centre.inventaire : [];
+
+    return {
+      locaux: locaux.length,
+      clubs: clubs.length,
+      inventaire: inventaire.length,
+      locauxActifs: locaux.filter((item: any) => item.est_actif !== false).length,
+      clubsActifs: clubs.filter((item: any) => item.est_actif !== false).length,
+    };
+  }, [centre]);
+
+  const quickLinks = [
+    { to: "/locaux", label: "Gérer les locaux", icon: <Warehouse size={16} /> },
+    { to: "/clubs", label: "Gérer les clubs", icon: <LayoutGrid size={16} /> },
+    { to: "/events", label: "Gérer les événements", icon: <CalendarDays size={16} /> },
+    { to: "/presences", label: "Suivi présence", icon: <ClipboardCheck size={16} /> },
+  ];
 
   return (
-    <div className="space-y-10 pb-20 animate-in fade-in duration-700 max-w-7xl mx-auto">
+    <div className="space-y-8 pb-16 max-w-7xl mx-auto animate-in fade-in duration-500">
       {notification && (
         <div
-          className={`fixed top-10 right-10 z-[1000] rounded-[30px] px-6 py-4 shadow-2xl border border-white/20 backdrop-blur-md ${
+          className={`fixed top-10 right-10 z-[1000] rounded-[26px] px-6 py-4 shadow-2xl border border-white/20 backdrop-blur-md ${
             notification.type === "error"
               ? "bg-[#E98A7D] text-white"
               : "bg-[#D9E8D1] text-[#436D75]"
           }`}
         >
-          <p className="font-black uppercase tracking-[0.3em] text-sm">
+          <p className="font-black uppercase tracking-[0.2em] text-xs">
             {notification.msg}
           </p>
         </div>
       )}
 
-      <section className="rounded-[40px] bg-white shadow-2xl border border-gray-100 p-10">
-        <div className="flex flex-col lg:flex-row justify-between gap-8">
-          <div className="max-w-2xl">
-            <span className="text-[10px] tracking-[0.4em] uppercase text-gray-400 font-black">
-              Espace responsable · Centre de Jeunesse
-            </span>
-            <h1 className="mt-4 text-4xl md:text-5xl font-black text-[#1A1C1E] tracking-tight leading-tight">
+      <section className="rounded-[34px] border border-[#D8E5E8] bg-gradient-to-br from-[#23444C] via-[#2F5A63] to-[#436D75] p-7 md:p-9 text-white shadow-2xl">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="max-w-3xl">
+            <p className="text-[10px] uppercase tracking-[0.3em] font-black text-[#D9E8D1]">
+              Tableau Responsable Centre
+            </p>
+            <h1 className="mt-3 text-3xl md:text-5xl font-black tracking-tight leading-tight">
               {centre?.nom || "Mon Centre"}
             </h1>
-            <p className="mt-5 text-gray-500 leading-8 text-sm md:text-base">
-              Consultez les données institutionnelles, suivez vos équipes et
-              mettez à jour rapidement les informations essentielles de votre
-              établissement.
+            <p className="mt-4 text-sm text-[#E2EEF1] leading-7">
+              Vue dédiée à votre centre uniquement: pilotage des locaux, clubs,
+              inventaire et informations institutionnelles.
             </p>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="rounded-[30px] bg-[#EDF7F2] p-6 shadow-sm border border-[#D9E8D1]">
-              <p className="text-[10px] uppercase tracking-[0.25em] text-gray-500 font-black mb-3">
+          <div className="flex flex-col gap-3 min-w-[260px]">
+            <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
+              <p className="text-[10px] uppercase tracking-[0.25em] text-white/70 font-black">
                 Responsable
               </p>
-              <h2 className="text-xl font-black text-[#436D75]">
-                {user?.nom} {user?.prenom}
-              </h2>
-              <p className="mt-2 text-sm text-gray-500 uppercase tracking-[0.3em] font-bold">
-                {user?.role?.replace("_", " ")}
+              <p className="mt-1 text-sm font-black">
+                {currentUser?.nom ?? user?.nom} {currentUser?.prenom ?? user?.prenom}
+              </p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[#D9E8D1] font-bold mt-1">
+                RESPONSABLE_CENTRE
               </p>
             </div>
+
             <button
               onClick={() => setIsEditing(true)}
-              className="inline-flex items-center justify-center gap-3 rounded-[30px] bg-[#436D75] px-8 py-4 text-white font-black uppercase tracking-[0.25em] shadow-xl hover:bg-black transition-all active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white text-[#244047] px-4 py-3 text-xs font-black uppercase tracking-[0.18em] hover:bg-[#F3F7F8] transition"
             >
-              <Edit3 size={18} /> Modifier mon centre
+              <Edit3 size={16} /> Modifier ce centre
             </button>
           </div>
         </div>
       </section>
 
       {loading ? (
-        <div className="flex items-center justify-center py-28">
-          <Loader2 className="animate-spin text-[#436D75]" size={48} />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 size={48} className="animate-spin text-[#436D75]" />
+        </div>
+      ) : !centre ? (
+        <div className="rounded-[28px] border border-[#F2D1CC] bg-[#FFF5F3] p-6 flex items-start gap-3">
+          <AlertTriangle size={18} className="text-[#B23A2B] mt-0.5" />
+          <p className="text-sm font-bold text-[#B23A2B]">
+            Centre introuvable ou non accessible.
+          </p>
         </div>
       ) : (
         <>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-3">
+            <CentreMetricCard
+              icon={<Warehouse size={20} />}
+              label="Locaux"
+              value={metrics.locaux}
+              helpText={`${metrics.locauxActifs} actif(s) pour votre centre.`}
+            />
             <CentreMetricCard
               icon={<LayoutGrid size={20} />}
-              label="Espaces"
-              value={metrics.espaces}
-              helpText="Salles, terrains et studios rattachés à votre centre."
-            />
-            <CentreMetricCard
-              icon={<Users size={20} />}
               label="Clubs"
               value={metrics.clubs}
-              helpText="Activités et associations gérées depuis votre institution."
+              helpText={`${metrics.clubsActifs} actif(s) dans votre centre.`}
             />
             <CentreMetricCard
-              icon={<CalendarCheck size={20} />}
+              icon={<Package size={20} />}
               label="Inventaire"
               value={metrics.inventaire}
-              helpText="Articles et équipements administrés par votre équipe."
+              helpText="Équipements enregistrés sur ce centre." 
             />
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[1.35fr_0.85fr]">
-            <section className="rounded-[40px] bg-white p-10 shadow-2xl border border-gray-100">
-              <div className="flex items-center justify-between gap-6 mb-8">
-                <div>
-                  <h2 className="text-2xl font-black text-[#1A1C1E]">
-                    Informations du Centre
-                  </h2>
-                  <p className="mt-2 text-sm text-gray-400">
-                    Données officielles et coordonnées institutionnelles.
-                  </p>
-                </div>
-                <span className="text-[10px] uppercase tracking-[0.3em] text-gray-400 font-black">
-                  ID #{centre?.id?.slice(0, 8)}
-                </span>
-              </div>
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <section className="rounded-[30px] border border-gray-100 bg-white p-6 shadow-sm">
+              <h2 className="text-xl font-black text-[#1A1C1E]">Identité du Centre</h2>
+              <p className="mt-1 text-xs text-gray-400 uppercase tracking-[0.2em] font-bold">
+                Informations officielles
+              </p>
 
-              <div className="space-y-5">
+              <div className="mt-6 space-y-4">
                 <InfoRow
-                  icon={<MapPin size={18} />}
+                  icon={<MapPin size={16} />}
                   label="Gouvernorat"
-                  value={centre?.gouvernorat}
+                  value={centre.gouvernorat || "—"}
                 />
                 <InfoRow
-                  icon={<Map size={18} />}
+                  icon={<Building2 size={16} />}
                   label="Délégation"
-                  value={centre?.delegation}
+                  value={centre.delegation || "—"}
                 />
                 <InfoRow
-                  icon={<Hash size={18} />}
-                  label="Code postal"
-                  value={centre?.code_postal || "—"}
-                />
-                <InfoRow
-                  icon={<Phone size={18} />}
+                  icon={<Phone size={16} />}
                   label="Téléphone"
-                  value={centre?.telephone_centre || "—"}
+                  value={centre.telephone_centre || "—"}
                 />
                 <InfoRow
-                  icon={<Home size={18} />}
+                  icon={<MapPin size={16} />}
                   label="Adresse"
-                  value={centre?.adresse || "—"}
+                  value={centre.adresse || "—"}
                 />
               </div>
             </section>
 
-            <aside className="rounded-[40px] bg-[#436D75] p-10 text-white shadow-2xl border border-white/10">
-              <div className="mb-8">
-                <h3 className="text-xl font-black uppercase tracking-[0.3em]">
-                  Fiche institutionnelle
-                </h3>
-                <p className="mt-3 text-sm text-[#D9E8D1] leading-6">
-                  Toutes les données de votre centre sont centralisées ici. Vous
-                  pouvez les mettre à jour dès que nécessaire.
-                </p>
+            <section className="rounded-[30px] border border-[#D7E4E8] bg-[#F7FBFC] p-6 shadow-sm">
+              <h2 className="text-lg font-black text-[#244047]">Actions Rapides</h2>
+              <p className="mt-1 text-xs text-gray-500">
+                Raccourcis de gestion pour votre centre.
+              </p>
+              <div className="mt-4 grid gap-2">
+                {quickLinks.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    className="inline-flex items-center justify-between rounded-xl border border-[#D7E4E8] bg-white px-3 py-2 text-sm font-bold text-[#2D4E56] hover:bg-[#EEF5F7] transition"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      {link.icon}
+                      {link.label}
+                    </span>
+                    <span className="text-xs text-gray-400">Ouvrir</span>
+                  </Link>
+                ))}
               </div>
-              <div className="space-y-6">
-                <StatRow
-                  icon={<Building2 size={18} />}
-                  label="Structure"
-                  value={centre?.nom}
-                />
-                <StatRow
-                  icon={<Users size={18} />}
-                  label="Responsable"
-                  value={`${user?.nom} ${user?.prenom}`}
-                />
-                <StatRow
-                  icon={<CalendarCheck size={18} />}
-                  label="Locaux"
-                  value={`${metrics.espaces} élément(s)`}
-                />
-                <StatRow
-                  icon={<LayoutGrid size={18} />}
-                  label="Clubs"
-                  value={`${metrics.clubs} actif(s)`}
-                />
+            </section>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <section className="rounded-[30px] border border-gray-100 bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-black text-[#1A1C1E]">Clubs de Mon Centre</h3>
+              <p className="mt-1 text-xs text-gray-500">Seulement les clubs rattachés à votre centre.</p>
+
+              <div className="mt-4 space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                {(centre.clubs ?? []).length === 0 ? (
+                  <p className="text-sm text-gray-400">Aucun club rattaché.</p>
+                ) : (
+                  (centre.clubs ?? []).map((club: any) => (
+                    <div
+                      key={club.id}
+                      className="rounded-xl border border-gray-100 px-3 py-2 flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="font-bold text-sm text-[#203A43]">{club.nom}</p>
+                        <p className="text-[11px] text-gray-500">
+                          Responsable: {club.responsable ? `${club.responsable.nom} ${club.responsable.prenom}` : "Non assigné"}
+                        </p>
+                      </div>
+                      <span
+                        className={`text-[10px] font-black uppercase px-2 py-1 rounded-full ${
+                          club.est_actif === false
+                            ? "bg-gray-100 text-gray-500"
+                            : "bg-[#D9E8D1] text-[#436D75]"
+                        }`}
+                      >
+                        {club.est_actif === false ? "Inactif" : "Actif"}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
-            </aside>
+            </section>
+
+            <section className="rounded-[30px] border border-gray-100 bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-black text-[#1A1C1E]">Locaux du Centre</h3>
+              <p className="mt-1 text-xs text-gray-500">Vision opérationnelle des espaces disponibles.</p>
+
+              <div className="mt-4 space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                {(centre.locaux ?? []).length === 0 ? (
+                  <p className="text-sm text-gray-400">Aucun local enregistré.</p>
+                ) : (
+                  (centre.locaux ?? []).map((local: any) => (
+                    <div
+                      key={local.id}
+                      className="rounded-xl border border-gray-100 px-3 py-2 flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="font-bold text-sm text-[#203A43]">{local.nom}</p>
+                        <p className="text-[11px] text-gray-500">
+                          {local.type || "Type non défini"} • Capacité: {local.capacite ?? "—"}
+                        </p>
+                      </div>
+                      <span
+                        className={`text-[10px] font-black uppercase px-2 py-1 rounded-full ${
+                          local.est_actif === false
+                            ? "bg-gray-100 text-gray-500"
+                            : "bg-[#D9E8D1] text-[#436D75]"
+                        }`}
+                      >
+                        {local.est_actif === false ? "Inactif" : "Actif"}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
           </div>
         </>
       )}
@@ -277,31 +359,15 @@ export default function ResponsableCentrePage() {
 
 function InfoRow({ icon, label, value }: any) {
   return (
-    <div className="grid grid-cols-[34px_1fr] gap-4 items-center">
-      <div className="w-10 h-10 rounded-3xl bg-[#F7F3E9] text-[#436D75] flex items-center justify-center shadow-sm">
+    <div className="grid grid-cols-[30px_1fr] items-start gap-3">
+      <div className="h-8 w-8 rounded-xl bg-[#F2F7F8] text-[#436D75] flex items-center justify-center">
         {icon}
       </div>
       <div>
-        <p className="text-[10px] uppercase tracking-[0.35em] text-gray-400 font-black">
+        <p className="text-[10px] uppercase tracking-[0.25em] font-black text-gray-400">
           {label}
         </p>
-        <p className="mt-2 text-sm text-[#1A1C1E] font-bold">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function StatRow({ icon, label, value }: any) {
-  return (
-    <div className="flex items-start gap-4">
-      <div className="w-11 h-11 rounded-3xl bg-white/10 text-white flex items-center justify-center shadow-sm">
-        {icon}
-      </div>
-      <div>
-        <p className="text-[10px] uppercase tracking-[0.3em] text-white/70 font-black">
-          {label}
-        </p>
-        <p className="mt-2 text-sm font-black">{value}</p>
+        <p className="mt-1 text-sm font-bold text-[#203A43]">{value}</p>
       </div>
     </div>
   );
