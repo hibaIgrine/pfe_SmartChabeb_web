@@ -32,6 +32,24 @@ export type EventItem = {
 export type EventDetail = EventItem & {
   participants?: EventParticipant[];
   createur?: { id: string; nom: string; prenom: string; role: string };
+  ratingAverage?: number;
+  ratingCount?: number;
+  canRate?: boolean;
+  myFeedback?: EventFeedback | null;
+  recentFeedbacks?: EventFeedback[];
+};
+
+export type EventFeedback = {
+  id: string;
+  note: number;
+  commentaire?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  user?: {
+    id: string;
+    nom: string;
+    prenom: string;
+  };
 };
 
 export type ParticipantStatus = "EN_ATTENTE" | "CONFIRME" | "REFUSE" | "ANNULE";

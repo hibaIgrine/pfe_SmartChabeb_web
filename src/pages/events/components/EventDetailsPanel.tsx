@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { Star } from "lucide-react";
 import type {
   EventDetail,
   EventParticipant,
@@ -18,6 +20,12 @@ type Props = {
     participantId: string,
     checkin: boolean,
   ) => void;
+  onSubmitFeedback: (
+    eventId: string,
+    note: number,
+    commentaire: string,
+  ) => Promise<void>;
+  isSubmittingFeedback: boolean;
 };
 
 const statusBadge: Record<string, string> = {
@@ -32,10 +40,45 @@ export default function EventDetailsPanel({
   canManageParticipants,
   onUpdateParticipantStatus,
   onToggleCheckin,
+  onSubmitFeedback,
+  isSubmittingFeedback,
 }: Props) {
+  const [myNote, setMyNote] = useState(0);
+  const [myCommentaire, setMyCommentaire] = useState("");
+
+  useEffect(() => {
+    setMyNote(selectedDetail?.myFeedback?.note ?? 0);
+    setMyCommentaire(selectedDetail?.myFeedback?.commentaire ?? "");
+  }, [
+    selectedDetail?.id,
+    selectedDetail?.myFeedback?.note,
+    selectedDetail?.myFeedback?.commentaire,
+  ]);
+
   const participants = selectedDetail?.participants ?? [];
   const confirmed = participants.filter((p) => p.status === "CONFIRME");
   const waiting = participants.filter((p) => p.status === "EN_ATTENTE");
+  const feedbacks = selectedDetail?.recentFeedbacks ?? [];
+
+  const renderStars = (value: number, size = 16) => {
+    return (
+      <div className="flex items-center gap-1">
+        {Array.from({ length: 5 }).map((_, index) => {
+          const starValue = index + 1;
+          const active = starValue <= Math.round(value);
+          return (
+            <Star
+              key={starValue}
+              size={size}
+              className={
+                active ? "text-amber-500 fill-amber-500" : "text-gray-300"
+              }
+            />
+          );
+        })}
+      </div>
+    );
+  };
 
   const renderParticipantRow = (participant: EventParticipant) => (
     <div
@@ -171,6 +214,118 @@ export default function EventDetailsPanel({
             <p className="font-semibold text-gray-700">
               {selectedDetail.participants?.length ?? 0}
             </p>
+          </div>
+
+          <div className="pt-2 border-t border-gray-100 space-y-3">
+            <p className="text-[10px] uppercase font-black tracking-wider text-gray-400">
+              Feedback & notation
+            </p>
+
+            <div className="flex items-center justify-between rounded-xl bg-[#F7FAFC] border border-gray-100 p-3">
+              <div>
+                <p className="text-xs text-gray-500 font-bold">
+                  Moyenne des notes
+                </p>
+                <div className="mt-1">
+                  {renderStars(selectedDetail.ratingAverage ?? 0, 18)}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-black text-[#203A43]">
+                  {(selectedDetail.ratingAverage ?? 0).toFixed(1)}
+                </p>
+                <p className="text-[11px] font-semibold text-gray-500">
+                  {selectedDetail.ratingCount ?? 0} avis
+                </p>
+              </div>
+            </div>
+
+            {selectedDetail.canRate && (
+              <div className="rounded-xl border border-gray-100 p-3 bg-white/70 space-y-3">
+                <p className="text-xs font-black text-[#203A43] uppercase tracking-wider">
+                  Votre note
+                </p>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, index) => {
+                    const starValue = index + 1;
+                    const active = starValue <= myNote;
+                    return (
+                      <button
+                        key={starValue}
+                        type="button"
+                        onClick={() => setMyNote(starValue)}
+                        className="p-0.5"
+                        aria-label={`Noter ${starValue} sur 5`}
+                      >
+                        <Star
+                          size={20}
+                          className={
+                            active
+                              ? "text-amber-500 fill-amber-500"
+                              : "text-gray-300"
+                          }
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <textarea
+                  value={myCommentaire}
+                  onChange={(event) => setMyCommentaire(event.target.value)}
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Ajoutez un commentaire (optionnel)"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#436D75]/20"
+                />
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    disabled={isSubmittingFeedback || myNote < 1}
+                    onClick={() =>
+                      selectedDetail &&
+                      onSubmitFeedback(selectedDetail.id, myNote, myCommentaire)
+                    }
+                    className="px-3 py-2 rounded-lg bg-[#436D75] text-white text-xs font-black disabled:opacity-60 hover:bg-[#33545B] transition"
+                  >
+                    {isSubmittingFeedback ? "Envoi..." : "Envoyer mon feedback"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {feedbacks.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] uppercase font-black tracking-wider text-gray-400">
+                  Derniers commentaires
+                </p>
+                {feedbacks.map((feedback) => (
+                  <div
+                    key={feedback.id}
+                    className="rounded-xl border border-gray-100 p-3 bg-white"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-bold text-gray-700">
+                        {feedback.user
+                          ? `${feedback.user.nom} ${feedback.user.prenom}`
+                          : "Membre"}
+                      </p>
+                      {renderStars(feedback.note, 14)}
+                    </div>
+                    {feedback.commentaire ? (
+                      <p className="text-xs text-gray-600 mt-2 leading-relaxed">
+                        {feedback.commentaire}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-400 mt-2 italic">
+                        Aucun commentaire.
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="pt-2 border-t border-gray-100">

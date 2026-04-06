@@ -61,6 +61,7 @@ export default function EventsPage() {
   const [presenceParticipants, setPresenceParticipants] = useState<any[]>([]);
   const [isPresenceLoading, setIsPresenceLoading] = useState(false);
   const [isPresenceUpdating, setIsPresenceUpdating] = useState(false);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [form, setForm] = useState<EventForm>(getEmptyForm());
 
   const [notification, setNotification] = useState<AlertState>(null);
@@ -389,6 +390,38 @@ export default function EventsPage() {
     }
   };
 
+  const submitFeedback = async (
+    eventId: string,
+    note: number,
+    commentaire: string,
+  ) => {
+    setIsSubmittingFeedback(true);
+    try {
+      await api.post(
+        `/events/${eventId}/feedback`,
+        {
+          note,
+          commentaire,
+        },
+        { headers },
+      );
+
+      showAlert("Merci, votre feedback a ete enregistre.", "success");
+      await loadDetail(eventId);
+    } catch (error: any) {
+      const apiMessage = error?.response?.data?.message;
+      const detailedMessage = Array.isArray(apiMessage)
+        ? apiMessage.join(" | ")
+        : apiMessage;
+      showAlert(
+        detailedMessage || "Impossible d'envoyer votre feedback.",
+        "error",
+      );
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
+
   return (
     <div className="space-y-8 pb-8">
       {notification && (
@@ -439,6 +472,8 @@ export default function EventsPage() {
           canManageParticipants={canManageParticipants}
           onUpdateParticipantStatus={updateParticipantStatus}
           onToggleCheckin={toggleParticipantCheckin}
+          onSubmitFeedback={submitFeedback}
+          isSubmittingFeedback={isSubmittingFeedback}
         />
       </div>
 
