@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import api from "../../api/axios";
 import EventDetailsPanel from "./components/EventDetailsPanel";
+import EventsDashboardStats from "./components/EventsDashboardStats";
 import EventFormModal from "./components/EventFormModal";
 import EventHeader from "./components/EventHeader";
 import EventPresenceModal from "./components/EventPresenceModal";
@@ -12,6 +13,7 @@ import type {
   AlertState,
   ClubLite,
   EventDetail,
+  EventDashboardStats,
   EventForm,
   EventItem,
   LocalLite,
@@ -43,6 +45,8 @@ export default function EventsPage() {
   const [locaux, setLocaux] = useState<LocalLite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [dashboardStats, setDashboardStats] =
+    useState<EventDashboardStats | null>(null);
 
   const [showInactive, setShowInactive] = useState(true);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -77,17 +81,22 @@ export default function EventsPage() {
   const loadBaseData = async () => {
     setIsLoading(true);
     try {
-      const [eventsRes, clubsRes, locauxRes] = await Promise.all([
+      const [eventsRes, clubsRes, locauxRes, statsRes] = await Promise.all([
         api.get(`/events?includeInactive=${showInactive}`, { headers }),
         api.get("/clubs", { headers }),
         api.get("/locaux", { headers }),
+        api.get(`/events/stats/dashboard?includeInactive=${showInactive}`, {
+          headers,
+        }),
       ]);
 
       setEvents(Array.isArray(eventsRes.data) ? eventsRes.data : []);
       setClubs(Array.isArray(clubsRes.data) ? clubsRes.data : []);
       setLocaux(Array.isArray(locauxRes.data) ? locauxRes.data : []);
+      setDashboardStats(statsRes.data ?? null);
     } catch {
       showAlert("Erreur lors du chargement des événements.", "error");
+      setDashboardStats(null);
     } finally {
       setIsLoading(false);
     }
@@ -277,7 +286,10 @@ export default function EventsPage() {
       const detailedMessage = Array.isArray(apiMessage)
         ? apiMessage.join(" | ")
         : apiMessage;
-      showAlert(detailedMessage || "Impossible d'annuler l'événement.", "error");
+      showAlert(
+        detailedMessage || "Impossible d'annuler l'événement.",
+        "error",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -408,6 +420,8 @@ export default function EventsPage() {
         onCreate={openCreateModal}
       />
 
+      <EventsDashboardStats stats={dashboardStats} isLoading={isLoading} />
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <EventsList
           isLoading={isLoading}
@@ -475,7 +489,9 @@ export default function EventsPage() {
               Confirmer l'annulation
             </h3>
             <p className="mt-2 text-center text-sm text-gray-600 leading-relaxed">
-              Vous allez annuler l'événement <span className="font-black">{cancelTarget.nom}</span>. Les participants recevront une notification d'annulation.
+              Vous allez annuler l'événement{" "}
+              <span className="font-black">{cancelTarget.nom}</span>. Les
+              participants recevront une notification d'annulation.
             </p>
 
             <div className="mt-6 flex items-center justify-end gap-3">

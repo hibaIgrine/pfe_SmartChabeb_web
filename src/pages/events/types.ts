@@ -69,3 +69,21 @@ export type AlertState = {
   msg: string;
   type: "success" | "error";
 } | null;
+
+export type EventPopularItem = {
+  id: string;
+  nom: string;
+  participants: number;
+  confirmed: number;
+  waiting: number;
+  capacity: number;
+  fillRate: number;
+};
+
+export type EventDashboardStats = {
+  nombreEvenements: number;
+  nombreParticipants: number;
+  tauxParticipation: number;
+  tauxRemplissage: number;
+  evenementsPopulaires: EventPopularItem[];
+};
