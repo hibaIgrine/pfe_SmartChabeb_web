@@ -13,28 +13,42 @@ import { Input, Select } from "./FormFields";
 type Props = {
   isOpen: boolean;
   editingEvent: EventItem | null;
+  isAdmin: boolean;
   form: EventForm;
   clubs: ClubLite[];
   filteredLocaux: LocalLite[];
+  gouvernorats: string[];
+  centresByGouvernorat: Array<{ id: string; nom: string }>;
+  selectedGouvernorat: string;
+  selectedCentreForAdmin: string;
   today: string;
   formAlert: AlertState;
   isSaving: boolean;
   onClose: () => void;
   onSubmit: () => void;
+  onChangeGouvernorat: (value: string) => void;
+  onChangeCentreForAdmin: (value: string) => void;
   onChangeForm: (patch: Partial<EventForm>) => void;
 };
 
 export default function EventFormModal({
   isOpen,
   editingEvent,
+  isAdmin,
   form,
   clubs,
   filteredLocaux,
+  gouvernorats,
+  centresByGouvernorat,
+  selectedGouvernorat,
+  selectedCentreForAdmin,
   today,
   formAlert,
   isSaving,
   onClose,
   onSubmit,
+  onChangeGouvernorat,
+  onChangeCentreForAdmin,
   onChangeForm,
 }: Props) {
   if (!isOpen) return null;
@@ -183,6 +197,27 @@ export default function EventFormModal({
             onChange={(v) => onChangeForm({ club_id: v, locaux_id: "" })}
             options={clubs.map((c) => ({ value: c.id, label: c.nom }))}
           />
+
+          {isAdmin && (
+            <Select
+              label="Région"
+              value={selectedGouvernorat}
+              onChange={onChangeGouvernorat}
+              options={gouvernorats.map((g) => ({ value: g, label: g }))}
+            />
+          )}
+
+          {isAdmin && (
+            <Select
+              label="Centre"
+              value={selectedCentreForAdmin}
+              onChange={onChangeCentreForAdmin}
+              options={centresByGouvernorat.map((centre) => ({
+                value: centre.id,
+                label: centre.nom,
+              }))}
+            />
+          )}
 
           <Select
             label="Local"

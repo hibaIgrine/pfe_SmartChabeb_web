@@ -28,6 +28,8 @@ import {
 
 export default function EventsPage() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isAdmin = user?.role === "ADMIN";
+  const isResponsableCentre = user?.role === "RESPONSABLE_CENTRE";
   const canManageParticipants = [
     "ADMIN",
     "RESPONSABLE_CENTRE",
@@ -63,16 +65,100 @@ export default function EventsPage() {
   const [isPresenceUpdating, setIsPresenceUpdating] = useState(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [form, setForm] = useState<EventForm>(getEmptyForm());
+  const [resolvedCentreId, setResolvedCentreId] = useState(
+    user?.centre?.id ?? user?.id_centre ?? "",
+  );
+  const [selectedGouvernorat, setSelectedGouvernorat] = useState("");
+  const [selectedCentreForAdmin, setSelectedCentreForAdmin] = useState("");
 
   const [notification, setNotification] = useState<AlertState>(null);
   const [formAlert, setFormAlert] = useState<AlertState>(null);
 
   const today = getTodayDate();
 
-  const selectedClub = clubs.find((c) => c.id === form.club_id);
-  const filteredLocaux = selectedClub?.id_centre
-    ? locaux.filter((local) => local.id_centre === selectedClub.id_centre)
-    : locaux;
+  const scopedClubs = useMemo(() => {
+    if (!isResponsableCentre || !resolvedCentreId) return clubs;
+    return clubs.filter((club) => club.id_centre === resolvedCentreId);
+  }, [clubs, isResponsableCentre, resolvedCentreId]);
+
+  const scopedEvents = useMemo(() => {
+    if (!isResponsableCentre || !resolvedCentreId) return events;
+    const clubIds = new Set(scopedClubs.map((club) => club.id));
+    return events.filter((event) => clubIds.has(event.club_id));
+  }, [events, isResponsableCentre, resolvedCentreId, scopedClubs]);
+
+  const scopedDashboardStats = useMemo(() => {
+    if (!dashboardStats || !isResponsableCentre) return dashboardStats;
+
+    const scopedEventIds = new Set(scopedEvents.map((event) => event.id));
+    const scopedClubIds = new Set(scopedClubs.map((club) => club.id));
+
+    return {
+      ...dashboardStats,
+      nombreEvenements: scopedEvents.length,
+      evenementsPopulaires: (dashboardStats.evenementsPopulaires || []).filter(
+        (event) => scopedEventIds.has(event.id),
+      ),
+      participationParClub: (dashboardStats.participationParClub || []).filter(
+        (club) => scopedClubIds.has(club.clubId),
+      ),
+    };
+  }, [dashboardStats, isResponsableCentre, scopedClubs, scopedEvents]);
+
+  const selectedClub = scopedClubs.find((c) => c.id === form.club_id);
+
+  const gouvernorats = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          locaux
+            .map((local) => local?.centre?.gouvernorat)
+            .filter((g): g is string => Boolean(g)),
+        ),
+      ),
+    [locaux],
+  );
+
+  const centresByGouvernorat = useMemo(() => {
+    const map = new Map<string, { id: string; nom: string }>();
+    locaux.forEach((local) => {
+      const centreId = local.id_centre || local.centre?.id;
+      const centreNom = local.centre?.nom;
+      const gouv = local.centre?.gouvernorat;
+
+      if (!centreId || !centreNom) return;
+      if (selectedGouvernorat && gouv !== selectedGouvernorat) return;
+
+      if (!map.has(centreId)) {
+        map.set(centreId, { id: centreId, nom: centreNom });
+      }
+    });
+    return Array.from(map.values());
+  }, [locaux, selectedGouvernorat]);
+
+  const filteredLocaux = useMemo(() => {
+    if (isAdmin) {
+      if (!selectedCentreForAdmin) return [];
+      return locaux.filter((local) => local.id_centre === selectedCentreForAdmin);
+    }
+
+    if (isResponsableCentre && resolvedCentreId) {
+      return locaux.filter((local) => local.id_centre === resolvedCentreId);
+    }
+
+    if (selectedClub?.id_centre) {
+      return locaux.filter((local) => local.id_centre === selectedClub.id_centre);
+    }
+
+    return locaux;
+  }, [
+    isAdmin,
+    isResponsableCentre,
+    locaux,
+    resolvedCentreId,
+    selectedCentreForAdmin,
+    selectedClub?.id_centre,
+  ]);
 
   const showAlert = (msg: string, type: "success" | "error") => {
     setNotification({ msg, type });
@@ -82,6 +168,16 @@ export default function EventsPage() {
   const loadBaseData = async () => {
     setIsLoading(true);
     try {
+      if (isResponsableCentre) {
+        try {
+          const meRes = await api.get("/users/me/profile", { headers });
+          const me = meRes.data;
+          setResolvedCentreId(me?.centre?.id ?? me?.id_centre ?? "");
+        } catch {
+          setResolvedCentreId(user?.centre?.id ?? user?.id_centre ?? "");
+        }
+      }
+
       const [eventsRes, clubsRes, locauxRes, statsRes] = await Promise.all([
         api.get(`/events?includeInactive=${showInactive}`, { headers }),
         api.get("/clubs", { headers }),
@@ -125,8 +221,45 @@ export default function EventsPage() {
     }
   }, [form.club_id, form.locaux_id, filteredLocaux]);
 
+  useEffect(() => {
+    if (!selectedEventId) return;
+
+    const stillVisible = scopedEvents.some((event) => event.id === selectedEventId);
+    if (!stillVisible) {
+      setSelectedEventId(null);
+      setSelectedDetail(null);
+    }
+  }, [selectedEventId, scopedEvents]);
+
+  useEffect(() => {
+    if (!isAdmin || !form.club_id) return;
+    const club = clubs.find((c) => c.id === form.club_id);
+    if (!club?.id_centre) return;
+
+    const matchedLocal = locaux.find((l) => l.id_centre === club.id_centre);
+    const inferredGouv = matchedLocal?.centre?.gouvernorat ?? "";
+
+    if (inferredGouv) {
+      setSelectedGouvernorat(inferredGouv);
+    }
+    setSelectedCentreForAdmin(club.id_centre);
+  }, [isAdmin, form.club_id, clubs, locaux]);
+
+  useEffect(() => {
+    if (!isAdmin || !selectedCentreForAdmin) return;
+    const stillExists = centresByGouvernorat.some(
+      (centre) => centre.id === selectedCentreForAdmin,
+    );
+    if (!stillExists) {
+      setSelectedCentreForAdmin("");
+      setForm((prev) => ({ ...prev, locaux_id: "" }));
+    }
+  }, [isAdmin, selectedCentreForAdmin, centresByGouvernorat]);
+
   const resetForm = () => {
     setForm(getEmptyForm());
+    setSelectedGouvernorat("");
+    setSelectedCentreForAdmin("");
     setEditingEvent(null);
     setFormAlert(null);
   };
@@ -163,6 +296,12 @@ export default function EventsPage() {
     });
     setFormAlert(null);
     setIsModalOpen(true);
+
+    if (isAdmin) {
+      const local = locaux.find((l) => l.id === event.locaux_id);
+      setSelectedCentreForAdmin(local?.id_centre || "");
+      setSelectedGouvernorat(local?.centre?.gouvernorat || "");
+    }
   };
 
   const submitForm = async () => {
@@ -495,12 +634,12 @@ export default function EventsPage() {
         onCreate={openCreateModal}
       />
 
-      <EventsDashboardStats stats={dashboardStats} isLoading={isLoading} />
+      <EventsDashboardStats stats={scopedDashboardStats} isLoading={isLoading} />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <EventsList
           isLoading={isLoading}
-          events={events}
+          events={scopedEvents}
           selectedEventId={selectedEventId}
           onView={loadDetail}
           onPresence={openPresence}
@@ -520,14 +659,19 @@ export default function EventsPage() {
         />
       </div>
 
-      <EventsCalendar events={events} onSelectEvent={loadDetail} />
+      <EventsCalendar events={scopedEvents} onSelectEvent={loadDetail} />
 
       <EventFormModal
         isOpen={isModalOpen}
         editingEvent={editingEvent}
+        isAdmin={isAdmin}
         form={form}
-        clubs={clubs}
+        clubs={scopedClubs}
         filteredLocaux={filteredLocaux}
+        gouvernorats={gouvernorats}
+        centresByGouvernorat={centresByGouvernorat}
+        selectedGouvernorat={selectedGouvernorat}
+        selectedCentreForAdmin={selectedCentreForAdmin}
         today={today}
         formAlert={formAlert}
         isSaving={isSaving}
@@ -536,6 +680,15 @@ export default function EventsPage() {
           resetForm();
         }}
         onSubmit={submitForm}
+        onChangeGouvernorat={(value) => {
+          setSelectedGouvernorat(value);
+          setSelectedCentreForAdmin("");
+          setForm((prev) => ({ ...prev, locaux_id: "" }));
+        }}
+        onChangeCentreForAdmin={(value) => {
+          setSelectedCentreForAdmin(value);
+          setForm((prev) => ({ ...prev, locaux_id: "" }));
+        }}
         onChangeForm={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
       />
 

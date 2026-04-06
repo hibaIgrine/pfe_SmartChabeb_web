@@ -33,6 +33,11 @@ type LeaderboardRow = {
   prenom: string;
   points: number;
   badge: Badge;
+  centre?: {
+    id?: string;
+    nom?: string;
+    gouvernorat?: string;
+  };
 };
 
 const badgeClass: Record<string, string> = {
@@ -43,6 +48,9 @@ const badgeClass: Record<string, string> = {
 };
 
 export default function ProfileGamificationPage() {
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const isAdmin = currentUser?.role === "ADMIN";
+
   const token = localStorage.getItem("token");
   const headers = useMemo(
     () => ({ Authorization: `Bearer ${token}` }),
@@ -53,6 +61,48 @@ export default function ProfileGamificationPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedGouvernorat, setSelectedGouvernorat] = useState("");
+  const [selectedCentreId, setSelectedCentreId] = useState("");
+
+  const gouvernorats = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          leaderboard
+            .map((row) => row.centre?.gouvernorat)
+            .filter((value): value is string => Boolean(value)),
+        ),
+      ),
+    [leaderboard],
+  );
+
+  const centresByGouvernorat = useMemo(() => {
+    const map = new Map<string, { id: string; nom: string }>();
+    leaderboard.forEach((row) => {
+      const centreId = row.centre?.id;
+      const centreNom = row.centre?.nom;
+      const gouv = row.centre?.gouvernorat;
+
+      if (!centreId || !centreNom) return;
+      if (selectedGouvernorat && gouv !== selectedGouvernorat) return;
+
+      if (!map.has(centreId)) {
+        map.set(centreId, { id: centreId, nom: centreNom });
+      }
+    });
+    return Array.from(map.values());
+  }, [leaderboard, selectedGouvernorat]);
+
+  const filteredLeaderboard = useMemo(() => {
+    if (!isAdmin) return leaderboard;
+
+    return leaderboard.filter((row) => {
+      const matchGouv =
+        !selectedGouvernorat || row.centre?.gouvernorat === selectedGouvernorat;
+      const matchCentre = !selectedCentreId || row.centre?.id === selectedCentreId;
+      return matchGouv && matchCentre;
+    });
+  }, [isAdmin, leaderboard, selectedCentreId, selectedGouvernorat]);
 
   useEffect(() => {
     const load = async () => {
@@ -162,13 +212,57 @@ export default function ProfileGamificationPage() {
       <div className="rounded-[36px] border border-gray-100 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-black italic text-[#203A43]">
-            Classement des membres
+            Classement des membres de mon centre
           </h3>
           <Trophy size={18} className="text-amber-500" />
         </div>
 
+        {isAdmin && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+            <select
+              value={selectedGouvernorat}
+              onChange={(e) => {
+                setSelectedGouvernorat(e.target.value);
+                setSelectedCentreId("");
+              }}
+              className="rounded-2xl border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#436D75]/40"
+            >
+              <option value="">Toutes les régions</option>
+              {gouvernorats.map((gouv) => (
+                <option key={gouv} value={gouv}>
+                  {gouv}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedCentreId}
+              onChange={(e) => setSelectedCentreId(e.target.value)}
+              className="rounded-2xl border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#436D75]/40"
+            >
+              <option value="">Tous les centres</option>
+              {centresByGouvernorat.map((centre) => (
+                <option key={centre.id} value={centre.id}>
+                  {centre.nom}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedGouvernorat("");
+                setSelectedCentreId("");
+              }}
+              className="rounded-2xl border border-gray-200 px-3 py-2 text-sm font-black text-gray-600 hover:bg-gray-50"
+            >
+              Réinitialiser les filtres
+            </button>
+          </div>
+        )}
+
         <div className="mt-4 space-y-2">
-          {leaderboard.map((row) => (
+          {filteredLeaderboard.map((row) => (
             <div
               key={row.id}
               className="rounded-2xl border border-gray-100 bg-[#F9FBFC] px-4 py-3 flex items-center justify-between"

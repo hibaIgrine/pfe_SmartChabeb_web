@@ -10,6 +10,11 @@ export type LocalLite = {
   type?: string;
   capacite?: number | null;
   id_centre?: string;
+  centre?: {
+    id?: string;
+    nom?: string;
+    gouvernorat?: string;
+  };
 };
 
 export type EventTimelineStep = {

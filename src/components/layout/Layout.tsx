@@ -98,9 +98,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "ADMIN" ||
-            role === "RESPONSABLE_CENTRE" ||
-            role === "RESPONSABLE_CLUB") && (
+          {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
               to="/locaux"
               icon={<Building2 size={18} />}
@@ -123,7 +121,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <SidebarItem
             to="/profile"
             icon={<UserCircle size={18} />}
-            label="Mon Profil"
+            label="Classement des membres"
             active={location.pathname === "/profile"}
           />
 
