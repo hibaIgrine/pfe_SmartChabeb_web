@@ -19,6 +19,11 @@ const DAYS = [
 export const PlanningInput = ({ value, onChange }: PlanningInputProps) => {
   const [slots, setSlots] = useState<PlanningSlot[]>([]);
 
+  const isInvalidSlot = (slot: PlanningSlot) => {
+    if (!slot.startTime || !slot.endTime) return false;
+    return slot.endTime <= slot.startTime;
+  };
+
   // Parse initial value (could be JSON or string)
   useEffect(() => {
     try {
@@ -97,7 +102,11 @@ export const PlanningInput = ({ value, onChange }: PlanningInputProps) => {
           {slots.map((slot, index) => (
             <div
               key={index}
-              className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-[20px] shadow-sm border border-transparent hover:border-smart-teal/20 transition-all animate-in slide-in-from-top-2"
+              className={`flex flex-wrap items-center gap-2 p-3 bg-white rounded-[20px] shadow-sm border transition-all animate-in slide-in-from-top-2 ${
+                isInvalidSlot(slot)
+                  ? "border-red-300"
+                  : "border-transparent hover:border-smart-teal/20"
+              }`}
             >
               {/* Day selection */}
               <div className="flex-1 min-w-[120px] relative group">
@@ -131,10 +140,17 @@ export const PlanningInput = ({ value, onChange }: PlanningInputProps) => {
                     type="time"
                     value={slot.endTime}
                     onChange={(e) => handleChange(index, "endTime", e.target.value)}
+                    min={slot.startTime || undefined}
                     className="w-[100px] pl-9 pr-3 py-2 bg-smart-sage/10 border-none rounded-xl text-[11px] font-black text-smart-teal outline-none focus:ring-2 focus:ring-smart-teal/20"
                   />
                 </div>
               </div>
+
+              {isInvalidSlot(slot) && (
+                <p className="w-full text-[10px] text-red-500 font-black pl-1 uppercase">
+                  L'heure de fin doit être après l'heure de début.
+                </p>
+              )}
 
               <button
                 type="button"

@@ -60,12 +60,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* NAVIGATION AVEC SCROLL INTERNE (si l'écran est petit) */}
         <nav className="flex-1 px-3 space-y-1 mt-4 overflow-y-auto custom-scrollbar scrollbar-hide">
-          <SidebarItem
-            to="/dashboard"
-            icon={<LayoutDashboard size={18} />}
-            label="Statistiques"
-            active={location.pathname === "/dashboard"}
-          />
+          {role === "ADMIN" && (
+            <SidebarItem
+              to="/dashboard"
+              icon={<LayoutDashboard size={18} />}
+              label="Statistiques"
+              active={location.pathname === "/dashboard"}
+            />
+          )}
 
           {(role === "ADMIN" || role === "RESPONSABLE_CENTRE") && (
             <SidebarItem

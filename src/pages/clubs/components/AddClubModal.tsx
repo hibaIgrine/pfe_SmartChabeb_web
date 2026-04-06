@@ -41,6 +41,29 @@ const validateForm = (data: any) => {
   if (!data.locale) errors.locale = "Veuillez choisir un local.";
   if (data.capacite === "" || parseInt(data.capacite) < 0)
     errors.capacite = "Invalide.";
+
+  if (data.planning) {
+    try {
+      const parsed =
+        typeof data.planning === "string" ? JSON.parse(data.planning) : data.planning;
+      const slots = Array.isArray(parsed?.slots) ? parsed.slots : [];
+
+      const hasInvalidRange = slots.some((slot: any) => {
+        const start = slot?.startTime;
+        const end = slot?.endTime;
+        if (!start || !end) return true;
+        return start >= end;
+      });
+
+      if (hasInvalidRange) {
+        errors.planning =
+          "Heure invalide: l'heure de fin doit être strictement après l'heure de début.";
+      }
+    } catch {
+      errors.planning = "Planning invalide.";
+    }
+  }
+
   return errors;
 };
 
@@ -52,6 +75,8 @@ export const AddClubModal = ({
   setFormData,
   salles,
   categories,
+  lockedCentreId,
+  lockedCentreName,
 }: any) => {
   const [selectedGouvernorat, setSelectedGouvernorat] = useState("");
   const [errors, setErrors] = useState<any>({});
@@ -62,6 +87,7 @@ export const AddClubModal = ({
   const [staffList, setStaffList] = useState([]);
   const [localList, setLocalList] = useState([]); // 💡 Liste des salles/terrains du centre
   const [selectedStaff, setSelectedStaff] = useState<any[]>([]);
+  const [selectedResponsableId, setSelectedResponsableId] = useState("");
   const token = localStorage.getItem("token");
 
   // 🔄 Charger le Staff ET les Locaux dès que le centre change
@@ -71,7 +97,7 @@ export const AddClubModal = ({
 
       // 1. Charger le staff
       api
-        .get(`/users/staff/${formData.id_salle}`, { headers })
+        .get(`/users/staff-by-centre/${formData.id_salle}`, { headers })
         .then((res) => setStaffList(res.data))
         .catch(() => setStaffList([]));
 
@@ -84,6 +110,7 @@ export const AddClubModal = ({
       setStaffList([]);
       setLocalList([]);
       setSelectedStaff([]);
+      setSelectedResponsableId("");
     }
   }, [formData.id_salle, isOpen, token]);
 
@@ -102,6 +129,15 @@ export const AddClubModal = ({
         : salles.filter((s: any) => s.gouvernorat === selectedGouvernorat),
     [salles, selectedGouvernorat],
   );
+
+  useEffect(() => {
+    if (isOpen && lockedCentreId && formData.id_salle !== lockedCentreId) {
+      setFormData((prev: any) => ({
+        ...prev,
+        id_salle: lockedCentreId,
+      }));
+    }
+  }, [isOpen, lockedCentreId, formData.id_salle, setFormData]);
 
   const handleLogoUpload = useCallback(
     (file: File) => {
@@ -128,10 +164,14 @@ export const AddClubModal = ({
 
     const payload = {
       ...formData,
-      staff: selectedStaff,
+      staff: selectedStaff.filter(
+        (s) => s.id_utilisateur !== selectedResponsableId,
+      ),
       id_coach:
+        selectedResponsableId ||
         selectedStaff.find((s) => s.role_dans_club === "COACH")
-          ?.id_utilisateur || formData.id_coach,
+          ?.id_utilisateur ||
+        formData.id_coach,
     };
     onSubmit(e, payload);
   };
@@ -141,6 +181,7 @@ export const AddClubModal = ({
     setLogoPreview("");
     setSelectedGouvernorat("");
     setSelectedStaff([]);
+    setSelectedResponsableId("");
     setIsCustomCategory(false);
     onClose();
   };
@@ -169,62 +210,79 @@ export const AddClubModal = ({
 
         <form onSubmit={handleSubmit} className="space-y-7" noValidate>
           {/* 📍 SECTION 1 : LOCALISATION (Gouvernorat & Centre) */}
-          <div className="bg-white/40 p-6 rounded-[30px] border border-white space-y-4">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
-              Étape 1 : Localisation de l'activité
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative group">
-                <Map
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 z-10"
-                  size={16}
-                />
-                <select
-                  className={`${inputCls()} pl-11`}
-                  value={selectedGouvernorat}
-                  onChange={(e) => {
-                    setSelectedGouvernorat(e.target.value);
-                    setFormData({ ...formData, id_salle: "", locale: "" });
-                  }}
-                >
-                  <option value="">Région / Gouvernorat...</option>
-                  {gouvernorats.map((gov) => (
-                    <option key={gov} value={gov}>
-                      {gov}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="relative group">
-                <Building2
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 z-10"
-                  size={16}
-                />
-                <select
-                  required
-                  className={`${inputCls(errors.id_salle)} pl-11`}
-                  value={formData.id_salle || ""}
-                  onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      id_salle: e.target.value,
-                      locale: "",
-                    });
-                    setErrors({ ...errors, id_salle: null });
-                  }}
-                >
-                  <option value="" disabled>
-                    Choisir un établissement... *
-                  </option>
-                  {filteredSalles.map((s: any) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nom}
-                    </option>
-                  ))}
-                </select>
+          {lockedCentreId ? (
+            <div className="bg-white/40 p-6 rounded-[30px] border border-white space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                Centre rattaché automatiquement
+              </label>
+              <div className="rounded-[20px] bg-white px-4 py-3 border border-smart-sage/30">
+                <p className="text-sm font-black text-smart-teal">
+                  {lockedCentreName || "Mon Centre"}
+                </p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">
+                  Le club sera créé dans ce centre
+                </p>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-white/40 p-6 rounded-[30px] border border-white space-y-4">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                Étape 1 : Localisation de l'activité
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="relative group">
+                  <Map
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 z-10"
+                    size={16}
+                  />
+                  <select
+                    className={`${inputCls()} pl-11`}
+                    value={selectedGouvernorat}
+                    onChange={(e) => {
+                      setSelectedGouvernorat(e.target.value);
+                      setFormData({ ...formData, id_salle: "", locale: "" });
+                    }}
+                  >
+                    <option value="">Région / Gouvernorat...</option>
+                    {gouvernorats.map((gov) => (
+                      <option key={gov} value={gov}>
+                        {gov}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="relative group">
+                  <Building2
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 z-10"
+                    size={16}
+                  />
+                  <select
+                    required
+                    className={`${inputCls(errors.id_salle)} pl-11`}
+                    value={formData.id_salle || ""}
+                    onChange={(e) => {
+                      setFormData({
+                        ...formData,
+                        id_salle: e.target.value,
+                        locale: "",
+                      });
+                      setSelectedResponsableId("");
+                      setErrors({ ...errors, id_salle: null });
+                    }}
+                  >
+                    <option value="" disabled>
+                      Choisir un établissement... *
+                    </option>
+                    {filteredSalles.map((s: any) => (
+                      <option key={s.id} value={s.id}>
+                        {s.nom}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 🖼️ SECTION 2 : LOGO ET INFOS GÉNÉRALES */}
           <div className="space-y-6">
@@ -385,6 +443,27 @@ export const AddClubModal = ({
             <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest ml-1">
               Responsables et Animateurs
             </label>
+            <div className="bg-white/70 rounded-2xl border border-white p-3">
+              <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider block mb-2 ml-1">
+                Responsable du club
+              </label>
+              <select
+                disabled={!formData.id_salle || staffList.length === 0}
+                className={inputCls()}
+                value={selectedResponsableId}
+                onChange={(e) => setSelectedResponsableId(e.target.value)}
+              >
+                <option value="">Aucun responsable sélectionné</option>
+                {staffList.map((s: any) => (
+                  <option key={`resp-${s.id}`} value={s.id}>
+                    {s.nom} {s.prenom} ({s.role})
+                  </option>
+                ))}
+              </select>
+              <p className="text-[9px] text-gray-400 font-bold ml-1 mt-2 uppercase tracking-wide">
+                Ce membre sera enregistré comme responsable du club.
+              </p>
+            </div>
             <div className="grid grid-cols-1 gap-2">
               {formData.id_salle && staffList.length === 0 && (
                 <p className="text-[10px] text-red-400 italic ml-2">
@@ -431,8 +510,16 @@ export const AddClubModal = ({
           {/* 📅 SECTION 5 : PLANNING */}
           <PlanningInput
             value={formData.planning}
-            onChange={(val) => setFormData({ ...formData, planning: val })}
+            onChange={(val) => {
+              setFormData({ ...formData, planning: val });
+              setErrors((prev: any) => ({ ...prev, planning: null }));
+            }}
           />
+          {errors.planning && (
+            <p className="text-red-500 text-[10px] font-black ml-1 uppercase">
+              {errors.planning}
+            </p>
+          )}
 
           {/* 🚀 SUBMIT */}
           <button

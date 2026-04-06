@@ -47,20 +47,63 @@ export default function ClubsPage() {
   const [addFormData, setAddFormData] = useState({ ...EMPTY_FORM });
   const [editFormData, setEditFormData] = useState({ ...EMPTY_FORM });
   const navigate = useNavigate();
+  const currentUser = useMemo(() => {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  }, []);
+  const [resolvedCentreId, setResolvedCentreId] = useState(
+    currentUser?.id_centre ?? currentUser?.centre?.id ?? "",
+  );
+  const [resolvedCentreName, setResolvedCentreName] = useState(
+    currentUser?.centre?.nom ?? "",
+  );
+  const isResponsableCentre = currentUser?.role === "RESPONSABLE_CENTRE";
+  const myCentreId = resolvedCentreId;
+  const myCentreName = resolvedCentreName;
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
   const loadAllData = async () => {
     setIsLoading(true);
     try {
-      const [resC, resS, resU] = await Promise.all([
+      const [resC, resS] = await Promise.all([
         api.get("/clubs", { headers }),
         api.get("/centres", { headers }),
-        api.get("/users", { headers }),
       ]);
       setClubs(resC.data);
       setSalles(resS.data);
-      setCoaches(resU.data.filter((u: any) => u.role === "COACH"));
+
+      try {
+        const meRes = await api.get("/users/me/profile", { headers });
+        const me = meRes.data;
+        setResolvedCentreId(me?.centre?.id ?? me?.id_centre ?? "");
+        setResolvedCentreName(me?.centre?.nom ?? "");
+      } catch {
+        setResolvedCentreId(currentUser?.id_centre ?? currentUser?.centre?.id ?? "");
+        setResolvedCentreName(currentUser?.centre?.nom ?? "");
+      }
+
+      try {
+        if (currentUser?.role === "ADMIN") {
+          const resU = await api.get("/users", { headers });
+          setCoaches(
+            (Array.isArray(resU.data) ? resU.data : []).filter(
+              (u: any) => u.role === "COACH",
+            ),
+          );
+        } else if (myCentreId) {
+          const resStaff = await api.get(`/users/staff-by-centre/${myCentreId}`, {
+            headers,
+          });
+          setCoaches(Array.isArray(resStaff.data) ? resStaff.data : []);
+        } else {
+          setCoaches([]);
+        }
+      } catch {
+        // Do not block page rendering if staff/coaches cannot be loaded.
+        setCoaches([]);
+      }
+
       return resC.data; // 💡 On retourne les nouveaux clubs pour la suite
     } catch {
       showAlert("Erreur de chargement", "error");
@@ -110,9 +153,15 @@ export default function ClubsPage() {
           .includes(searchQuery.toLowerCase());
         const matchCat =
           selectedCategory === "ALL" || c.categorie === selectedCategory;
+        const shouldUseLocationFilters = !isResponsableCentre;
         const matchGov =
-          !selectedGouvernorat || c.centre?.gouvernorat === selectedGouvernorat;
-        const matchCentre = !selectedCentre || c.id_centre === selectedCentre;
+          !shouldUseLocationFilters ||
+          !selectedGouvernorat ||
+          c.centre?.gouvernorat === selectedGouvernorat;
+        const matchCentre =
+          !shouldUseLocationFilters ||
+          !selectedCentre ||
+          c.id_centre === selectedCentre;
         const matchStatus =
           selectedStatus === "ALL" ||
           (selectedStatus === "ACTIVE" ? c.est_actif : !c.est_actif);
@@ -122,6 +171,7 @@ export default function ClubsPage() {
       }),
     [
       clubs,
+      isResponsableCentre,
       searchQuery,
       selectedCategory,
       selectedGouvernorat,
@@ -137,12 +187,14 @@ export default function ClubsPage() {
 
   const handleCreate = async (e: any, payload: any) => {
     e.preventDefault();
+    const resolvedCentreId = isResponsableCentre ? myCentreId : payload.id_salle;
     try {
       await api.post(
         "/clubs",
         {
           ...payload,
-          id_centre: payload.id_salle,
+          id_salle: resolvedCentreId,
+          id_centre: resolvedCentreId,
           locale_fixe: payload.locale,
         },
         { headers },
@@ -247,6 +299,13 @@ export default function ClubsPage() {
         </div>
         <button
           onClick={() => {
+            if (isResponsableCentre && !myCentreId) {
+              showAlert(
+                "Aucun centre associé au responsable courant.",
+                "error",
+              );
+              return;
+            }
             setAddFormData({ ...EMPTY_FORM });
             setIsAddModalOpen(true);
           }}
@@ -255,7 +314,11 @@ export default function ClubsPage() {
           <Plus size={18} /> Nouveau Club
         </button>
       </div>
-      <ClubStats clubs={clubs} salles={salles} />
+      <ClubStats
+        clubs={clubs}
+        salles={salles}
+        hideCoverageStat={isResponsableCentre}
+      />
       <ClubFilters
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -270,6 +333,7 @@ export default function ClubsPage() {
         categories={allCategories}
         gouvernorats={gouvernorats}
         centres={centresPourFiltre}
+        showLocationFilters={!isResponsableCentre}
       />
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -304,6 +368,8 @@ export default function ClubsPage() {
         categories={allCategories}
         formData={addFormData}
         setFormData={setAddFormData}
+        lockedCentreId={isResponsableCentre ? myCentreId : ""}
+        lockedCentreName={isResponsableCentre ? myCentreName : ""}
         onSubmit={handleCreate}
       />
       <EditClubModal

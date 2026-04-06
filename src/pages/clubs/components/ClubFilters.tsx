@@ -14,6 +14,7 @@ interface ClubFiltersProps {
   categories: any[];
   gouvernorats: string[];
   centres: any[];
+  showLocationFilters?: boolean;
 }
 
 export const ClubFilters = ({
@@ -30,20 +31,20 @@ export const ClubFilters = ({
   centres,
   selectedStatus,
   setSelectedStatus,
+  showLocationFilters = true,
 }: ClubFiltersProps) => {
   const hasFilter =
     searchQuery ||
     selectedCategory !== "ALL" ||
-    selectedGouvernorat ||
-    selectedCentre ||
+    (showLocationFilters && (selectedGouvernorat || selectedCentre)) ||
     selectedStatus !== "ALL";
 
   return (
     <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm p-6 space-y-5 mb-6">
       {/* Ligne 1 : Recherche + Selects (Gouvernorat & Centre) */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${showLocationFilters ? "md:grid-cols-4" : "md:grid-cols-2"}`}>
         {/* Barre de recherche */}
-        <div className="relative group md:col-span-2">
+        <div className={`relative group ${showLocationFilters ? "md:col-span-2" : "md:col-span-2"}`}>
           <Search
             className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-smart-teal transition-colors pointer-events-none"
             size={17}
@@ -65,41 +66,45 @@ export const ClubFilters = ({
           )}
         </div>
 
-        {/* Filtre Gouvernorat */}
-        <select
-          className="w-full px-4 py-3 rounded-2xl font-bold text-[11px] border text-smart-teal bg-[#F7F3E9] border-transparent focus:border-smart-teal outline-none cursor-pointer transition-all"
-          value={selectedGouvernorat}
-          onChange={(e) => {
-            setSelectedGouvernorat(e.target.value);
-            setSelectedCentre(""); // Reset centre if gouvernorat changes
-          }}
-        >
-          <option value="">🗺️ Tous les gouvernorats</option>
-          {gouvernorats.map((gov) => (
-            <option key={gov} value={gov}>
-              {gov}
-            </option>
-          ))}
-        </select>
+        {showLocationFilters && (
+          <>
+            {/* Filtre Gouvernorat */}
+            <select
+              className="w-full px-4 py-3 rounded-2xl font-bold text-[11px] border text-smart-teal bg-[#F7F3E9] border-transparent focus:border-smart-teal outline-none cursor-pointer transition-all"
+              value={selectedGouvernorat}
+              onChange={(e) => {
+                setSelectedGouvernorat(e.target.value);
+                setSelectedCentre(""); // Reset centre if gouvernorat changes
+              }}
+            >
+              <option value="">🗺️ Tous les gouvernorats</option>
+              {gouvernorats.map((gov) => (
+                <option key={gov} value={gov}>
+                  {gov}
+                </option>
+              ))}
+            </select>
 
-        {/* Filtre Centre (Salle) */}
-        <select
-          className={`w-full px-4 py-3 rounded-2xl font-bold text-[11px] border outline-none transition-all ${
-            !selectedGouvernorat
-              ? "bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed"
-              : "bg-[#F7F3E9] text-smart-teal border-transparent focus:border-smart-teal cursor-pointer"
-          }`}
-          value={selectedCentre}
-          onChange={(e) => setSelectedCentre(e.target.value)}
-          disabled={!selectedGouvernorat}
-        >
-          <option value="">🏛️ Tous les centres</option>
-          {centres.map((centre) => (
-            <option key={centre.id} value={centre.id}>
-              {centre.nom}
-            </option>
-          ))}
-        </select>
+            {/* Filtre Centre (Salle) */}
+            <select
+              className={`w-full px-4 py-3 rounded-2xl font-bold text-[11px] border outline-none transition-all ${
+                !selectedGouvernorat
+                  ? "bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed"
+                  : "bg-[#F7F3E9] text-smart-teal border-transparent focus:border-smart-teal cursor-pointer"
+              }`}
+              value={selectedCentre}
+              onChange={(e) => setSelectedCentre(e.target.value)}
+              disabled={!selectedGouvernorat}
+            >
+              <option value="">🏛️ Tous les centres</option>
+              {centres.map((centre) => (
+                <option key={centre.id} value={centre.id}>
+                  {centre.nom}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
       </div>
 
       <div className="h-px bg-gray-50 w-full" />
@@ -153,6 +158,7 @@ export const ClubFilters = ({
               setSelectedCategory("ALL");
               setSelectedGouvernorat("");
               setSelectedCentre("");
+              setSelectedStatus("ALL");
             }}
             className="shrink-0 text-[10px] font-bold text-smart-salmon hover:underline flex items-center gap-1 px-2"
           >
