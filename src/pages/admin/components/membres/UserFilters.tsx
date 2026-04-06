@@ -20,6 +20,7 @@ interface UserFiltersProps {
   centres: any[];
   clubs: any[];
   availableRoles: any[];
+  showLocationFilters?: boolean;
 }
 
 export const UserFilters = ({
@@ -41,6 +42,7 @@ export const UserFilters = ({
   centres,
   clubs,
   availableRoles,
+  showLocationFilters = true,
 }: UserFiltersProps) => {
   // 1. Filtrage en cascade : Centres selon la Région
   const filteredCentres = useMemo(() => {
@@ -71,7 +73,9 @@ export const UserFilters = ({
   return (
     <div className="bg-white rounded-[35px] border border-gray-100 shadow-sm p-7 space-y-6 animate-in fade-in duration-700">
       {/* --- LIGNE 1 : RECHERCHE ET CASCADES --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-4">
+      <div
+        className={`grid grid-cols-1 lg:grid-cols-2 gap-4 ${showLocationFilters ? "xl:grid-cols-5" : "xl:grid-cols-3"}`}
+      >
         {/* Recherche textuelle */}
         <div className="relative group lg:col-span-2 xl:col-span-1">
           <Search
@@ -87,42 +91,46 @@ export const UserFilters = ({
           />
         </div>
 
-        {/* Gouvernorats (Arabe RTL) */}
-        <select
-          dir="rtl"
-          className="px-5 py-4 rounded-2xl font-black text-[11px] text-smart-teal bg-smart-bg outline-none cursor-pointer border-none appearance-none hover:bg-gray-100 transition-colors"
-          value={selectedGouvernorat}
-          onChange={(e) => {
-            setSelectedGouvernorat(e.target.value);
-            setSelectedCentreId("");
-            setSelectedClubId("");
-          }}
-        >
-          <option value="">🗺️ Toutes les régions</option>
-          {gouvernorats.map((gov) => (
-            <option key={gov} value={gov}>
-              {gov}
-            </option>
-          ))}
-        </select>
+        {showLocationFilters && (
+          <>
+            {/* Gouvernorats (Arabe RTL) */}
+            <select
+              dir="rtl"
+              className="px-5 py-4 rounded-2xl font-black text-[11px] text-smart-teal bg-smart-bg outline-none cursor-pointer border-none appearance-none hover:bg-gray-100 transition-colors"
+              value={selectedGouvernorat}
+              onChange={(e) => {
+                setSelectedGouvernorat(e.target.value);
+                setSelectedCentreId("");
+                setSelectedClubId("");
+              }}
+            >
+              <option value="">🗺️ Toutes les régions</option>
+              {gouvernorats.map((gov) => (
+                <option key={gov} value={gov}>
+                  {gov}
+                </option>
+              ))}
+            </select>
 
-        {/* Centres */}
-        <select
-          className={`px-5 py-4 rounded-2xl font-black text-[11px] text-smart-teal bg-smart-bg outline-none border-none appearance-none transition-all ${!selectedGouvernorat ? "opacity-40 grayscale cursor-not-allowed" : "cursor-pointer hover:bg-gray-100"}`}
-          value={selectedCentreId}
-          disabled={!selectedGouvernorat}
-          onChange={(e) => {
-            setSelectedCentreId(e.target.value);
-            setSelectedClubId("");
-          }}
-        >
-          <option value="">🏛️ Tous les centres</option>
-          {filteredCentres.map((c: any) => (
-            <option key={c.id} value={c.id}>
-              {c.nom}
-            </option>
-          ))}
-        </select>
+            {/* Centres */}
+            <select
+              className={`px-5 py-4 rounded-2xl font-black text-[11px] text-smart-teal bg-smart-bg outline-none border-none appearance-none transition-all ${!selectedGouvernorat ? "opacity-40 grayscale cursor-not-allowed" : "cursor-pointer hover:bg-gray-100"}`}
+              value={selectedCentreId}
+              disabled={!selectedGouvernorat}
+              onChange={(e) => {
+                setSelectedCentreId(e.target.value);
+                setSelectedClubId("");
+              }}
+            >
+              <option value="">🏛️ Tous les centres</option>
+              {filteredCentres.map((c: any) => (
+                <option key={c.id} value={c.id}>
+                  {c.nom}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
 
         {/* Clubs */}
         <select

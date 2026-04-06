@@ -75,6 +75,7 @@ export const UserCard = ({
   onAssignClick,
   onToggleStatus,
   onAssignClub,
+  showCentreSection = true,
 }: any) => {
   const role = user.role as keyof typeof ROLES_INFO;
   const info = ROLES_INFO[role] || ROLES_INFO.ADHERENT;
@@ -139,32 +140,33 @@ export const UserCard = ({
           </button>
         )}
 
-      {/* 2. SECTION ÉTABLISSEMENT (id_salle -> id_centre) */}
-      <div className="flex flex-col items-center gap-2 md:flex-1">
-        {user.centre ? ( // 💡 salles -> centre
-          <div className="flex flex-col items-center gap-1">
-            <div className="bg-smart-bg/50 px-5 py-2.5 rounded-[20px] flex items-center gap-2 border border-white shadow-sm">
-              <Building2 size={12} className="text-smart-teal opacity-40" />
-              <span className="text-[10px] font-black uppercase text-smart-teal tracking-widest">
-                {user.centre.nom}
-              </span>
+      {showCentreSection && (
+        <div className="flex flex-col items-center gap-2 md:flex-1">
+          {user.centre ? (
+            <div className="flex flex-col items-center gap-1">
+              <div className="bg-smart-bg/50 px-5 py-2.5 rounded-[20px] flex items-center gap-2 border border-white shadow-sm">
+                <Building2 size={12} className="text-smart-teal opacity-40" />
+                <span className="text-[10px] font-black uppercase text-smart-teal tracking-widest">
+                  {user.centre.nom}
+                </span>
+              </div>
+              <button
+                onClick={() => onAssignClick(user)}
+                className="text-[9px] font-black text-smart-salmon uppercase tracking-tighter hover:underline px-2"
+              >
+                Changer de centre
+              </button>
             </div>
+          ) : (
             <button
               onClick={() => onAssignClick(user)}
-              className="text-[9px] font-black text-smart-salmon uppercase tracking-tighter hover:underline px-2"
+              className="flex items-center gap-2 px-5 py-3 bg-smart-salmon/10 text-smart-salmon rounded-2xl font-black text-[10px] uppercase border border-smart-salmon/5 hover:bg-smart-salmon hover:text-white transition-all active:scale-95"
             >
-              Changer de centre
+              <Plus size={14} /> Affecter une institution
             </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => onAssignClick(user)}
-            className="flex items-center gap-2 px-5 py-3 bg-smart-salmon/10 text-smart-salmon rounded-2xl font-black text-[10px] uppercase border border-smart-salmon/5 hover:bg-smart-salmon hover:text-white transition-all active:scale-95"
-          >
-            <Plus size={14} /> Affecter une institution
-          </button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* 3. SECTION ACTIONS DÉCISIVES */}
       <div className="flex items-center gap-3 w-full md:w-auto justify-end">

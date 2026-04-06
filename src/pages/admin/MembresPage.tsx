@@ -48,6 +48,15 @@ export default function MembresPage() {
     assignClub: false, // 💡 Nouveau
   });
 
+  const currentUser = useMemo(() => {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  }, []);
+  const isResponsableCentre = currentUser?.role === "RESPONSABLE_CENTRE";
+  const [resolvedCentreId, setResolvedCentreId] = useState(
+    currentUser?.id_centre ?? currentUser?.centre?.id ?? "",
+  );
+
   const getAuthHeaders = () => {
     const token = localStorage.getItem("token");
     return token ? { Authorization: `Bearer ${token}` } : {};
@@ -79,6 +88,25 @@ export default function MembresPage() {
     }
 
     try {
+      if (isResponsableCentre) {
+        try {
+          const meRes = await api.get("/users/me/profile", { headers });
+          const me = meRes.data;
+          const centreId = me?.centre?.id ?? me?.id_centre ?? "";
+          setResolvedCentreId(centreId);
+          if (centreId) {
+            setSelectedCentreId(centreId);
+          }
+        } catch {
+          const fallbackCentreId =
+            currentUser?.id_centre ?? currentUser?.centre?.id ?? "";
+          setResolvedCentreId(fallbackCentreId);
+          if (fallbackCentreId) {
+            setSelectedCentreId(fallbackCentreId);
+          }
+        }
+      }
+
       const resU = await api.get("/users", { headers });
       setUsers(normalizeArrayResponse(resU.data));
     } catch (err: any) {
@@ -119,6 +147,12 @@ export default function MembresPage() {
     setLoading(false);
   };
 
+  const usersInScope = useMemo(() => {
+    if (!isResponsableCentre) return users;
+    if (!resolvedCentreId) return [];
+    return users.filter((u: any) => u.id_centre === resolvedCentreId);
+  }, [isResponsableCentre, resolvedCentreId, users]);
+
   const handleAction = async (url: string, data: any, msg: string) => {
     try {
       const response = await api.patch(url, data, {
@@ -155,7 +189,7 @@ export default function MembresPage() {
   );
 
   const filteredUsers = useMemo(() => {
-    return users.filter((u: any) => {
+    return usersInScope.filter((u: any) => {
       // 1. CALCUL ÂGE
       let age = -1;
       if (u.date_naissance) {
@@ -176,10 +210,12 @@ export default function MembresPage() {
         (filterStatus === "INACTIVE" && !u.compte_actif);
 
       const matchesGouv =
-        !selectedGouvernorat || u.centre?.gouvernorat === selectedGouvernorat;
+        isResponsableCentre ||
+        !selectedGouvernorat ||
+        u.centre?.gouvernorat === selectedGouvernorat;
 
       const matchesCentre =
-        !selectedCentreId || u.id_centre === selectedCentreId;
+        isResponsableCentre || !selectedCentreId || u.id_centre === selectedCentreId;
 
       const matchesClub =
         !selectedClubId ||
@@ -201,15 +237,22 @@ export default function MembresPage() {
       );
     });
   }, [
-    users,
+    usersInScope,
     search,
     filterRole,
     filterStatus,
+    isResponsableCentre,
     selectedGouvernorat,
     selectedCentreId,
     selectedClubId,
     selectedAgeRange,
   ]);
+
+  const clubsForFilter = useMemo(() => {
+    if (!isResponsableCentre) return clubs;
+    if (!resolvedCentreId) return [];
+    return clubs.filter((club: any) => club.id_centre === resolvedCentreId);
+  }, [isResponsableCentre, resolvedCentreId, clubs]);
 
   const toggleUserStatus = (user: any) => {
     if (user.compte_actif) {
@@ -293,7 +336,7 @@ export default function MembresPage() {
       </div>
 
       {/* STATISTIQUES */}
-      <UserStats users={users} />
+      <UserStats users={usersInScope} hideOrphanStat={isResponsableCentre} />
 
       {/* BARRE DE FILTRES */}
       <UserFilters
@@ -313,8 +356,9 @@ export default function MembresPage() {
         setSelectedAgeRange={setSelectedAgeRange}
         gouvernorats={gouvernorats}
         centres={centres} // 💡 Changé
-        clubs={clubs}
+        clubs={clubsForFilter}
         availableRoles={availableRoles}
+        showLocationFilters={!isResponsableCentre}
       />
 
       {/* LISTE DES CARTES MEMBRES */}
@@ -352,6 +396,7 @@ export default function MembresPage() {
                 setModals({ ...modals, assignClub: true });
               }}
               onToggleStatus={toggleUserStatus}
+              showCentreSection={!isResponsableCentre}
             />
           ))
         ) : (
@@ -370,6 +415,7 @@ export default function MembresPage() {
         onClose={closeAllModals}
         user={activeUser}
         availableRoles={availableRoles}
+        excludedRoles={isResponsableCentre ? ["RESPONSABLE_CENTRE"] : []}
         onSelect={handleRoleChange} // 💡 On appelle notre nouvelle fonction de gestion
       />
 

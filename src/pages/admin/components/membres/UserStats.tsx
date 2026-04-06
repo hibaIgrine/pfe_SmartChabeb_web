@@ -3,12 +3,16 @@ import { useMemo } from "react";
 
 interface UserStatsProps {
   users: any[];
+  hideOrphanStat?: boolean;
 }
 
-export const UserStats = ({ users }: UserStatsProps) => {
+export const UserStats = ({
+  users,
+  hideOrphanStat = false,
+}: UserStatsProps) => {
   // 💡 Optimisation : On calcule les stats une seule fois sauf si 'users' change
   const statsData = useMemo(() => {
-    return [
+    const baseStats = [
       {
         icon: <Users2 size={24} />,
         val: users.length,
@@ -38,10 +42,16 @@ export const UserStats = ({ users }: UserStatsProps) => {
         textColor: "text-smart-salmon", // 💡 Utilisation de ta couleur Alerte
       },
     ];
-  }, [users]);
+
+    return hideOrphanStat
+      ? baseStats.filter((item) => item.label !== "Sans Institution")
+      : baseStats;
+  }, [users, hideOrphanStat]);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 animate-in fade-in duration-700">
+    <div
+      className={`grid grid-cols-1 sm:grid-cols-2 ${hideOrphanStat ? "xl:grid-cols-3" : "xl:grid-cols-4"} gap-4 animate-in fade-in duration-700`}
+    >
       {statsData.map((s, idx) => (
         <div
           key={idx}

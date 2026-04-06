@@ -15,6 +15,7 @@ interface RoleModalProps {
   onSelect: (roleName: string) => void;
   user: any;
   availableRoles: any[];
+  excludedRoles?: string[];
 }
 
 export const RoleModal = ({
@@ -23,8 +24,16 @@ export const RoleModal = ({
   onSelect,
   user,
   availableRoles,
+  excludedRoles = [],
 }: RoleModalProps) => {
   if (!isOpen || !user) return null;
+
+  const normalizedExcludedRoles = excludedRoles.map((role) =>
+    role.toUpperCase(),
+  );
+  const visibleRoles = availableRoles.filter(
+    (role) => !normalizedExcludedRoles.includes((role?.nom || "").toUpperCase()),
+  );
 
   // 🎨 Style des grades (Design Michelle)
   const getRoleStyle = (roleName: string) => {
@@ -104,7 +113,7 @@ export const RoleModal = ({
         </div>
 
         <div className="grid grid-cols-1 gap-3">
-          {availableRoles.map((role) => {
+          {visibleRoles.map((role) => {
             const style = getRoleStyle(role.nom);
             const isCurrentRole = user.role === role.nom;
 
