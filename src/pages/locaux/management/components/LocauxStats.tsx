@@ -1,6 +1,6 @@
 import { Building2, CalendarCheck2, Percent, Wallet } from "lucide-react";
 
-export const LocauxStats = ({ reservationStats }: any) => {
+export const LocauxStats = ({ reservationStats, isAdmin = false }: any) => {
   const mostUsedRoom =
     reservationStats?.mostUsedRoom?.roomName || "Aucune salle";
   const mostUsedCount = reservationStats?.mostUsedRoom?.count || 0;
@@ -29,7 +29,7 @@ export const LocauxStats = ({ reservationStats }: any) => {
         color="bg-white text-smart-salmon border border-gray-100"
       />
       <StatItem
-        label="Revenus général"
+        label={isAdmin ? "Revenus général" : "Revenus du centre"}
         val={`${Number(revenueTotal).toFixed(2)} DT`}
         icon={<Wallet />}
         color="bg-white text-smart-teal border border-gray-100"

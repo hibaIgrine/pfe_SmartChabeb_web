@@ -8,7 +8,7 @@ import {
   DollarSign,
   Map,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import api from "../../../../api/axios";
 
 const GOUVERNORATS_AR = [
@@ -38,7 +38,14 @@ const GOUVERNORATS_AR = [
   "نابل",
 ];
 
-export const AddLocalModal = ({ isOpen, onClose, centres, onRefresh }: any) => {
+export const AddLocalModal = ({
+  isOpen,
+  onClose,
+  centres,
+  onRefresh,
+  lockedCentreId,
+  lockedCentreName,
+}: any) => {
   const [form, setForm] = useState({
     nom: "",
     type: "",
@@ -52,6 +59,13 @@ export const AddLocalModal = ({ isOpen, onClose, centres, onRefresh }: any) => {
   const [errors, setErrors] = useState<any>({});
   const [isCustomType, setIsCustomType] = useState(false);
   const token = localStorage.getItem("token");
+  const isLockedCentre = Boolean(lockedCentreId);
+
+  useEffect(() => {
+    if (isOpen && lockedCentreId) {
+      setForm((prev) => ({ ...prev, id_centre: lockedCentreId }));
+    }
+  }, [isOpen, lockedCentreId]);
 
   const filteredCentres = useMemo(() => {
     return centres.filter(
@@ -86,8 +100,9 @@ export const AddLocalModal = ({ isOpen, onClose, centres, onRefresh }: any) => {
     let newErrors: any = {};
     if (!form.nom.trim()) newErrors.nom = "Le nom de l'espace est requis";
     if (!form.type.trim()) newErrors.type = "Veuillez définir le type d'espace";
-    if (!selectedGouv) newErrors.gouv = "Veuillez choisir un gouvernorat";
-    if (!form.id_centre)
+    if (!isLockedCentre && !selectedGouv)
+      newErrors.gouv = "Veuillez choisir un gouvernorat";
+    if (!isLockedCentre && !form.id_centre)
       newErrors.id_centre = "Veuillez sélectionner un établissement";
     if (form.capacite === "")
       newErrors.capacite = "Indiquez la capacité d'accueil";
@@ -109,6 +124,7 @@ export const AddLocalModal = ({ isOpen, onClose, centres, onRefresh }: any) => {
           ...form,
           capacite: parseInt(form.capacite),
           prix_heure: parseFloat(form.prix_heure),
+          id_centre: lockedCentreId || form.id_centre,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -162,6 +178,17 @@ export const AddLocalModal = ({ isOpen, onClose, centres, onRefresh }: any) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {isLockedCentre && (
+            <div className="bg-white p-5 rounded-[25px] border border-smart-sage/30 shadow-sm">
+              <label className="text-[10px] font-black text-gray-400 ml-1 uppercase tracking-widest">
+                Centre rattaché automatiquement
+              </label>
+              <p className="text-sm font-black text-smart-teal mt-2">
+                {lockedCentreName || "Mon Centre"}
+              </p>
+            </div>
+          )}
+
           {/* Nom du local */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-gray-400 ml-5 uppercase">
@@ -179,7 +206,9 @@ export const AddLocalModal = ({ isOpen, onClose, centres, onRefresh }: any) => {
             {errors.nom && <ErrorMsg msg={errors.nom} />}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div
+            className={`grid grid-cols-1 ${isLockedCentre ? "" : "md:grid-cols-2"} gap-6`}
+          >
             {/* Type */}
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 ml-5 uppercase">
@@ -208,30 +237,31 @@ export const AddLocalModal = ({ isOpen, onClose, centres, onRefresh }: any) => {
               {errors.type && <ErrorMsg msg={errors.type} />}
             </div>
 
-            {/* Gouvernorat */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 ml-5 uppercase">
-                Région
-              </label>
-              <select
-                dir="rtl"
-                className={inputStyle("gouv")}
-                value={selectedGouv}
-                onChange={(e) => {
-                  setSelectedGouv(e.target.value);
-                  setForm({ ...form, id_centre: "" });
-                  if (errors.gouv) setErrors({ ...errors, gouv: null });
-                }}
-              >
-                <option value="">كل الولايات...</option>
-                {GOUVERNORATS_AR.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
-              {errors.gouv && <ErrorMsg msg={errors.gouv} />}
-            </div>
+            {!isLockedCentre && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 ml-5 uppercase">
+                  Région
+                </label>
+                <select
+                  dir="rtl"
+                  className={inputStyle("gouv")}
+                  value={selectedGouv}
+                  onChange={(e) => {
+                    setSelectedGouv(e.target.value);
+                    setForm({ ...form, id_centre: "" });
+                    if (errors.gouv) setErrors({ ...errors, gouv: null });
+                  }}
+                >
+                  <option value="">كل الولايات...</option>
+                  {GOUVERNORATS_AR.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+                {errors.gouv && <ErrorMsg msg={errors.gouv} />}
+              </div>
+            )}
           </div>
 
           {isCustomType && (
@@ -248,27 +278,30 @@ export const AddLocalModal = ({ isOpen, onClose, centres, onRefresh }: any) => {
           )}
 
           {/* Choix du centre */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 ml-5 uppercase flex items-center gap-2">
-              <Building2 size={12} /> Établissement
-            </label>
-            <select
-              className={inputStyle("id_centre")}
-              value={form.id_centre}
-              onChange={(e) => {
-                setForm({ ...form, id_centre: e.target.value });
-                if (errors.id_centre) setErrors({ ...errors, id_centre: null });
-              }}
-            >
-              <option value="">Sélectionner le centre de jeunesse...</option>
-              {filteredCentres.map((c: any) => (
-                <option key={c.id} value={c.id}>
-                  {c.nom}
-                </option>
-              ))}
-            </select>
-            {errors.id_centre && <ErrorMsg msg={errors.id_centre} />}
-          </div>
+          {!isLockedCentre && (
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 ml-5 uppercase flex items-center gap-2">
+                <Building2 size={12} /> Établissement
+              </label>
+              <select
+                className={inputStyle("id_centre")}
+                value={form.id_centre}
+                onChange={(e) => {
+                  setForm({ ...form, id_centre: e.target.value });
+                  if (errors.id_centre)
+                    setErrors({ ...errors, id_centre: null });
+                }}
+              >
+                <option value="">Sélectionner le centre de jeunesse...</option>
+                {filteredCentres.map((c: any) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nom}
+                  </option>
+                ))}
+              </select>
+              {errors.id_centre && <ErrorMsg msg={errors.id_centre} />}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Capacité */}

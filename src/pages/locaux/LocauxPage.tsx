@@ -46,6 +46,13 @@ export default function LocauxPage() {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdmin = user.role === "ADMIN";
+  const isResponsableCentre = user.role === "RESPONSABLE_CENTRE";
+  const [resolvedCentreId, setResolvedCentreId] = useState(
+    user?.centre?.id ?? user?.id_centre ?? "",
+  );
+  const [resolvedCentreName, setResolvedCentreName] = useState(
+    user?.centre?.nom ?? "Mon centre",
+  );
 
   const showAlert = (msg: string, type: "error" | "success") => {
     setNotification({ msg, type });
@@ -55,6 +62,18 @@ export default function LocauxPage() {
   const loadData = async () => {
     setLoading(true);
     try {
+      if (isResponsableCentre) {
+        try {
+          const meRes = await api.get("/users/me/profile", { headers });
+          const me = meRes.data;
+          setResolvedCentreId(me?.centre?.id ?? me?.id_centre ?? "");
+          setResolvedCentreName(me?.centre?.nom ?? "Mon centre");
+        } catch {
+          setResolvedCentreId(user?.centre?.id ?? user?.id_centre ?? "");
+          setResolvedCentreName(user?.centre?.nom ?? "Mon centre");
+        }
+      }
+
       const [resL, resC, resStats] = await Promise.all([
         api.get("/locaux", { headers }),
         api.get("/centres", { headers }),
@@ -74,10 +93,17 @@ export default function LocauxPage() {
     loadData();
   }, []);
 
-  const filteredLocaux = locaux.filter((l: any) => {
+  const locauxInScope = useMemo(() => {
+    if (!isResponsableCentre) return locaux;
+    if (!resolvedCentreId) return locaux;
+    return locaux.filter((l: any) => l.id_centre === resolvedCentreId);
+  }, [isResponsableCentre, locaux, resolvedCentreId]);
+
+  const filteredLocaux = locauxInScope.filter((l: any) => {
     const matchesSearch = l.nom.toLowerCase().includes(search.toLowerCase());
     const matchesType = filterType === "ALL" || l.type === filterType;
-    const matchesCentre = !selectedCentre || l.id_centre === selectedCentre;
+    const matchesCentre =
+      isResponsableCentre || !selectedCentre || l.id_centre === selectedCentre;
     return matchesSearch && matchesType && matchesCentre;
   });
 
@@ -100,9 +126,9 @@ export default function LocauxPage() {
   };
 
   const availableTypes = useMemo(() => {
-    const types = locaux.map((l: any) => l.type);
+    const types = locauxInScope.map((l: any) => l.type);
     return Array.from(new Set(types));
-  }, [locaux]);
+  }, [locauxInScope]);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-20">
@@ -128,7 +154,7 @@ export default function LocauxPage() {
           <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.5em] mt-4 ml-1 italic">
             {isAdmin
               ? "Inventaire national ministériel"
-              : `Espaces de : ${user.centre?.nom || "votre centre"}`}
+              : `Espaces de : ${resolvedCentreName || "votre centre"}`}
           </p>
         </div>
 
@@ -140,7 +166,11 @@ export default function LocauxPage() {
         </button>
       </div>
 
-      <LocauxStats locaux={locaux} reservationStats={reservationStats} />
+      <LocauxStats
+        locaux={locauxInScope}
+        reservationStats={reservationStats}
+        isAdmin={isAdmin}
+      />
 
       <LocalFilters
         search={search}
@@ -189,6 +219,8 @@ export default function LocauxPage() {
         onClose={() => setIsAddModalOpen(false)}
         centres={centres}
         onRefresh={loadData}
+        lockedCentreId={isResponsableCentre ? resolvedCentreId : ""}
+        lockedCentreName={isResponsableCentre ? resolvedCentreName : ""}
       />
 
       {editingLocal && (
