@@ -30,10 +30,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) {
       navigate("/auth");
-    } else if (role === "ADHERENT") {
-      navigate("/mobile-guide");
+      return;
     }
-  }, [user, role, navigate]);
+  }, [user, role, navigate, location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -41,7 +40,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     navigate("/");
   };
 
-  if (!user || role === "ADHERENT") return null;
+  if (!user) return null;
 
   return (
     <div className="flex h-screen bg-[#F7F3E9] font-sans overflow-hidden">
@@ -60,7 +59,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* NAVIGATION AVEC SCROLL INTERNE (si l'écran est petit) */}
         <nav className="flex-1 px-3 space-y-1 mt-4 overflow-y-auto custom-scrollbar scrollbar-hide">
-          {role === "ADMIN" && (
+          {(role === "ADMIN" || role === "ADHERENT") && (
             <SidebarItem
               to="/dashboard"
               icon={<LayoutDashboard size={18} />}
@@ -105,12 +104,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          <SidebarItem
-            to="/profile"
-            icon={<UserCircle size={18} />}
-            label="Classement des membres"
-            active={location.pathname === "/profile"}
-          />
+          {role !== "ADHERENT" && (
+            <SidebarItem
+              to="/profile"
+              icon={<UserCircle size={18} />}
+              label="Classement des membres"
+              active={location.pathname === "/profile"}
+            />
+          )}
+
+          {(role === "ADHERENT" ||
+            role === "ADMIN" ||
+            role === "RESPONSABLE_CENTRE") && (
+            <SidebarItem
+              to="/club-creation-requests"
+              icon={<ClipboardList size={18} />}
+              label="Demandes Clubs"
+              active={location.pathname === "/club-creation-requests"}
+            />
+          )}
 
           {(role === "ADMIN" ||
             role === "RESPONSABLE_CENTRE" ||
@@ -194,15 +206,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               icon={<ShieldCheck size={18} />}
               label="Grades & Droits"
               active={location.pathname === "/roles"}
-            />
-          )}
-
-          {role === "RESPONSABLE_CLUB" && (
-            <SidebarItem
-              to="/presences"
-              icon={<ClipboardCheck size={18} />}
-              label="Présence"
-              active={location.pathname.startsWith("/presences")}
             />
           )}
 

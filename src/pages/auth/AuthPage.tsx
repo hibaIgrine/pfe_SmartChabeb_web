@@ -37,13 +37,7 @@ export default function AuthPage() {
 
         console.log("Rôle détecté :", user.role); // Pour vérifier dans F12
 
-        if (user.role === "ADHERENT") {
-          // C'est un jeune : on ne stocke pas le token et on le redirige
-          navigate("/mobile-guide");
-          return;
-        }
-
-        // C'est un Admin ou Coach : on autorise l'accès
+        // Tous les roles accedent maintenant au dashboard web.
         localStorage.setItem("token", res.data.access_token);
         localStorage.setItem("user", JSON.stringify(user));
         navigate("/dashboard");

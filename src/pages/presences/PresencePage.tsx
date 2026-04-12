@@ -122,7 +122,7 @@ export default function PresencePage() {
   };
 
   useEffect(() => {
-    if (role !== "RESPONSABLE_CLUB") {
+    if (role !== "RESPONSABLE_CLUB" && role !== "RESPONSABLE_CENTRE") {
       setLoading(false);
       return;
     }

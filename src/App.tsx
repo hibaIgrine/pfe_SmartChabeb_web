@@ -5,7 +5,6 @@ import CentresPage from "./pages/admin/centres/CentresPage";
 import ResponsableCentrePage from "./pages/centres/ResponsableCentrePage";
 import Dashboard from "./pages/admin/Dashboard";
 import MembresPage from "./pages/admin/MembresPage";
-import AdherentAccessPage from "./pages/auth/AdherentAccessPage";
 import AuthPage from "./pages/auth/AuthPage";
 import NotFound from "./pages/auth/NotFound";
 import CoachMembers from "./pages/coach/CoachMembers";
@@ -14,6 +13,7 @@ import MemberDetails from "./pages/coach/MembreDetails";
 import ClubsPage from "./pages/clubs/ClubsPage";
 import ClubStaffPage from "./pages/clubs/ClubStaffPage";
 import ClubRequestsPage from "./pages/clubs/ClubRequestsPage";
+import ClubCreationRequestsPage from "./pages/clubs/ClubCreationRequestsPage";
 import RolesPage from "./pages/admin/roles/RolesPage";
 import LocauxPage from "./pages/locaux/LocauxPage";
 import LocauxPlanningPage from "./pages/locaux/LocauxPlanningPage";
@@ -46,8 +46,6 @@ function App() {
 
         {/* Page d'authentification (Login + Register) */}
         <Route path="/auth" element={<AuthPage />} />
-
-        <Route path="/mobile-guide" element={<AdherentAccessPage />} />
 
         {/* Espace Privé Admin/Coach */}
         <Route
@@ -105,6 +103,14 @@ function App() {
           element={
             <Layout>
               <ClubRequestsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/club-creation-requests"
+          element={
+            <Layout>
+              <ClubCreationRequestsPage />
             </Layout>
           }
         />

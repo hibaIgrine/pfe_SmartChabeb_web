@@ -33,6 +33,15 @@ function formatDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function formatDateKeyFromApi(dateValue: string): string {
+  if (!dateValue) return "";
+  const raw = String(dateValue);
+  if (raw.includes("T")) {
+    return raw.split("T")[0];
+  }
+  return raw;
+}
+
 function addDays(date: Date, amount: number): Date {
   const next = new Date(date);
   next.setDate(next.getDate() + amount);
@@ -109,7 +118,18 @@ export default function LocauxPlanningPage() {
       const res = await api.get(`/reservations/planning/${localId}`, {
         headers,
       });
-      setPlanningReservations(res.data || []);
+      const reservations = Array.isArray(res.data) ? res.data : [];
+      setPlanningReservations(reservations);
+
+      if (reservations.length > 0) {
+        const sortedByDate = [...reservations].sort(
+          (a, b) =>
+            new Date(a.date_reservation).getTime() -
+            new Date(b.date_reservation).getTime(),
+        );
+        const firstReservationDate = new Date(sortedByDate[0].date_reservation);
+        setPlanningDate(firstReservationDate);
+      }
     } catch {
       setPlanningReservations([]);
       setFeedback({
@@ -140,7 +160,7 @@ export default function LocauxPlanningPage() {
   const planningByDate = useMemo(() => {
     return planningReservations.reduce(
       (acc: Record<string, PlanningReservation[]>, item) => {
-        const key = formatDateKey(new Date(item.date_reservation));
+        const key = formatDateKeyFromApi(item.date_reservation);
         if (!acc[key]) acc[key] = [];
         acc[key].push(item);
         return acc;
