@@ -9,6 +9,7 @@ import {
   MapPin,
   Sparkles,
   Upload,
+  X,
 } from "lucide-react";
 import api from "../../api/axios";
 import { ALL_CATEGORIES } from "./components/AddClubModal";
@@ -46,6 +47,7 @@ type RequestFormState = {
   categorie: string;
   custom_categorie: string;
   description: string;
+  objectifs: string[];
   planning_souhaite: string;
   id_local_souhaite: string;
   jour_recurrent: string;
@@ -68,6 +70,7 @@ const DEFAULT_FORM: RequestFormState = {
   categorie: "",
   custom_categorie: "",
   description: "",
+  objectifs: [],
   planning_souhaite: "",
   id_local_souhaite: "",
   jour_recurrent: "FRIDAY",
@@ -118,6 +121,14 @@ const buildPlanningSummary = (planning: any) => {
   }
 
   return planning.texte || "Planning détaillé";
+};
+
+const extractObjectives = (planning: any): string[] => {
+  if (!planning || typeof planning !== "object") return [];
+  if (!Array.isArray(planning.objectifs)) return [];
+  return planning.objectifs
+    .map((value: unknown) => (typeof value === "string" ? value.trim() : ""))
+    .filter(Boolean);
 };
 
 function AttachmentCard({
@@ -195,6 +206,7 @@ export default function ClubCreationRequestsPage() {
   const [attestationFile, setAttestationFile] = useState<File | null>(null);
   const [availabilityMessage, setAvailabilityMessage] = useState<string>("");
   const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [objectifInput, setObjectifInput] = useState("");
 
   const selectedCategory = isCustomCategory
     ? form.custom_categorie.trim()
@@ -276,6 +288,10 @@ export default function ClubCreationRequestsPage() {
         "La description doit contenir au moins 20 caractères.";
     }
 
+    if (!Array.isArray(form.objectifs) || form.objectifs.length === 0) {
+      nextErrors.objectifs = "Ajoutez au moins un objectif du club.";
+    }
+
     if (!form.id_local_souhaite) {
       nextErrors.id_local_souhaite = "Sélectionnez un local de votre centre.";
     }
@@ -338,6 +354,7 @@ export default function ClubCreationRequestsPage() {
 
   const resetForm = () => {
     setForm(DEFAULT_FORM);
+    setObjectifInput("");
     setCvFile(null);
     setAttestationFile(null);
     setAvailabilityMessage("");
@@ -368,6 +385,7 @@ export default function ClubCreationRequestsPage() {
         heure_debut: form.heure_debut_souhaitee,
         heure_fin: form.heure_fin_souhaitee,
         recurrence: "TOUTE_L_ANNEE",
+        objectifs: form.objectifs,
         notes: form.planning_souhaite.trim() || undefined,
       };
 
@@ -375,6 +393,7 @@ export default function ClubCreationRequestsPage() {
       payload.append("nom_club", form.nom_club.trim());
       payload.append("categorie", selectedCategory);
       payload.append("description", form.description.trim());
+      payload.append("objectifs", JSON.stringify(form.objectifs));
       payload.append("planning_souhaite", JSON.stringify(planningPayload));
       payload.append("id_local_souhaite", form.id_local_souhaite);
       payload.append("jour_recurrent", form.jour_recurrent);
@@ -432,6 +451,27 @@ export default function ClubCreationRequestsPage() {
     }
   };
 
+  const addObjectif = () => {
+    const value = objectifInput.trim();
+    if (!value) return;
+
+    setForm((prev) => {
+      if (prev.objectifs.some((objectif) => objectif === value)) {
+        return prev;
+      }
+      return { ...prev, objectifs: [...prev.objectifs, value] };
+    });
+    setObjectifInput("");
+    setFieldErrors((prev) => ({ ...prev, objectifs: "" }));
+  };
+
+  const removeObjectif = (objectifToRemove: string) => {
+    setForm((prev) => ({
+      ...prev,
+      objectifs: prev.objectifs.filter((objectif) => objectif !== objectifToRemove),
+    }));
+  };
+
   if (!isRequester && !canReview) {
     return (
       <div className="rounded-3xl bg-white border border-gray-100 p-6 shadow-sm">
@@ -445,6 +485,38 @@ export default function ClubCreationRequestsPage() {
 
   return (
     <div className="space-y-6 pb-8">
+      {(notice || error) && (
+        <div className="fixed right-4 top-4 z-[80] w-[min(92vw,420px)] space-y-3 pointer-events-none">
+          {notice && (
+            <div className="pointer-events-auto rounded-2xl bg-[#D9E8D1] text-[#436D75] border border-[#436D75]/20 text-sm font-bold shadow-xl px-4 py-3 flex items-start justify-between gap-3">
+              <span>{notice}</span>
+              <button
+                type="button"
+                onClick={() => setNotice(null)}
+                className="rounded-full p-1 hover:bg-white/60"
+                aria-label="Fermer la notification"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          {error && (
+            <div className="pointer-events-auto rounded-2xl bg-[#FDE5E1] text-[#B23A2B] border border-[#E98A7D]/40 text-sm font-bold shadow-xl px-4 py-3 flex items-start justify-between gap-3">
+              <span>{error}</span>
+              <button
+                type="button"
+                onClick={() => setError(null)}
+                className="rounded-full p-1 hover:bg-white/60"
+                aria-label="Fermer l'erreur"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="rounded-[32px] border border-white bg-gradient-to-br from-white via-[#F7F3E9] to-[#D9E8D1] p-6 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
           <div>
@@ -490,18 +562,6 @@ export default function ClubCreationRequestsPage() {
           )}
         </div>
       </div>
-
-      {notice && (
-        <div className="px-4 py-3 rounded-2xl bg-[#D9E8D1] text-[#436D75] border border-[#436D75]/20 text-sm font-bold shadow-sm">
-          {notice}
-        </div>
-      )}
-
-      {error && (
-        <div className="px-4 py-3 rounded-2xl bg-[#FDE5E1] text-[#B23A2B] border border-[#E98A7D]/40 text-sm font-bold shadow-sm">
-          {error}
-        </div>
-      )}
 
       {isRequester && (
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
@@ -654,6 +714,63 @@ export default function ClubCreationRequestsPage() {
               {fieldErrors.description && (
                 <p className="text-xs font-bold text-red-500">
                   {fieldErrors.description}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">
+                Objectifs du club
+              </label>
+              <p className="text-sm text-gray-500 font-medium">
+                Ajoutez les objectifs sous forme de puces. Ce champ est obligatoire.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  value={objectifInput}
+                  onChange={(e) => setObjectifInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addObjectif();
+                    }
+                  }}
+                  placeholder="Ex: Former les jeunes au leadership"
+                  className="flex-1 rounded-2xl border border-gray-200 bg-[#F8FAFC] px-4 py-3 text-sm font-semibold outline-none transition focus:bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={addObjectif}
+                  className="rounded-2xl bg-[#436D75] px-4 py-3 text-xs font-black uppercase tracking-[0.15em] text-white"
+                >
+                  Ajouter
+                </button>
+              </div>
+
+              {form.objectifs.length > 0 && (
+                <ul className="space-y-2 rounded-2xl border border-gray-100 bg-[#F8FAFC] p-4 text-sm text-gray-700">
+                  {form.objectifs.map((objectif) => (
+                    <li
+                      key={objectif}
+                      className="flex items-start justify-between gap-3"
+                    >
+                      <span className="font-medium">• {objectif}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeObjectif(objectif)}
+                        className="text-xs font-bold text-[#B23A2B]"
+                      >
+                        Retirer
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {fieldErrors.objectifs && (
+                <p className="text-xs font-bold text-red-500">
+                  {fieldErrors.objectifs}
                 </p>
               )}
             </div>
@@ -906,10 +1023,15 @@ export default function ClubCreationRequestsPage() {
             ) : (
               <div className="space-y-3 max-h-[760px] overflow-y-auto pr-1">
                 {items.map((item) => (
+                  
                   <div
                     key={item.id}
                     className="rounded-[26px] border border-gray-100 bg-[#F9FAFB] p-4"
                   >
+                    {(() => {
+                      const objectifs = extractObjectives(item.planning_souhaite);
+                      return (
+                        <>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-black text-[#244047]">
@@ -932,6 +1054,19 @@ export default function ClubCreationRequestsPage() {
                     <div className="mt-3 rounded-2xl bg-white p-3 text-xs font-semibold text-gray-600 border border-gray-100">
                       {buildPlanningSummary(item.planning_souhaite)}
                     </div>
+
+                    {objectifs.length > 0 && (
+                      <div className="mt-3 rounded-2xl bg-white p-3 border border-gray-100">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">
+                          Objectifs
+                        </p>
+                        <ul className="space-y-1 text-xs text-gray-700">
+                          {objectifs.map((objectif) => (
+                            <li key={objectif}>• {objectif}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
                     {item.local_souhaite && (
                       <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
@@ -970,6 +1105,9 @@ export default function ClubCreationRequestsPage() {
                         Commentaire: {item.commentaire_decision}
                       </p>
                     )}
+                        </>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
@@ -993,6 +1131,10 @@ export default function ClubCreationRequestsPage() {
                   key={item.id}
                   className="rounded-[26px] border border-gray-100 bg-[#F9FAFB] p-4"
                 >
+                  {(() => {
+                    const objectifs = extractObjectives(item.planning_souhaite);
+                    return (
+                      <>
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div>
                       <p className="text-sm font-black text-[#244047]">
@@ -1011,6 +1153,18 @@ export default function ClubCreationRequestsPage() {
                       <div className="mt-3 rounded-2xl bg-white p-3 text-xs font-semibold text-gray-600 border border-gray-100">
                         {buildPlanningSummary(item.planning_souhaite)}
                       </div>
+                      {objectifs.length > 0 && (
+                        <div className="mt-3 rounded-2xl bg-white p-3 border border-gray-100">
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">
+                            Objectifs
+                          </p>
+                          <ul className="space-y-1 text-xs text-gray-700">
+                            {objectifs.map((objectif) => (
+                              <li key={objectif}>• {objectif}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                       {item.local_souhaite && (
                         <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                           <MapPin size={12} /> {item.local_souhaite.nom} (
@@ -1077,6 +1231,9 @@ export default function ClubCreationRequestsPage() {
                       </div>
                     )}
                   </div>
+                      </>
+                    );
+                  })()}
                 </div>
               ))}
             </div>
