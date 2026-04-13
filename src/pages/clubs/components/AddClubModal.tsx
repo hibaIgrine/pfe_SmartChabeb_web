@@ -1,12 +1,10 @@
 import {
   X,
-  FileText,
-  MapPin,
   Map,
-  AlertCircle,
   Building2,
-  Users,
+  ChevronRight,
   CheckCircle,
+  Clock3,
 } from "lucide-react";
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { PlanningInput } from "./PlanningInput";
@@ -38,14 +36,18 @@ const validateForm = (data: any) => {
   if (!data.nom || data.nom.trim().length < 3) errors.nom = "Nom trop court.";
   if (!data.categorie) errors.categorie = "Catégorie requise.";
   if (!data.id_salle) errors.id_salle = "Établissement requis.";
-  if (!data.locale) errors.locale = "Veuillez choisir un local.";
-  if (data.capacite === "" || parseInt(data.capacite) < 0)
+  if (!data.id_local) errors.locale = "Veuillez choisir un local.";
+  if (data.capacite === "" || parseInt(data.capacite) <= 0)
     errors.capacite = "Invalide.";
+  if (!Array.isArray(data.objectifs) || data.objectifs.length === 0)
+    errors.objectifs = "Ajoutez au moins un objectif.";
 
   if (data.planning) {
     try {
       const parsed =
-        typeof data.planning === "string" ? JSON.parse(data.planning) : data.planning;
+        typeof data.planning === "string"
+          ? JSON.parse(data.planning)
+          : data.planning;
       const slots = Array.isArray(parsed?.slots) ? parsed.slots : [];
 
       const hasInvalidRange = slots.some((slot: any) => {
@@ -67,14 +69,41 @@ const validateForm = (data: any) => {
   return errors;
 };
 
+const FR_DAY_TO_INDEX: Record<string, number> = {
+  Dimanche: 0,
+  Lundi: 1,
+  Mardi: 2,
+  Mercredi: 3,
+  Jeudi: 4,
+  Vendredi: 5,
+  Samedi: 6,
+};
+
+const formatDateOnly = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getNextDateForFrenchDay = (dayLabel: string) => {
+  const targetIndex = FR_DAY_TO_INDEX[dayLabel] ?? 1;
+  const nextDate = new Date();
+  const currentIndex = nextDate.getDay();
+  let daysUntilTarget = (targetIndex - currentIndex + 7) % 7;
+  if (daysUntilTarget === 0) daysUntilTarget = 7;
+  nextDate.setDate(nextDate.getDate() + daysUntilTarget);
+  return nextDate;
+};
+
 export const AddClubModal = ({
   isOpen,
   onClose,
   onSubmit,
-  formData,
-  setFormData,
-  salles,
-  categories,
+  formData = {},
+  setFormData = () => {},
+  salles = [],
+  categories = [],
   lockedCentreId,
   lockedCentreName,
 }: any) => {
@@ -84,10 +113,13 @@ export const AddClubModal = ({
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [staffList, setStaffList] = useState([]);
-  const [localList, setLocalList] = useState([]); // 💡 Liste des salles/terrains du centre
+  const [staffList, setStaffList] = useState<any[]>([]);
+  const [localList, setLocalList] = useState<any[]>([]); // 💡 Liste des salles/terrains du centre
   const [selectedStaff, setSelectedStaff] = useState<any[]>([]);
   const [selectedResponsableId, setSelectedResponsableId] = useState("");
+  const [objectifInput, setObjectifInput] = useState("");
+  const [availabilityMessage, setAvailabilityMessage] = useState("");
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const token = localStorage.getItem("token");
 
   // 🔄 Charger le Staff ET les Locaux dès que le centre change
@@ -162,8 +194,28 @@ export const AddClubModal = ({
       return;
     }
 
+    const isAvailable = await checkAvailability();
+    if (!isAvailable) {
+      return;
+    }
+
+    let parsedPlanning: any = {};
+    try {
+      parsedPlanning = formData.planning
+        ? typeof formData.planning === "string"
+          ? JSON.parse(formData.planning)
+          : formData.planning
+        : {};
+    } catch {
+      parsedPlanning = {};
+    }
+
     const payload = {
       ...formData,
+      planning: {
+        ...parsedPlanning,
+        objectifs: Array.isArray(formData.objectifs) ? formData.objectifs : [],
+      },
       staff: selectedStaff.filter(
         (s) => s.id_utilisateur !== selectedResponsableId,
       ),
@@ -176,15 +228,126 @@ export const AddClubModal = ({
     onSubmit(e, payload);
   };
 
+  const addObjectif = () => {
+    const value = objectifInput.trim();
+    if (!value) return;
+    const current = Array.isArray(formData.objectifs) ? formData.objectifs : [];
+    if (current.includes(value)) return;
+    setFormData({
+      ...formData,
+      objectifs: [...current, value],
+    });
+    setObjectifInput("");
+    setErrors({ ...errors, objectifs: null });
+  };
+
+  const removeObjectif = (objectifToRemove: string) => {
+    const current = Array.isArray(formData.objectifs) ? formData.objectifs : [];
+    setFormData({
+      ...formData,
+      objectifs: current.filter(
+        (objectif: string) => objectif !== objectifToRemove,
+      ),
+    });
+  };
+
+  const checkAvailability = async () => {
+    const localId = formData.id_local;
+    let parsedPlanning: any = {};
+
+    try {
+      parsedPlanning = formData.planning
+        ? typeof formData.planning === "string"
+          ? JSON.parse(formData.planning)
+          : formData.planning
+        : {};
+    } catch {
+      setAvailabilityMessage("Planning invalide.");
+      return false;
+    }
+
+    const slots = Array.isArray(parsedPlanning?.slots)
+      ? parsedPlanning.slots
+      : [];
+
+    if (!localId || slots.length === 0) {
+      setAvailabilityMessage(
+        "Choisissez un local et ajoutez au moins un créneau pour vérifier.",
+      );
+      return false;
+    }
+
+    setCheckingAvailability(true);
+    setAvailabilityMessage("");
+
+    try {
+      for (const slot of slots) {
+        if (!slot?.day || !slot?.startTime || !slot?.endTime) {
+          setAvailabilityMessage("Complétez tous les créneaux du planning.");
+          return false;
+        }
+
+        const date = formatDateOnly(getNextDateForFrenchDay(slot.day));
+        const response = await api.get(
+          `/reservations/check?id_local=${localId}&date=${date}&start=${slot.startTime}&end=${slot.endTime}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+
+        if (!response.data?.available) {
+          setAvailabilityMessage(
+            `Indisponible: ${slot.day} de ${slot.startTime} à ${slot.endTime}.`,
+          );
+          return false;
+        }
+      }
+
+      setAvailabilityMessage("Tous les créneaux sont disponibles.");
+      return true;
+    } catch {
+      setAvailabilityMessage("Vérification de disponibilité indisponible.");
+      return false;
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };
+
   const handleClose = () => {
     setErrors({});
     setLogoPreview("");
     setSelectedGouvernorat("");
     setSelectedStaff([]);
     setSelectedResponsableId("");
+    setObjectifInput("");
+    setAvailabilityMessage("");
     setIsCustomCategory(false);
     onClose();
   };
+
+  const planningPreview = useMemo(() => {
+    try {
+      const parsed = formData.planning
+        ? typeof formData.planning === "string"
+          ? JSON.parse(formData.planning)
+          : formData.planning
+        : {};
+      const slots = Array.isArray(parsed?.slots) ? parsed.slots : [];
+
+      if (slots.length === 0) {
+        return "Ajoutez des créneaux pour afficher la prévisualisation.";
+      }
+
+      return slots
+        .map((slot: any) => {
+          if (!slot?.day || !slot?.startTime || !slot?.endTime) {
+            return "Créneau incomplet";
+          }
+          return `Chaque ${String(slot.day).toLowerCase()} de ${slot.startTime} à ${slot.endTime}`;
+        })
+        .join(" | ");
+    } catch {
+      return "Planning invalide.";
+    }
+  }, [formData.planning]);
 
   if (!isOpen) return null;
 
@@ -240,7 +403,12 @@ export const AddClubModal = ({
                     value={selectedGouvernorat}
                     onChange={(e) => {
                       setSelectedGouvernorat(e.target.value);
-                      setFormData({ ...formData, id_salle: "", locale: "" });
+                      setFormData({
+                        ...formData,
+                        id_salle: "",
+                        locale: "",
+                        id_local: "",
+                      });
                     }}
                   >
                     <option value="">Région / Gouvernorat...</option>
@@ -265,6 +433,7 @@ export const AddClubModal = ({
                         ...formData,
                         id_salle: e.target.value,
                         locale: "",
+                        id_local: "",
                       });
                       setSelectedResponsableId("");
                       setErrors({ ...errors, id_salle: null });
@@ -327,8 +496,7 @@ export const AddClubModal = ({
                 }}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* 💡 CAPACITÉ BLOQUÉE (Pas de négatif) */}
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-1">
                   <input
                     type="text"
@@ -348,37 +516,58 @@ export const AddClubModal = ({
                     </p>
                   )}
                 </div>
+              </div>
 
-                {/* 💡 CHOIX DU LOCAL (SELON LE CENTRE) */}
-                <div className="space-y-1">
-                  <select
-                    required
-                    disabled={!formData.id_salle}
-                    className={inputCls(errors.locale)}
-                    value={formData.locale || ""}
-                    onChange={(e) => {
-                      setFormData({ ...formData, locale: e.target.value });
-                      setErrors({ ...errors, locale: null });
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest ml-1">
+                  Objectifs du club
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    value={objectifInput}
+                    onChange={(e) => setObjectifInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addObjectif();
+                      }
                     }}
+                    placeholder="Ajouter un objectif"
+                    className={inputCls(errors.objectifs)}
+                  />
+                  <button
+                    type="button"
+                    onClick={addObjectif}
+                    className="px-4 py-3 rounded-2xl bg-smart-teal text-white text-xs font-black uppercase tracking-wide"
                   >
-                    <option value="">
-                      {formData.id_salle
-                        ? "Choisir la salle / le terrain *"
-                        : "En attente du centre..."}
-                    </option>
-                    {localList.map((l: any) => (
-                      <option key={l.id} value={l.nom}>
-                        {l.nom} ({l.type})
-                      </option>
-                    ))}
-                    <option value="Autre">Extérieur / Hors centre</option>
-                  </select>
-                  {errors.locale && (
-                    <p className="text-red-500 text-[9px] font-black ml-4 uppercase">
-                      {errors.locale}
-                    </p>
-                  )}
+                    Ajouter
+                  </button>
                 </div>
+                {errors.objectifs && (
+                  <p className="text-red-500 text-[9px] font-black ml-4 uppercase">
+                    {errors.objectifs}
+                  </p>
+                )}
+                {Array.isArray(formData.objectifs) &&
+                  formData.objectifs.length > 0 && (
+                    <ul className="space-y-2 rounded-2xl bg-white p-4 border border-gray-100">
+                      {formData.objectifs.map((objectif: string) => (
+                        <li
+                          key={objectif}
+                          className="flex items-center justify-between text-xs font-bold text-smart-teal"
+                        >
+                          <span>• {objectif}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeObjectif(objectif)}
+                            className="text-red-500"
+                          >
+                            Retirer
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
               </div>
 
               <textarea
@@ -507,19 +696,112 @@ export const AddClubModal = ({
             </div>
           </div>
 
-          {/* 📅 SECTION 5 : PLANNING */}
-          <PlanningInput
-            value={formData.planning}
-            onChange={(val) => {
-              setFormData({ ...formData, planning: val });
-              setErrors((prev: any) => ({ ...prev, planning: null }));
-            }}
-          />
-          {errors.planning && (
-            <p className="text-red-500 text-[10px] font-black ml-1 uppercase">
-              {errors.planning}
-            </p>
-          )}
+          <div className="rounded-[28px] border border-gray-100 bg-[#F7F3E9] p-5 space-y-4">
+            <div>
+              <h4 className="text-sm font-black text-[#244047]">
+                Planning hebdomadaire
+              </h4>
+              <p className="text-xs text-gray-500 font-medium mt-1">
+                Configurez les créneaux du club, puis vérifiez la disponibilité
+                du local.
+              </p>
+            </div>
+
+            <div className="rounded-[24px] bg-white p-4 border border-[#D9E8D1] flex items-start gap-3">
+              <Clock3 size={18} className="text-[#436D75] mt-0.5" />
+              <div>
+                <p className="text-sm font-black text-[#244047]">
+                  Prévisualisation
+                </p>
+                <p className="text-xs text-gray-500 font-medium mt-1">
+                  {planningPreview}
+                </p>
+              </div>
+            </div>
+
+            <PlanningInput
+              value={formData.planning}
+              onChange={(val) => {
+                setFormData({ ...formData, planning: val });
+                setErrors((prev: any) => ({ ...prev, planning: null }));
+              }}
+            />
+            {errors.planning && (
+              <p className="text-red-500 text-[10px] font-black ml-1 uppercase">
+                {errors.planning}
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-[28px] border border-gray-100 bg-white p-5 space-y-4">
+            <div>
+              <h4 className="text-sm font-black text-[#244047]">
+                Local de votre centre
+              </h4>
+              <p className="text-xs text-gray-500 font-medium mt-1">
+                Les locaux affichés ici proviennent uniquement du centre
+                sélectionné.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                Local souhaité
+              </label>
+              <select
+                required
+                disabled={!formData.id_salle}
+                className="w-full rounded-2xl border bg-[#F8FAFC] px-4 py-3 text-sm font-semibold outline-none border-gray-200"
+                value={formData.id_local || ""}
+                onChange={(e) => {
+                  const selected = localList.find(
+                    (l: any) => l.id === e.target.value,
+                  );
+                  setFormData({
+                    ...formData,
+                    id_local: e.target.value,
+                    locale: selected?.nom || "",
+                  });
+                  setErrors({ ...errors, locale: null });
+                }}
+              >
+                <option value="">
+                  {formData.id_salle
+                    ? "Choisir la salle / le terrain *"
+                    : "En attente du centre..."}
+                </option>
+                {localList.map((l: any) => (
+                  <option key={l.id} value={l.id}>
+                    {l.nom} ({l.type})
+                  </option>
+                ))}
+              </select>
+              {errors.locale && (
+                <p className="text-red-500 text-[9px] font-black ml-1 uppercase">
+                  {errors.locale}
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => void checkAvailability()}
+                disabled={checkingAvailability}
+                className="inline-flex items-center gap-2 rounded-2xl bg-[#436D75] px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-white shadow-sm disabled:opacity-60"
+              >
+                <ChevronRight size={14} />
+                {checkingAvailability
+                  ? "Vérification..."
+                  : "Vérifier la disponibilité"}
+              </button>
+              {availabilityMessage && (
+                <span className="text-xs font-bold text-gray-600">
+                  {availabilityMessage}
+                </span>
+              )}
+            </div>
+          </div>
 
           {/* 🚀 SUBMIT */}
           <button

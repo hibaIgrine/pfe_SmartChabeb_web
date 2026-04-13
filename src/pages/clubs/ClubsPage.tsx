@@ -15,11 +15,13 @@ const EMPTY_FORM = {
   description: "",
   categorie: "",
   id_salle: "",
+  id_local: "",
   id_coach: "",
   logo_url: "",
   planning: "",
   capacite: "", // 💡 AJOUTÉ
   locale: "",
+  objectifs: [] as string[],
   staff: [] as any[], // 💡 AJOUTÉ
 };
 
@@ -79,7 +81,9 @@ export default function ClubsPage() {
         setResolvedCentreId(me?.centre?.id ?? me?.id_centre ?? "");
         setResolvedCentreName(me?.centre?.nom ?? "");
       } catch {
-        setResolvedCentreId(currentUser?.id_centre ?? currentUser?.centre?.id ?? "");
+        setResolvedCentreId(
+          currentUser?.id_centre ?? currentUser?.centre?.id ?? "",
+        );
         setResolvedCentreName(currentUser?.centre?.nom ?? "");
       }
 
@@ -92,9 +96,12 @@ export default function ClubsPage() {
             ),
           );
         } else if (myCentreId) {
-          const resStaff = await api.get(`/users/staff-by-centre/${myCentreId}`, {
-            headers,
-          });
+          const resStaff = await api.get(
+            `/users/staff-by-centre/${myCentreId}`,
+            {
+              headers,
+            },
+          );
           setCoaches(Array.isArray(resStaff.data) ? resStaff.data : []);
         } else {
           setCoaches([]);
@@ -187,7 +194,9 @@ export default function ClubsPage() {
 
   const handleCreate = async (e: any, payload: any) => {
     e.preventDefault();
-    const resolvedCentreId = isResponsableCentre ? myCentreId : payload.id_salle;
+    const resolvedCentreId = isResponsableCentre
+      ? myCentreId
+      : payload.id_salle;
     try {
       await api.post(
         "/clubs",
@@ -214,11 +223,15 @@ export default function ClubsPage() {
       description: club.description ?? "",
       categorie: club.categorie ?? "",
       id_salle: club.id_salle ?? club.id_centre ?? "",
+      id_local: "",
       id_coach: club.id_coach ?? "",
       logo_url: club.logo_url ?? "",
       planning: club.planning ?? "",
       capacite: club.capacite ?? "",
       locale: club.locale ?? club.locale_fixe ?? "",
+      objectifs: Array.isArray(club?.planning?.objectifs)
+        ? club.planning.objectifs
+        : [],
       staff: club.staff ?? [],
     });
     setEditingClub(club);
