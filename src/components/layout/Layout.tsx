@@ -32,6 +32,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       navigate("/auth");
       return;
     }
+
+    if (
+      role === "ADHERENT" &&
+      location.pathname !== "/club-creation-requests"
+    ) {
+      navigate("/club-creation-requests");
+    }
   }, [user, role, navigate, location.pathname]);
 
   const handleLogout = () => {
@@ -59,7 +66,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* NAVIGATION AVEC SCROLL INTERNE (si l'écran est petit) */}
         <nav className="flex-1 px-3 space-y-1 mt-4 overflow-y-auto custom-scrollbar scrollbar-hide">
-          {(role === "ADMIN" || role === "ADHERENT") && (
+          {role === "ADMIN" && (
             <SidebarItem
               to="/dashboard"
               icon={<LayoutDashboard size={18} />}

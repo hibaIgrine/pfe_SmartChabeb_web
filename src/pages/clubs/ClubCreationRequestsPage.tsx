@@ -46,6 +46,7 @@ type RequestFormState = {
   nom_club: string;
   categorie: string;
   custom_categorie: string;
+  capacite: string;
   description: string;
   objectifs: string[];
   planning_souhaite: string;
@@ -69,6 +70,7 @@ const DEFAULT_FORM: RequestFormState = {
   nom_club: "",
   categorie: "",
   custom_categorie: "",
+  capacite: "",
   description: "",
   objectifs: [],
   planning_souhaite: "",
@@ -129,6 +131,24 @@ const extractObjectives = (planning: any): string[] => {
   return planning.objectifs
     .map((value: unknown) => (typeof value === "string" ? value.trim() : ""))
     .filter(Boolean);
+};
+
+const extractCapacity = (planning: any): number | null => {
+  if (!planning || typeof planning !== "object") return null;
+  const parsed = Number(planning.capacite);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+const extractLogoUrl = (planning: any): string | null => {
+  if (!planning || typeof planning !== "object") return null;
+  const raw = planning.logo_url;
+  return typeof raw === "string" && raw.trim().length > 0 ? raw : null;
+};
+
+type CategoryOption = {
+  id: string;
+  label: string;
+  icon: string;
 };
 
 function AttachmentCard({
@@ -207,6 +227,19 @@ export default function ClubCreationRequestsPage() {
   const [availabilityMessage, setAvailabilityMessage] = useState<string>("");
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [objectifInput, setObjectifInput] = useState("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+
+  const categoryOptions: CategoryOption[] = useMemo(() => {
+    const defaults = [...ALL_CATEGORIES];
+    const knownDefaultIds = new Set(defaults.map((item) => item.id));
+    const generated = customCategories
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .filter((value) => !knownDefaultIds.has(value))
+      .map((value) => ({ id: value, label: value, icon: "✨" }));
+    return [...defaults, ...generated];
+  }, [customCategories]);
 
   const selectedCategory = isCustomCategory
     ? form.custom_categorie.trim()
@@ -214,7 +247,7 @@ export default function ClubCreationRequestsPage() {
 
   const selectedCategoryLabel = isCustomCategory
     ? form.custom_categorie.trim() || "Catégorie personnalisée"
-    : ALL_CATEGORIES.find((category) => category.id === form.categorie)
+    : categoryOptions.find((category) => category.id === form.categorie)
         ?.label || "Catégorie";
 
   const availableLocals = useMemo(
@@ -238,19 +271,28 @@ export default function ClubCreationRequestsPage() {
     setError(null);
     try {
       if (isRequester) {
-        const [requestsRes, locauxRes] = await Promise.all([
+        const [requestsRes, locauxRes, categoriesRes] = await Promise.all([
           api.get("/club-creation-requests/mine", { headers }),
           api.get("/locaux", { headers }),
+          api.get("/club-creation-requests/categories", { headers }),
         ]);
 
         setItems(Array.isArray(requestsRes.data) ? requestsRes.data : []);
         setLocaux(Array.isArray(locauxRes.data) ? locauxRes.data : []);
-      } else if (canReview) {
-        const requestsRes = await api.get(
-          `/club-creation-requests?statut=${statusFilter}`,
-          { headers },
+        setCustomCategories(
+          Array.isArray(categoriesRes.data) ? categoriesRes.data : [],
         );
+      } else if (canReview) {
+        const [requestsRes, categoriesRes] = await Promise.all([
+          api.get(`/club-creation-requests?statut=${statusFilter}`, {
+            headers,
+          }),
+          api.get("/club-creation-requests/categories", { headers }),
+        ]);
         setItems(Array.isArray(requestsRes.data) ? requestsRes.data : []);
+        setCustomCategories(
+          Array.isArray(categoriesRes.data) ? categoriesRes.data : [],
+        );
       } else {
         setItems([]);
       }
@@ -286,6 +328,12 @@ export default function ClubCreationRequestsPage() {
     if (!form.description.trim() || form.description.trim().length < 20) {
       nextErrors.description =
         "La description doit contenir au moins 20 caractères.";
+    }
+
+    const capacity = Number(form.capacite);
+    if (!form.capacite || !Number.isInteger(capacity) || capacity <= 0) {
+      nextErrors.capacite =
+        "La capacité doit être un nombre entier supérieur à 0.";
     }
 
     if (!Array.isArray(form.objectifs) || form.objectifs.length === 0) {
@@ -355,6 +403,7 @@ export default function ClubCreationRequestsPage() {
   const resetForm = () => {
     setForm(DEFAULT_FORM);
     setObjectifInput("");
+    setLogoFile(null);
     setCvFile(null);
     setAttestationFile(null);
     setAvailabilityMessage("");
@@ -393,6 +442,7 @@ export default function ClubCreationRequestsPage() {
       payload.append("nom_club", form.nom_club.trim());
       payload.append("categorie", selectedCategory);
       payload.append("description", form.description.trim());
+      payload.append("capacite", form.capacite);
       payload.append("objectifs", JSON.stringify(form.objectifs));
       payload.append("planning_souhaite", JSON.stringify(planningPayload));
       payload.append("id_local_souhaite", form.id_local_souhaite);
@@ -402,6 +452,9 @@ export default function ClubCreationRequestsPage() {
       payload.append("heure_fin_souhaitee", form.heure_fin_souhaitee);
       payload.append("cv", cvFile as Blob);
       payload.append("attestation", attestationFile as Blob);
+      if (logoFile) {
+        payload.append("logo", logoFile as Blob);
+      }
 
       await api.post("/club-creation-requests", payload, {
         headers: {
@@ -468,7 +521,9 @@ export default function ClubCreationRequestsPage() {
   const removeObjectif = (objectifToRemove: string) => {
     setForm((prev) => ({
       ...prev,
-      objectifs: prev.objectifs.filter((objectif) => objectif !== objectifToRemove),
+      objectifs: prev.objectifs.filter(
+        (objectif) => objectif !== objectifToRemove,
+      ),
     }));
   };
 
@@ -607,6 +662,29 @@ export default function ClubCreationRequestsPage() {
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">
+                  Capacité
+                </label>
+                <input
+                  value={form.capacite}
+                  onChange={(e) => {
+                    const numericOnly = e.target.value.replace(/\D/g, "");
+                    setForm((p) => ({ ...p, capacite: numericOnly }));
+                    setFieldErrors((prev) => ({ ...prev, capacite: "" }));
+                  }}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="Ex: 30"
+                  className={`w-full rounded-2xl border bg-[#F8FAFC] px-4 py-3 text-sm font-semibold outline-none transition focus:bg-white ${fieldErrors.capacite ? "border-red-300 ring-2 ring-red-100" : "border-gray-200"}`}
+                />
+                {fieldErrors.capacite && (
+                  <p className="text-xs font-bold text-red-500">
+                    {fieldErrors.capacite}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">
                   Centre d'attache
                 </label>
                 <div className="rounded-2xl border border-[#D9E8D1] bg-[#F7F3E9] px-4 py-3 text-sm font-bold text-[#244047] flex items-center gap-2">
@@ -633,7 +711,7 @@ export default function ClubCreationRequestsPage() {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                {ALL_CATEGORIES.map((category) => {
+                {categoryOptions.map((category) => {
                   const active =
                     !isCustomCategory && form.categorie === category.id;
                   return (
@@ -723,7 +801,8 @@ export default function ClubCreationRequestsPage() {
                 Objectifs du club
               </label>
               <p className="text-sm text-gray-500 font-medium">
-                Ajoutez les objectifs sous forme de puces. Ce champ est obligatoire.
+                Ajoutez les objectifs sous forme de puces. Ce champ est
+                obligatoire.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-2">
@@ -957,11 +1036,11 @@ export default function ClubCreationRequestsPage() {
                   Pièces jointes
                 </h4>
                 <p className="text-xs text-gray-500 font-medium mt-1">
-                  Joignez un CV et une attestation de soutien ou justificatif.
+                  Joignez un CV, une attestation et un logo optionnel.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <AttachmentCard
                   title="CV du porteur"
                   description="Mettez en avant votre parcours et votre rôle dans le club."
@@ -979,6 +1058,15 @@ export default function ClubCreationRequestsPage() {
                   onChange={(file) => {
                     setAttestationFile(file);
                     setFieldErrors((prev) => ({ ...prev, attestation: "" }));
+                  }}
+                />
+
+                <AttachmentCard
+                  title="Logo du club (optionnel)"
+                  description="Ajoutez l'identité visuelle de votre club (image)."
+                  file={logoFile}
+                  onChange={(file) => {
+                    setLogoFile(file);
                   }}
                 />
               </div>
@@ -1023,88 +1111,105 @@ export default function ClubCreationRequestsPage() {
             ) : (
               <div className="space-y-3 max-h-[760px] overflow-y-auto pr-1">
                 {items.map((item) => (
-                  
                   <div
                     key={item.id}
                     className="rounded-[26px] border border-gray-100 bg-[#F9FAFB] p-4"
                   >
                     {(() => {
-                      const objectifs = extractObjectives(item.planning_souhaite);
+                      const objectifs = extractObjectives(
+                        item.planning_souhaite,
+                      );
+                      const capacity = extractCapacity(item.planning_souhaite);
+                      const logoUrl = extractLogoUrl(item.planning_souhaite);
                       return (
                         <>
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-black text-[#244047]">
-                          {item.nom_club}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {item.categorie} ·{" "}
-                          {new Date(item.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <span className="rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-[#436D75] border border-gray-100">
-                        {item.statut}
-                      </span>
-                    </div>
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-black text-[#244047]">
+                                {item.nom_club}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {item.categorie} ·{" "}
+                                {new Date(item.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <span className="rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-[#436D75] border border-gray-100">
+                              {item.statut}
+                            </span>
+                          </div>
 
-                    <p className="mt-3 text-xs leading-5 text-gray-600">
-                      {item.description}
-                    </p>
+                          <p className="mt-3 text-xs leading-5 text-gray-600">
+                            {item.description}
+                          </p>
 
-                    <div className="mt-3 rounded-2xl bg-white p-3 text-xs font-semibold text-gray-600 border border-gray-100">
-                      {buildPlanningSummary(item.planning_souhaite)}
-                    </div>
+                          {capacity && (
+                            <p className="mt-2 text-xs font-bold text-[#436D75]">
+                              Capacité: {capacity} membres
+                            </p>
+                          )}
 
-                    {objectifs.length > 0 && (
-                      <div className="mt-3 rounded-2xl bg-white p-3 border border-gray-100">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">
-                          Objectifs
-                        </p>
-                        <ul className="space-y-1 text-xs text-gray-700">
-                          {objectifs.map((objectif) => (
-                            <li key={objectif}>• {objectif}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                          {logoUrl && (
+                            <img
+                              src={buildFileUrl(logoUrl)}
+                              alt="Logo club"
+                              className="mt-3 h-16 w-16 rounded-2xl border border-gray-200 object-cover"
+                            />
+                          )}
 
-                    {item.local_souhaite && (
-                      <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                        <MapPin size={12} /> {item.local_souhaite.nom} (
-                        {item.local_souhaite.type})
-                      </p>
-                    )}
+                          <div className="mt-3 rounded-2xl bg-white p-3 text-xs font-semibold text-gray-600 border border-gray-100">
+                            {buildPlanningSummary(item.planning_souhaite)}
+                          </div>
 
-                    {(item.cv_url || item.attestation_url) && (
-                      <div className="flex flex-wrap gap-3 mt-3 text-xs font-bold">
-                        {item.cv_url && (
-                          <a
-                            href={buildFileUrl(item.cv_url)}
-                            className="inline-flex items-center gap-1 rounded-full bg-[#D9E8D1] px-3 py-2 text-[#244047]"
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <FileText size={12} /> CV
-                          </a>
-                        )}
-                        {item.attestation_url && (
-                          <a
-                            href={buildFileUrl(item.attestation_url)}
-                            className="inline-flex items-center gap-1 rounded-full bg-[#F7F3E9] px-3 py-2 text-[#244047]"
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <Check size={12} /> Attestation
-                          </a>
-                        )}
-                      </div>
-                    )}
+                          {objectifs.length > 0 && (
+                            <div className="mt-3 rounded-2xl bg-white p-3 border border-gray-100">
+                              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">
+                                Objectifs
+                              </p>
+                              <ul className="space-y-1 text-xs text-gray-700">
+                                {objectifs.map((objectif) => (
+                                  <li key={objectif}>• {objectif}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
 
-                    {item.commentaire_decision && (
-                      <p className="text-xs text-gray-600 mt-3 rounded-2xl bg-white px-3 py-2 border border-gray-100">
-                        Commentaire: {item.commentaire_decision}
-                      </p>
-                    )}
+                          {item.local_souhaite && (
+                            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                              <MapPin size={12} /> {item.local_souhaite.nom} (
+                              {item.local_souhaite.type})
+                            </p>
+                          )}
+
+                          {(item.cv_url || item.attestation_url) && (
+                            <div className="flex flex-wrap gap-3 mt-3 text-xs font-bold">
+                              {item.cv_url && (
+                                <a
+                                  href={buildFileUrl(item.cv_url)}
+                                  className="inline-flex items-center gap-1 rounded-full bg-[#D9E8D1] px-3 py-2 text-[#244047]"
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  <FileText size={12} /> CV
+                                </a>
+                              )}
+                              {item.attestation_url && (
+                                <a
+                                  href={buildFileUrl(item.attestation_url)}
+                                  className="inline-flex items-center gap-1 rounded-full bg-[#F7F3E9] px-3 py-2 text-[#244047]"
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  <Check size={12} /> Attestation
+                                </a>
+                              )}
+                            </div>
+                          )}
+
+                          {item.commentaire_decision && (
+                            <p className="text-xs text-gray-600 mt-3 rounded-2xl bg-white px-3 py-2 border border-gray-100">
+                              Commentaire: {item.commentaire_decision}
+                            </p>
+                          )}
                         </>
                       );
                     })()}
@@ -1133,104 +1238,118 @@ export default function ClubCreationRequestsPage() {
                 >
                   {(() => {
                     const objectifs = extractObjectives(item.planning_souhaite);
+                    const capacity = extractCapacity(item.planning_souhaite);
+                    const logoUrl = extractLogoUrl(item.planning_souhaite);
                     return (
                       <>
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-black text-[#244047]">
-                        {item.nom_club}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {item.categorie} · {item.demandeur?.nom}{" "}
-                        {item.demandeur?.prenom} · {item.demandeur?.email}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Centre: {item.centre?.nom || "-"}
-                      </p>
-                      <p className="text-xs text-gray-600 mt-2">
-                        {item.description}
-                      </p>
-                      <div className="mt-3 rounded-2xl bg-white p-3 text-xs font-semibold text-gray-600 border border-gray-100">
-                        {buildPlanningSummary(item.planning_souhaite)}
-                      </div>
-                      {objectifs.length > 0 && (
-                        <div className="mt-3 rounded-2xl bg-white p-3 border border-gray-100">
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">
-                            Objectifs
-                          </p>
-                          <ul className="space-y-1 text-xs text-gray-700">
-                            {objectifs.map((objectif) => (
-                              <li key={objectif}>• {objectif}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {item.local_souhaite && (
-                        <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                          <MapPin size={12} /> {item.local_souhaite.nom} (
-                          {item.local_souhaite.type})
-                        </p>
-                      )}
-                      {(item.cv_url || item.attestation_url) && (
-                        <div className="flex flex-wrap gap-3 mt-3 text-xs font-bold">
-                          {item.cv_url && (
-                            <a
-                              href={buildFileUrl(item.cv_url)}
-                              className="inline-flex items-center gap-1 rounded-full bg-[#D9E8D1] px-3 py-2 text-[#244047]"
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              <FileText size={12} /> CV
-                            </a>
-                          )}
-                          {item.attestation_url && (
-                            <a
-                              href={buildFileUrl(item.attestation_url)}
-                              className="inline-flex items-center gap-1 rounded-full bg-[#F7F3E9] px-3 py-2 text-[#244047]"
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              <Check size={12} /> Attestation
-                            </a>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-black text-[#244047]">
+                              {item.nom_club}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {item.categorie} · {item.demandeur?.nom}{" "}
+                              {item.demandeur?.prenom} · {item.demandeur?.email}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Centre: {item.centre?.nom || "-"}
+                            </p>
+                            <p className="text-xs text-gray-600 mt-2">
+                              {item.description}
+                            </p>
+                            {capacity && (
+                              <p className="text-xs font-bold text-[#436D75] mt-2">
+                                Capacité: {capacity} membres
+                              </p>
+                            )}
+                            {logoUrl && (
+                              <img
+                                src={buildFileUrl(logoUrl)}
+                                alt="Logo club"
+                                className="mt-3 h-16 w-16 rounded-2xl border border-gray-200 object-cover"
+                              />
+                            )}
+                            <div className="mt-3 rounded-2xl bg-white p-3 text-xs font-semibold text-gray-600 border border-gray-100">
+                              {buildPlanningSummary(item.planning_souhaite)}
+                            </div>
+                            {objectifs.length > 0 && (
+                              <div className="mt-3 rounded-2xl bg-white p-3 border border-gray-100">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">
+                                  Objectifs
+                                </p>
+                                <ul className="space-y-1 text-xs text-gray-700">
+                                  {objectifs.map((objectif) => (
+                                    <li key={objectif}>• {objectif}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {item.local_souhaite && (
+                              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                                <MapPin size={12} /> {item.local_souhaite.nom} (
+                                {item.local_souhaite.type})
+                              </p>
+                            )}
+                            {(item.cv_url || item.attestation_url) && (
+                              <div className="flex flex-wrap gap-3 mt-3 text-xs font-bold">
+                                {item.cv_url && (
+                                  <a
+                                    href={buildFileUrl(item.cv_url)}
+                                    className="inline-flex items-center gap-1 rounded-full bg-[#D9E8D1] px-3 py-2 text-[#244047]"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    <FileText size={12} /> CV
+                                  </a>
+                                )}
+                                {item.attestation_url && (
+                                  <a
+                                    href={buildFileUrl(item.attestation_url)}
+                                    className="inline-flex items-center gap-1 rounded-full bg-[#F7F3E9] px-3 py-2 text-[#244047]"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    <Check size={12} /> Attestation
+                                  </a>
+                                )}
+                              </div>
+                            )}
+                          </div>
 
-                    {item.statut === "EN_ATTENTE" && (
-                      <div className="w-full md:w-[320px] space-y-2 rounded-[22px] bg-white p-3 border border-gray-100">
-                        <textarea
-                          placeholder="Commentaire de décision (optionnel)"
-                          value={decisionNotes[item.id] || ""}
-                          onChange={(e) =>
-                            setDecisionNotes((prev) => ({
-                              ...prev,
-                              [item.id]: e.target.value,
-                            }))
-                          }
-                          className="w-full min-h-[92px] rounded-2xl border border-gray-200 bg-[#F8FAFC] px-3 py-3 text-xs font-medium outline-none"
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() =>
-                              void reviewRequest(item.id, "ACCEPTEE")
-                            }
-                            className="flex-1 rounded-2xl bg-[#436D75] px-3 py-3 text-xs font-black uppercase tracking-[0.15em] text-white"
-                          >
-                            Accepter
-                          </button>
-                          <button
-                            onClick={() =>
-                              void reviewRequest(item.id, "REFUSEE")
-                            }
-                            className="flex-1 rounded-2xl bg-[#FDE5E1] px-3 py-3 text-xs font-black uppercase tracking-[0.15em] text-[#B23A2B] border border-[#E98A7D]/40"
-                          >
-                            Refuser
-                          </button>
+                          {item.statut === "EN_ATTENTE" && (
+                            <div className="w-full md:w-[320px] space-y-2 rounded-[22px] bg-white p-3 border border-gray-100">
+                              <textarea
+                                placeholder="Commentaire de décision (optionnel)"
+                                value={decisionNotes[item.id] || ""}
+                                onChange={(e) =>
+                                  setDecisionNotes((prev) => ({
+                                    ...prev,
+                                    [item.id]: e.target.value,
+                                  }))
+                                }
+                                className="w-full min-h-[92px] rounded-2xl border border-gray-200 bg-[#F8FAFC] px-3 py-3 text-xs font-medium outline-none"
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() =>
+                                    void reviewRequest(item.id, "ACCEPTEE")
+                                  }
+                                  className="flex-1 rounded-2xl bg-[#436D75] px-3 py-3 text-xs font-black uppercase tracking-[0.15em] text-white"
+                                >
+                                  Accepter
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    void reviewRequest(item.id, "REFUSEE")
+                                  }
+                                  className="flex-1 rounded-2xl bg-[#FDE5E1] px-3 py-3 text-xs font-black uppercase tracking-[0.15em] text-[#B23A2B] border border-[#E98A7D]/40"
+                                >
+                                  Refuser
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
-                  </div>
                       </>
                     );
                   })()}
