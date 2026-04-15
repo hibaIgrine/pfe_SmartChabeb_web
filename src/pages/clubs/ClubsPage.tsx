@@ -45,6 +45,9 @@ export default function ClubsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingClub, setEditingClub] = useState<any>(null);
   const [deletingClub, setDeletingClub] = useState<any>(null);
+  const [validatingStartId, setValidatingStartId] = useState<string | null>(
+    null,
+  );
 
   const [addFormData, setAddFormData] = useState({ ...EMPTY_FORM });
   const [editFormData, setEditFormData] = useState({ ...EMPTY_FORM });
@@ -60,6 +63,8 @@ export default function ClubsPage() {
     currentUser?.centre?.nom ?? "",
   );
   const isResponsableCentre = currentUser?.role === "RESPONSABLE_CENTRE";
+  const canValidateStart =
+    currentUser?.role === "ADMIN" || currentUser?.role === "RESPONSABLE_CENTRE";
   const myCentreId = resolvedCentreId;
   const myCentreName = resolvedCentreName;
   const token = localStorage.getItem("token");
@@ -217,6 +222,24 @@ export default function ClubsPage() {
     }
   };
 
+  const handleValidateStart = async (club: any) => {
+    if (!club?.id) return;
+
+    setValidatingStartId(club.id);
+    try {
+      await api.patch(`/clubs/${club.id}/start`, {}, { headers });
+      await loadAllData();
+      showAlert(`Le club "${club.nom}" est maintenant validé pour démarrer.`, "success");
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        "Impossible de valider le démarrage du club.";
+      showAlert(Array.isArray(message) ? message[0] : message, "error");
+    } finally {
+      setValidatingStartId(null);
+    }
+  };
+
   const handleEditOpen = (club: any) => {
     setEditFormData({
       nom: club.nom ?? "",
@@ -362,6 +385,9 @@ export default function ClubsPage() {
               onViewStaff={(c) => navigate(`/clubs/${c.id}/staff`)}
               onEdit={(c) => handleEditOpen(c)}
               onDelete={(c) => handleToggleActive(c)}
+              canValidateStart={canValidateStart}
+              onValidateStart={handleValidateStart}
+              validatingStartId={validatingStartId}
             />
           ))}
         </div>

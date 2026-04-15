@@ -6,6 +6,7 @@ import {
   User,
   Calendar,
   ChevronRight,
+  CheckCircle2,
 } from "lucide-react";
 import api from "../../../api/axios";
 import { ClubResponsablesList } from "./ClubResponsablesList";
@@ -93,6 +94,9 @@ interface ClubCardProps {
   onViewStaff: (club: any) => void;
   onEdit: (club: any) => void;
   onDelete: (club: any) => void;
+  canValidateStart?: boolean;
+  onValidateStart?: (club: any) => void;
+  validatingStartId?: string | null;
 }
 
 export const ClubCard = ({
@@ -101,12 +105,21 @@ export const ClubCard = ({
   onViewStaff,
   onEdit,
   onDelete,
+  canValidateStart = false,
+  onValidateStart,
+  validatingStartId = null,
 }: ClubCardProps) => {
   const cat = getCategoryStyle(club.categorie);
   const totalMembers =
     club._count?.inscriptions ?? club.inscriptions?.length ?? 0;
   const planningText = safePlanning(club.planning);
   const imageUrl = getFullImageUrl(club.logo_url, club.nom);
+  const startStatus = club.start_status ?? {};
+  const isStarted = Boolean(startStatus.is_started);
+  const readyForValidation = Boolean(startStatus.ready_for_validation);
+  const minimumReached = Boolean(startStatus.minimum_reached);
+  const canShowValidateButton =
+    canValidateStart && readyForValidation && !isStarted && !!onValidateStart;
 
   return (
     <div className="group bg-white rounded-[28px] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden hover:-translate-y-1">
@@ -116,12 +129,34 @@ export const ClubCard = ({
       <div className="p-6 flex flex-col flex-1">
         {/* Badge catégorie + compteur */}
         <div className="flex justify-between items-start mb-4">
-          <span
-            className={`text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1 ${cat.bg} ${cat.text}`}
-          >
-            <span>{cat.icon}</span>
-            {club.categorie}
-          </span>
+          <div className="flex flex-wrap gap-2">
+            <span
+              className={`text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1 ${cat.bg} ${cat.text}`}
+            >
+              <span>{cat.icon}</span>
+              {club.categorie}
+            </span>
+            <span
+              className={`text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1 ${
+                isStarted
+                  ? "bg-emerald-50 text-emerald-700"
+                  : readyForValidation
+                    ? "bg-amber-50 text-amber-700"
+                    : minimumReached
+                      ? "bg-sky-50 text-sky-700"
+                      : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              <CheckCircle2 size={10} />
+              {isStarted
+                ? "Club démarré"
+                : readyForValidation
+                  ? "Validation finale requise"
+                  : minimumReached
+                    ? "Participants atteints"
+                    : "En attente"}
+            </span>
+          </div>
           <div className="flex items-center gap-1.5 bg-smart-sage/20 px-3 py-1.5 rounded-full">
             <Users size={12} className="text-smart-teal" />
             <span className="text-xs font-black text-smart-teal">
@@ -192,6 +227,25 @@ export const ClubCard = ({
 
         {/* Actions */}
         <div className="pt-4 border-t border-gray-50 flex flex-col gap-4 mt-auto">
+          {canShowValidateButton && (
+            <button
+              onClick={() => onValidateStart?.(club)}
+              disabled={validatingStartId === club.id}
+              className="w-full px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition flex items-center justify-center gap-2 bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {validatingStartId === club.id ? (
+                <>
+                  <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Validation...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={14} />
+                  Valider le démarrage
+                </>
+              )}
+            </button>
+          )}
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => onViewRequests(club)}
