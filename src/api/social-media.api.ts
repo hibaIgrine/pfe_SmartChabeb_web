@@ -76,6 +76,13 @@ export async function fetchFeed(limit = 20, offset = 0) {
   return response.data;
 }
 
+export async function fetchPost(postId: string) {
+  const response = await api.get<Publication>(
+    `/social-media/posts/${postId}`,
+  );
+  return response.data;
+}
+
 export async function createPublication(payload: CreatePublicationPayload) {
   const response = await api.post<Publication>("/social-media/posts", payload);
   return response.data;
@@ -94,6 +101,14 @@ export async function updatePublication(
 
 export async function deletePublication(postId: string) {
   await api.delete(`/social-media/posts/${postId}`);
+}
+
+export async function sharePublication(postId: string, message?: string) {
+  const response = await api.post<Publication>(
+    `/social-media/posts/${postId}/share`,
+    { message },
+  );
+  return response.data;
 }
 
 export async function fetchMentionUsers() {

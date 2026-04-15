@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Share2 } from "lucide-react";
 import type {
   ReactionSummary,
   ReactionType,
@@ -33,6 +33,7 @@ type ReactionBarProps = {
   onCommentClick?: () => void;
   commentCount?: number;
   commentsOpen?: boolean;
+  onShareClick?: () => void;
 };
 
 type ReactionPickerProps = {
@@ -85,6 +86,7 @@ export function ReactionBar({
   onCommentClick,
   commentCount = 0,
   commentsOpen = false,
+  onShareClick,
 }: ReactionBarProps) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const totalReactions = reactions?.total ?? 0;
@@ -191,7 +193,20 @@ export function ReactionBar({
           <div />
         )}
 
-        <div className="justify-self-end" />
+        {onShareClick ? (
+          <button
+            type="button"
+            onClick={onShareClick}
+            className="justify-self-end rounded-full px-4 py-1.5 text-sm font-semibold text-[#436D75] hover:bg-[#f7f3e9] transition-colors"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <Share2 size={16} />
+              Partager
+            </span>
+          </button>
+        ) : (
+          <div className="justify-self-end" />
+        )}
       </div>
     </div>
   );

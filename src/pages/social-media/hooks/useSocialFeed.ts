@@ -6,6 +6,7 @@ import {
   fetchFeed,
   fetchMentionUsers,
   removeReaction,
+  sharePublication,
   updatePublication,
 } from "../../../api/social-media.api";
 import type {
@@ -268,6 +269,19 @@ export function useSocialFeed() {
     }
   };
 
+  const sharePost = async (postId: string, message?: string) => {
+    try {
+      setError(null);
+      const shared = await sharePublication(postId, message);
+      setPosts((prev) => [shared, ...prev]);
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          "Impossible de partager cette publication.",
+      );
+    }
+  };
+
   return {
     posts,
     mentionUsers,
@@ -299,5 +313,6 @@ export function useSocialFeed() {
     cancelEdit,
     reactToPost,
     removePostReaction,
+    sharePost,
   };
 }

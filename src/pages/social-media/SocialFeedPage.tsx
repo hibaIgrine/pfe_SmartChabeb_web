@@ -52,6 +52,7 @@ export default function SocialFeedPage() {
         onEdit={feed.startEditPost}
         onReact={feed.reactToPost}
         onRemoveReaction={feed.removePostReaction}
+        onShare={feed.sharePost}
       />
     </div>
   );
