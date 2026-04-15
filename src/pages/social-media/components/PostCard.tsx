@@ -11,27 +11,59 @@ import type {
   PublicationComment,
   ReactionType,
 } from "../../../api/social-media.api";
-import { Edit2, FileText, ImagePlus, MapPin, Smile } from "lucide-react";
+import { Edit2, FileText, ImagePlus, MapPin, Reply, Smile } from "lucide-react";
 import { ReactionBar } from "./ReactionBar";
 
 const COMMENT_IMAGE_TOKEN_REGEX = /\[\[img:(.*?)\]\]/g;
+const COMMENT_REPLY_TOKEN_REGEX = /\[\[reply:(.*?)\]\]/g;
 
-function serializeCommentContent(text: string, imageUrl?: string) {
+type ParsedComment = {
+  text: string;
+  imageUrls: string[];
+  replyToCommentId: string | null;
+};
+
+type CommentWithMeta = PublicationComment & {
+  parsed: ParsedComment;
+};
+
+function serializeCommentContent(
+  text: string,
+  imageUrl?: string,
+  replyToCommentId?: string | null,
+) {
   const cleanText = text.trim();
   const cleanImageUrl = imageUrl?.trim();
+  const cleanReplyToId = replyToCommentId?.trim();
+  const parts: string[] = [];
 
-  if (!cleanImageUrl) {
-    return cleanText;
+  if (cleanText) {
+    parts.push(cleanText);
   }
 
-  return cleanText
-    ? `${cleanText}\n[[img:${cleanImageUrl}]]`
-    : `[[img:${cleanImageUrl}]]`;
+  if (cleanReplyToId) {
+    parts.push(`[[reply:${cleanReplyToId}]]`);
+  }
+
+  if (cleanImageUrl) {
+    parts.push(`[[img:${cleanImageUrl}]]`);
+  }
+
+  return parts.join("\n").trim();
 }
 
 function parseCommentContent(content: string) {
   const imageUrls: string[] = [];
+  let replyToCommentId: string | null = null;
+
   const text = content
+    .replace(COMMENT_REPLY_TOKEN_REGEX, (_, rawId: string) => {
+      const id = String(rawId ?? "").trim();
+      if (id) {
+        replyToCommentId = id;
+      }
+      return "";
+    })
     .replace(COMMENT_IMAGE_TOKEN_REGEX, (_, rawUrl: string) => {
       const url = String(rawUrl ?? "").trim();
       if (url) imageUrls.push(url);
@@ -40,7 +72,7 @@ function parseCommentContent(content: string) {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
-  return { text, imageUrls };
+  return { text, imageUrls, replyToCommentId };
 }
 
 type PostCardProps = {
@@ -74,15 +106,23 @@ export function PostCard({
   const [commentInput, setCommentInput] = useState("");
   const [commentImageUrl, setCommentImageUrl] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
+  const [replyInput, setReplyInput] = useState("");
+  const [replyImageUrl, setReplyImageUrl] = useState("");
+  const [showReplyEmojiPicker, setShowReplyEmojiPicker] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentInput, setEditingCommentInput] = useState("");
   const [editingCommentImageUrl, setEditingCommentImageUrl] = useState("");
+  const [editingCommentReplyToId, setEditingCommentReplyToId] = useState<
+    string | null
+  >(null);
   const [showEditEmojiPickerFor, setShowEditEmojiPickerFor] = useState<
     string | null
   >(null);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const commentImageInputRef = useRef<HTMLInputElement | null>(null);
+  const replyImageInputRef = useRef<HTMLInputElement | null>(null);
   const editCommentImageInputRef = useRef<HTMLInputElement | null>(null);
 
   const imageMedia = useMemo(
@@ -173,6 +213,41 @@ export function PostCard({
       setComments((prev) => [...prev, created]);
       setCommentInput("");
       setCommentImageUrl("");
+      setShowEmojiPicker(false);
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
+
+  const startReplyToComment = (commentId: string) => {
+    setReplyToCommentId(commentId);
+    setReplyInput("");
+    setReplyImageUrl("");
+    setShowReplyEmojiPicker(false);
+  };
+
+  const cancelReply = () => {
+    setReplyToCommentId(null);
+    setReplyInput("");
+    setReplyImageUrl("");
+    setShowReplyEmojiPicker(false);
+  };
+
+  const submitReply = async () => {
+    if (!replyToCommentId) return;
+
+    const content = serializeCommentContent(
+      replyInput,
+      replyImageUrl,
+      replyToCommentId,
+    );
+    if (!content) return;
+
+    try {
+      setCommentSubmitting(true);
+      const created = await createComment(post.id, content);
+      setComments((prev) => [...prev, created]);
+      cancelReply();
     } finally {
       setCommentSubmitting(false);
     }
@@ -183,12 +258,14 @@ export function PostCard({
     setEditingCommentId(comment.id);
     setEditingCommentInput(parsed.text);
     setEditingCommentImageUrl(parsed.imageUrls[0] ?? "");
+    setEditingCommentReplyToId(parsed.replyToCommentId);
   };
 
   const cancelEditComment = () => {
     setEditingCommentId(null);
     setEditingCommentInput("");
     setEditingCommentImageUrl("");
+    setEditingCommentReplyToId(null);
     setShowEditEmojiPickerFor(null);
   };
 
@@ -196,6 +273,7 @@ export function PostCard({
     const content = serializeCommentContent(
       editingCommentInput,
       editingCommentImageUrl,
+      editingCommentReplyToId,
     );
     if (!content) return;
 
@@ -217,6 +295,10 @@ export function PostCard({
 
   const onEditCommentEmojiClick = (emojiData: EmojiClickData) => {
     setEditingCommentInput((prev) => `${prev}${emojiData.emoji}`);
+  };
+
+  const onReplyEmojiClick = (emojiData: EmojiClickData) => {
+    setReplyInput((prev) => `${prev}${emojiData.emoji}`);
   };
 
   const fileToDataUrl = (file: File) =>
@@ -243,6 +325,14 @@ export function PostCard({
     setEditingCommentImageUrl(dataUrl);
   };
 
+  const attachImageToReply = async (file: File | null) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return;
+
+    const dataUrl = await fileToDataUrl(file);
+    setReplyImageUrl(dataUrl);
+  };
+
   const removeComment = async (commentId: string) => {
     try {
       setCommentSubmitting(true);
@@ -267,6 +357,324 @@ export function PostCard({
     }
 
     setPreviewImageIndex(nextIndex);
+  };
+
+  const commentsWithMeta = useMemo<CommentWithMeta[]>(
+    () =>
+      comments.map((comment) => ({
+        ...comment,
+        parsed: parseCommentContent(comment.content),
+      })),
+    [comments],
+  );
+
+  const commentIds = useMemo(
+    () => new Set(commentsWithMeta.map((comment) => comment.id)),
+    [commentsWithMeta],
+  );
+
+  const repliesByParent = useMemo(() => {
+    const grouped: Record<string, CommentWithMeta[]> = {};
+
+    for (const comment of commentsWithMeta) {
+      const parentId = comment.parsed.replyToCommentId;
+      if (!parentId || !commentIds.has(parentId)) continue;
+
+      if (!grouped[parentId]) {
+        grouped[parentId] = [];
+      }
+      grouped[parentId].push(comment);
+    }
+
+    return grouped;
+  }, [commentIds, commentsWithMeta]);
+
+  const topLevelComments = useMemo(
+    () =>
+      commentsWithMeta.filter((comment) => {
+        const parentId = comment.parsed.replyToCommentId;
+        return !parentId || !commentIds.has(parentId);
+      }),
+    [commentIds, commentsWithMeta],
+  );
+
+  const renderCommentCard = (comment: CommentWithMeta, isReply = false) => {
+    const canManageComment =
+      Boolean(currentUserId) && currentUserId === comment.user_id;
+    const nestedReplies = repliesByParent[comment.id] ?? [];
+
+    return (
+      <div key={comment.id} className={isReply ? "ml-7 mt-2" : ""}>
+        <div className="rounded-xl border border-[#ece6d8] bg-[#faf8f3] px-3 py-2">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-xs font-bold text-[#436D75]">
+                {comment.user.nom} {comment.user.prenom}
+              </p>
+              <p className="text-[11px] text-gray-400">
+                {new Date(comment.created_at).toLocaleString("fr-FR")}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => startReplyToComment(comment.id)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#436D75] hover:underline"
+              >
+                <Reply size={12} />
+                Repondre
+              </button>
+
+              {canManageComment && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => beginEditComment(comment)}
+                    className="text-xs font-semibold text-[#436D75] hover:underline"
+                  >
+                    Modifier
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void removeComment(comment.id)}
+                    className="text-xs font-semibold text-red-600 hover:underline"
+                  >
+                    Supprimer
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {editingCommentId === comment.id ? (
+            <div className="mt-2 space-y-2">
+              <div className="relative">
+                <textarea
+                  value={editingCommentInput}
+                  onChange={(event) => setEditingCommentInput(event.target.value)}
+                  rows={2}
+                  className="w-full rounded-lg border border-[#ddd2bc] px-2.5 py-1.5 pr-14 text-sm outline-none focus:border-[#7f6f50]"
+                />
+
+                <div className="absolute bottom-2 right-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowEditEmojiPickerFor((prev) =>
+                        prev === comment.id ? null : comment.id,
+                      )
+                    }
+                    className="text-[#436D75] hover:text-[#2f5560]"
+                    title="Ajouter un emoji"
+                  >
+                    <Smile size={18} />
+                  </button>
+
+                  <input
+                    ref={editCommentImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      void attachImageToEditComment(event.target.files?.[0] ?? null);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => editCommentImageInputRef.current?.click()}
+                    className="text-[#436D75] hover:text-[#2f5560]"
+                    title="Choisir une image depuis le PC"
+                  >
+                    <ImagePlus size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {showEditEmojiPickerFor === comment.id && (
+                <div>
+                  <EmojiPicker
+                    onEmojiClick={onEditCommentEmojiClick}
+                    theme={Theme.LIGHT}
+                    width="100%"
+                    height={320}
+                    searchPlaceholder="Rechercher un emoji"
+                    lazyLoadEmojis
+                  />
+                </div>
+              )}
+
+              {editingCommentImageUrl && (
+                <div className="space-y-2">
+                  <img
+                    src={editingCommentImageUrl}
+                    alt="Apercu image commentaire"
+                    className="max-h-44 w-auto rounded-lg border border-[#ece6d8]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setEditingCommentImageUrl("")}
+                    className="text-xs font-semibold text-red-600 hover:underline"
+                  >
+                    Retirer l'image
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void saveEditComment(comment.id)}
+                  disabled={
+                    commentSubmitting ||
+                    (!editingCommentInput.trim() && !editingCommentImageUrl)
+                  }
+                  className="rounded-lg bg-[#436D75] px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  Enregistrer
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEditComment}
+                  className="rounded-lg border border-[#d8d1c2] px-2.5 py-1 text-xs font-semibold text-gray-600"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-2 space-y-2">
+              {comment.parsed.text ? (
+                <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                  {comment.parsed.text}
+                </p>
+              ) : null}
+              {comment.parsed.imageUrls.length > 0 && (
+                <div className="space-y-2">
+                  {comment.parsed.imageUrls.map((url, idx) => (
+                    <img
+                      key={`${comment.id}-img-${idx}`}
+                      src={url}
+                      alt="Image commentaire"
+                      className="max-h-56 w-auto rounded-lg border border-[#ece6d8]"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {replyToCommentId === comment.id && (
+          <div className="ml-7 mt-2 space-y-2 rounded-xl border border-dashed border-[#ddd2bc] bg-[#fffdf8] p-2.5">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <textarea
+                  value={replyInput}
+                  onChange={(event) => setReplyInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void submitReply();
+                    }
+                  }}
+                  placeholder={`Repondre a ${comment.user.nom}...`}
+                  rows={2}
+                  className="w-full rounded-xl border border-[#ddd2bc] px-3 py-2 pr-16 text-sm outline-none focus:border-[#7f6f50]"
+                />
+
+                <div className="absolute bottom-2 right-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowReplyEmojiPicker((prev) => !prev)}
+                    className="text-[#436D75] hover:text-[#2f5560]"
+                    title="Ajouter un emoji"
+                  >
+                    <Smile size={18} />
+                  </button>
+
+                  <input
+                    ref={replyImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      void attachImageToReply(event.target.files?.[0] ?? null);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => replyImageInputRef.current?.click()}
+                    className="text-[#436D75] hover:text-[#2f5560]"
+                    title="Choisir une image depuis le PC"
+                  >
+                    <ImagePlus size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {showReplyEmojiPicker && (
+              <div>
+                <EmojiPicker
+                  onEmojiClick={onReplyEmojiClick}
+                  theme={Theme.LIGHT}
+                  width="100%"
+                  height={280}
+                  searchPlaceholder="Rechercher un emoji"
+                  lazyLoadEmojis
+                />
+              </div>
+            )}
+
+            {replyImageUrl && (
+              <div className="space-y-2">
+                <img
+                  src={replyImageUrl}
+                  alt="Apercu reponse"
+                  className="max-h-44 w-auto rounded-lg border border-[#ece6d8]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setReplyImageUrl("")}
+                  className="text-xs font-semibold text-red-600 hover:underline"
+                >
+                  Retirer l'image
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void submitReply()}
+                disabled={
+                  commentSubmitting || (!replyInput.trim() && !replyImageUrl)
+                }
+                className="rounded-lg bg-[#436D75] px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
+              >
+                Repondre
+              </button>
+              <button
+                type="button"
+                onClick={cancelReply}
+                className="rounded-lg border border-[#d8d1c2] px-2.5 py-1 text-xs font-semibold text-gray-600"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
+
+        {nestedReplies.length > 0 && (
+          <div className="mt-2 space-y-2">
+            {nestedReplies.map((reply) => renderCommentCard(reply, true))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -549,170 +957,7 @@ export function PostCard({
               <p className="text-xs text-gray-500">Aucun commentaire pour le moment.</p>
             ) : (
               <div className="space-y-2">
-                {comments.map((comment) => {
-                  const parsedComment = parseCommentContent(comment.content);
-                  const canManageComment =
-                    Boolean(currentUserId) && currentUserId === comment.user_id;
-
-                  return (
-                    <div
-                      key={comment.id}
-                      className="rounded-xl border border-[#ece6d8] bg-[#faf8f3] px-3 py-2"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-xs font-bold text-[#436D75]">
-                            {comment.user.nom} {comment.user.prenom}
-                          </p>
-                          <p className="text-[11px] text-gray-400">
-                            {new Date(comment.created_at).toLocaleString("fr-FR")}
-                          </p>
-                        </div>
-
-                        {canManageComment && (
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => beginEditComment(comment)}
-                              className="text-xs font-semibold text-[#436D75] hover:underline"
-                            >
-                              Modifier
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void removeComment(comment.id)}
-                              className="text-xs font-semibold text-red-600 hover:underline"
-                            >
-                              Supprimer
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {editingCommentId === comment.id ? (
-                        <div className="mt-2 space-y-2">
-                          <div className="relative">
-                            <textarea
-                              value={editingCommentInput}
-                              onChange={(event) =>
-                                setEditingCommentInput(event.target.value)
-                              }
-                              rows={2}
-                              className="w-full rounded-lg border border-[#ddd2bc] px-2.5 py-1.5 pr-14 text-sm outline-none focus:border-[#7f6f50]"
-                            />
-
-                            <div className="absolute bottom-2 right-2 flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setShowEditEmojiPickerFor((prev) =>
-                                    prev === comment.id ? null : comment.id,
-                                  )
-                                }
-                                className="text-[#436D75] hover:text-[#2f5560]"
-                                title="Ajouter un emoji"
-                              >
-                                <Smile size={18} />
-                              </button>
-
-                              <input
-                                ref={editCommentImageInputRef}
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(event) => {
-                                  void attachImageToEditComment(
-                                    event.target.files?.[0] ?? null,
-                                  );
-                                  event.currentTarget.value = "";
-                                }}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => editCommentImageInputRef.current?.click()}
-                                className="text-[#436D75] hover:text-[#2f5560]"
-                                title="Choisir une image depuis le PC"
-                              >
-                                <ImagePlus size={18} />
-                              </button>
-                            </div>
-                          </div>
-
-                          {showEditEmojiPickerFor === comment.id && (
-                            <div>
-                              <EmojiPicker
-                                onEmojiClick={onEditCommentEmojiClick}
-                                theme={Theme.LIGHT}
-                                width="100%"
-                                height={320}
-                                searchPlaceholder="Rechercher un emoji"
-                                lazyLoadEmojis
-                              />
-                            </div>
-                          )}
-
-                          {editingCommentImageUrl && (
-                            <div className="space-y-2">
-                              <img
-                                src={editingCommentImageUrl}
-                                alt="Apercu image commentaire"
-                                className="max-h-44 w-auto rounded-lg border border-[#ece6d8]"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setEditingCommentImageUrl("")}
-                                className="text-xs font-semibold text-red-600 hover:underline"
-                              >
-                                Retirer l'image
-                              </button>
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => void saveEditComment(comment.id)}
-                              disabled={
-                                commentSubmitting ||
-                                (!editingCommentInput.trim() && !editingCommentImageUrl)
-                              }
-                              className="rounded-lg bg-[#436D75] px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
-                            >
-                              Enregistrer
-                            </button>
-                            <button
-                              type="button"
-                              onClick={cancelEditComment}
-                              className="rounded-lg border border-[#d8d1c2] px-2.5 py-1 text-xs font-semibold text-gray-600"
-                            >
-                              Annuler
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mt-2 space-y-2">
-                          {parsedComment.text ? (
-                            <p className="text-sm text-gray-800 whitespace-pre-wrap">
-                              {parsedComment.text}
-                            </p>
-                          ) : null}
-                          {parsedComment.imageUrls.length > 0 && (
-                            <div className="space-y-2">
-                              {parsedComment.imageUrls.map((url, idx) => (
-                                <img
-                                  key={`${comment.id}-img-${idx}`}
-                                  src={url}
-                                  alt="Image commentaire"
-                                  className="max-h-56 w-auto rounded-lg border border-[#ece6d8]"
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {topLevelComments.map((comment) => renderCommentCard(comment))}
               </div>
             )}
         </div>

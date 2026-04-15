@@ -1,25 +1,28 @@
-import { useState } from 'react';
-import { MessageCircle } from 'lucide-react';
-import type { ReactionSummary, ReactionType } from '../../../api/social-media.api';
+import { useState } from "react";
+import { MessageCircle } from "lucide-react";
+import type {
+  ReactionSummary,
+  ReactionType,
+} from "../../../api/social-media.api";
 
 const REACTION_EMOJIS: Record<ReactionType, string> = {
-  like: '👍',
-  love: '❤️',
-  wow: '😮',
-  bravo: '👏',
-  instructif: '💡',
-  soutien: '🤝',
-  haha: '😂',
+  like: "👍",
+  love: "❤️",
+  wow: "😮",
+  bravo: "👏",
+  instructif: "💡",
+  soutien: "🤝",
+  haha: "😂",
 };
 
 const REACTION_LABELS: Record<ReactionType, string> = {
-  like: 'J\'aime',
-  love: 'J\'adore',
-  wow: 'Impressionnant',
-  bravo: 'Bravo',
-  instructif: 'Instructif',
-  soutien: 'Je soutiens',
-  haha: 'Haha',
+  like: "J'aime",
+  love: "J'adore",
+  wow: "Impressionnant",
+  bravo: "Bravo",
+  instructif: "Instructif",
+  soutien: "Je soutiens",
+  haha: "Haha",
 };
 
 type ReactionBarProps = {
@@ -39,13 +42,13 @@ type ReactionPickerProps = {
 
 function ReactionPicker({ onSelect, isOpen }: ReactionPickerProps) {
   const reactionTypes: ReactionType[] = [
-    'like',
-    'love',
-    'wow',
-    'bravo',
-    'instructif',
-    'soutien',
-    'haha',
+    "like",
+    "love",
+    "wow",
+    "bravo",
+    "instructif",
+    "soutien",
+    "haha",
   ];
 
   if (!isOpen) return null;
@@ -87,13 +90,13 @@ export function ReactionBar({
   const totalReactions = reactions?.total ?? 0;
 
   const reactionTypes: ReactionType[] = [
-    'like',
-    'love',
-    'wow',
-    'bravo',
-    'instructif',
-    'soutien',
-    'haha',
+    "like",
+    "love",
+    "wow",
+    "bravo",
+    "instructif",
+    "soutien",
+    "haha",
   ];
 
   const handleReactionSelect = (type: ReactionType) => {
@@ -134,7 +137,7 @@ export function ReactionBar({
           onMouseEnter={() => setIsPickerOpen(true)}
           onMouseLeave={() => setIsPickerOpen(false)}
         >
-          {userReaction && userReaction !== 'like' ? (
+          {userReaction && userReaction !== "like" ? (
             <button
               type="button"
               onClick={handleRemoveReaction}
@@ -143,22 +146,28 @@ export function ReactionBar({
             >
               <span className="text-lg">{REACTION_EMOJIS[userReaction]}</span>
               <span>{REACTION_LABELS[userReaction]}</span>
-              <ReactionPicker onSelect={handleReactionSelect} isOpen={isPickerOpen} />
+              <ReactionPicker
+                onSelect={handleReactionSelect}
+                isOpen={isPickerOpen}
+              />
             </button>
           ) : (
             <button
               type="button"
-              onClick={() => handleReactionSelect('like')}
+              onClick={() => handleReactionSelect("like")}
               className={`relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 font-medium text-sm transition-colors ${
-                userReaction === 'like'
-                  ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                userReaction === "like"
+                  ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                  : "bg-gray-50 text-gray-700 hover:bg-gray-100"
               }`}
               title="Cliquez ou survolez pour réagir"
             >
               <span className="text-lg">👍</span>
-              <span>{userReaction === 'like' ? "J'aime" : 'J\'aime'}</span>
-              <ReactionPicker onSelect={handleReactionSelect} isOpen={isPickerOpen} />
+              <span>{userReaction === "like" ? "J'aime" : "J'aime"}</span>
+              <ReactionPicker
+                onSelect={handleReactionSelect}
+                isOpen={isPickerOpen}
+              />
             </button>
           )}
         </div>
@@ -169,8 +178,8 @@ export function ReactionBar({
             onClick={onCommentClick}
             className={`justify-self-center rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
               commentsOpen
-                ? 'bg-[#f7f3e9] text-[#2f5560]'
-                : 'text-[#436D75] hover:bg-[#f7f3e9]'
+                ? "bg-[#f7f3e9] text-[#2f5560]"
+                : "text-[#436D75] hover:bg-[#f7f3e9]"
             }`}
           >
             <span className="inline-flex items-center gap-1.5">
