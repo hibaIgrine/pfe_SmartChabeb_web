@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Bell } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   fetchMyNotifications,
   fetchUnreadNotificationsCount,
@@ -26,6 +27,7 @@ function formatRelativeDate(value: string) {
 }
 
 export function NotificationBell() {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -125,6 +127,29 @@ export function NotificationBell() {
     }
   };
 
+  const getNotificationPostId = (notification: InAppNotification) => {
+    if (!notification.data || typeof notification.data !== "object") {
+      return null;
+    }
+
+    const postId = (notification.data as Record<string, unknown>).postId;
+    if (typeof postId !== "string" || !postId.trim()) {
+      return null;
+    }
+
+    return postId;
+  };
+
+  const handleNotificationClick = async (item: InAppNotification) => {
+    await handleMarkOneAsRead(item.id, item.is_read);
+
+    const postId = getNotificationPostId(item);
+    if (postId) {
+      setIsOpen(false);
+      navigate(`/fil-actualite?postId=${encodeURIComponent(postId)}`);
+    }
+  };
+
   const handleMarkAllAsRead = async () => {
     try {
       await markAllNotificationsAsRead();
@@ -155,64 +180,66 @@ export function NotificationBell() {
         ) : null}
       </button>
 
-      {isOpen ? (
-        createPortal(
-          <div
-            ref={panelRef}
-            className="fixed z-[3000] w-[360px] max-w-[92vw] rounded-2xl border border-gray-200 bg-white shadow-2xl"
-            style={{ top: panelPosition.top, right: panelPosition.right }}
-          >
-            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-[#436D75]">
-                Notifications
-              </p>
-              <button
-                type="button"
-                onClick={handleMarkAllAsRead}
-                className="text-[10px] font-black uppercase tracking-[0.12em] text-[#436D75] hover:text-black"
-              >
-                Tout marquer lu
-              </button>
-            </div>
+      {isOpen
+        ? createPortal(
+            <div
+              ref={panelRef}
+              className="fixed z-[3000] w-[360px] max-w-[92vw] rounded-2xl border border-gray-200 bg-white shadow-2xl"
+              style={{ top: panelPosition.top, right: panelPosition.right }}
+            >
+              <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-[#436D75]">
+                  Notifications
+                </p>
+                <button
+                  type="button"
+                  onClick={handleMarkAllAsRead}
+                  className="text-[10px] font-black uppercase tracking-[0.12em] text-[#436D75] hover:text-black"
+                >
+                  Tout marquer lu
+                </button>
+              </div>
 
-            <div className="max-h-[360px] overflow-y-auto p-2">
-              {isLoading ? (
-                <div className="px-3 py-6 text-center text-xs font-bold text-gray-400">
-                  Chargement...
-                </div>
-              ) : displayNotifications.length === 0 ? (
-                <div className="px-3 py-6 text-center text-xs font-bold text-gray-400">
-                  Aucune notification.
-                </div>
-              ) : (
-                displayNotifications.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleMarkOneAsRead(item.id, item.is_read)}
-                    className={`w-full rounded-xl px-3 py-3 text-left transition ${
-                      item.is_read
-                        ? "bg-white text-gray-600 hover:bg-gray-50"
-                        : "bg-[#D9E8D1]/30 text-gray-800 hover:bg-[#D9E8D1]/50"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#436D75]">
-                        {item.titre}
+              <div className="max-h-[360px] overflow-y-auto p-2">
+                {isLoading ? (
+                  <div className="px-3 py-6 text-center text-xs font-bold text-gray-400">
+                    Chargement...
+                  </div>
+                ) : displayNotifications.length === 0 ? (
+                  <div className="px-3 py-6 text-center text-xs font-bold text-gray-400">
+                    Aucune notification.
+                  </div>
+                ) : (
+                  displayNotifications.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => void handleNotificationClick(item)}
+                      className={`w-full rounded-xl px-3 py-3 text-left transition ${
+                        item.is_read
+                          ? "bg-white text-gray-600 hover:bg-gray-50"
+                          : "bg-[#D9E8D1]/30 text-gray-800 hover:bg-[#D9E8D1]/50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#436D75]">
+                          {item.titre}
+                        </p>
+                        <span className="text-[10px] font-bold text-gray-400">
+                          {formatRelativeDate(item.created_at)}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs leading-relaxed">
+                        {item.message}
                       </p>
-                      <span className="text-[10px] font-bold text-gray-400">
-                        {formatRelativeDate(item.created_at)}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs leading-relaxed">{item.message}</p>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>,
-          document.body,
-        )
-      ) : null}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

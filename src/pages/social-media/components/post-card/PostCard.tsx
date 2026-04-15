@@ -738,7 +738,9 @@ export function PostCard({
 
   return (
     <>
-      <article className="rounded-2xl border border-[#e7dfcf] bg-white p-5 shadow-sm">
+    <article
+      className="rounded-2xl border border-[#e7dfcf] bg-white p-5 shadow-sm transition-all"
+    >
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 className="text-sm font-black text-[#436D75]">

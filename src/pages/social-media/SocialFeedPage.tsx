@@ -1,9 +1,27 @@
 import type { FormEvent } from "react";
+import { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { FeedHeader, FeedList, PostComposer } from "./components";
 import { useSocialFeed } from "./hooks/useSocialFeed";
+import { OriginalPostModal } from "./components/post-card/OriginalPostModal";
 
 export default function SocialFeedPage() {
+  const location = useLocation();
   const feed = useSocialFeed();
+  const [originalPostId, setOriginalPostId] = useState<string | null>(null);
+
+  const targetPostId = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const value = searchParams.get("postId");
+    return value && value.trim() ? value.trim() : undefined;
+  }, [location.search]);
+
+  // Ouvrir le modal si postId dans l'URL
+  useMemo(() => {
+    if (targetPostId && !originalPostId) {
+      setOriginalPostId(targetPostId);
+    }
+  }, [targetPostId, originalPostId]);
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -50,6 +68,15 @@ export default function SocialFeedPage() {
         currentUserId={feed.me?.id}
         onDelete={feed.removePost}
         onEdit={feed.startEditPost}
+        onReact={feed.reactToPost}
+        onRemoveReaction={feed.removePostReaction}
+        onShare={feed.sharePost}
+      />
+
+      <OriginalPostModal
+        originalPostId={originalPostId}
+        onClose={() => setOriginalPostId(null)}
+        currentUserId={feed.me?.id}
         onReact={feed.reactToPost}
         onRemoveReaction={feed.removePostReaction}
         onShare={feed.sharePost}

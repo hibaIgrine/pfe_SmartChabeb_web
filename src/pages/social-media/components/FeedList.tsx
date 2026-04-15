@@ -22,6 +22,7 @@ export function FeedList({
   onRemoveReaction,
   onShare,
 }: FeedListProps) {
+
   if (loading) {
     return <div className="text-sm text-gray-500">Chargement du fil...</div>;
   }
