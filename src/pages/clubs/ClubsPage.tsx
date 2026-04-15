@@ -229,7 +229,10 @@ export default function ClubsPage() {
     try {
       await api.patch(`/clubs/${club.id}/start`, {}, { headers });
       await loadAllData();
-      showAlert(`Le club "${club.nom}" est maintenant validé pour démarrer.`, "success");
+      showAlert(
+        `Le club "${club.nom}" est maintenant validé pour démarrer.`,
+        "success",
+      );
     } catch (error: any) {
       const message =
         error?.response?.data?.message ||

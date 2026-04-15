@@ -16,6 +16,7 @@ import {
   ClipboardCheck,
   CalendarRange,
   CalendarDays,
+  Newspaper,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 
@@ -35,7 +36,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
     if (
       role === "ADHERENT" &&
-      location.pathname !== "/club-creation-requests"
+      location.pathname !== "/club-creation-requests" &&
+      location.pathname !== "/fil-actualite"
     ) {
       navigate("/club-creation-requests");
     }
@@ -119,6 +121,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               active={location.pathname === "/profile"}
             />
           )}
+
+          <SidebarItem
+            to="/fil-actualite"
+            icon={<Newspaper size={18} />}
+            label="Fil d'actualité"
+            active={location.pathname === "/fil-actualite"}
+          />
 
           {(role === "ADHERENT" ||
             role === "ADMIN" ||
@@ -261,6 +270,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              to="/fil-actualite"
+              className="w-10 h-10 rounded-full border border-gray-200 bg-white text-[#436D75] flex items-center justify-center hover:bg-[#F7F3E9] hover:border-[#cfdad3] transition-colors"
+              title="Fil d'actualité"
+            >
+              <Newspaper size={18} />
+            </Link>
             <NotificationBell />
             <div className="flex items-center space-x-3 bg-white p-1 rounded-full pr-4 border border-gray-100 shadow-sm">
               <div className="w-8 h-8 bg-[#F7F3E9] rounded-full flex items-center justify-center text-[#436D75] shadow-inner">

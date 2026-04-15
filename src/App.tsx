@@ -26,6 +26,7 @@ import EventRequestsPage from "./pages/events/EventRequestsPage";
 import EventParticipantsPage from "./pages/events/EventParticipantsPage";
 import EventWaitingListPage from "./pages/events/EventWaitingListPage";
 import ProfileGamificationPage from "./pages/profile/ProfileGamificationPage";
+import SocialFeedPage from "./pages/social-media/SocialFeedPage";
 
 function App() {
   const getCentrePage = () => {
@@ -215,6 +216,14 @@ function App() {
           element={
             <Layout>
               <ProfileGamificationPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/fil-actualite"
+          element={
+            <Layout>
+              <SocialFeedPage />
             </Layout>
           }
         />
