@@ -26,7 +26,9 @@ function decodeBase64Utf8(input: string) {
   }
 }
 
-export function parseSharedPostContent(content: string): ParsedSharedPostContent {
+export function parseSharedPostContent(
+  content: string,
+): ParsedSharedPostContent {
   let shared: SharedPostMetadata | null = null;
 
   const messageText = content
@@ -41,8 +43,7 @@ export function parseSharedPostContent(content: string): ParsedSharedPostContent
         if (payload.author && typeof payload.author === "string") {
           shared = {
             author: payload.author,
-            content:
-              typeof payload.content === "string" ? payload.content : "",
+            content: typeof payload.content === "string" ? payload.content : "",
             location:
               typeof payload.location === "string" || payload.location === null
                 ? payload.location

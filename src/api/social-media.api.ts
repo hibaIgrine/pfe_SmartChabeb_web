@@ -77,9 +77,7 @@ export async function fetchFeed(limit = 20, offset = 0) {
 }
 
 export async function fetchPost(postId: string) {
-  const response = await api.get<Publication>(
-    `/social-media/posts/${postId}`,
-  );
+  const response = await api.get<Publication>(`/social-media/posts/${postId}`);
   return response.data;
 }
 
