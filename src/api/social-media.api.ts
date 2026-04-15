@@ -29,6 +29,16 @@ export type MentionUser = {
   prenom: string;
 };
 
+export type PublicationComment = {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  user: PublicationAuthor;
+};
+
 export type ReactionSummary = {
   aggregated: Record<ReactionType, PublicationAuthor[]>;
   total: number;
@@ -111,4 +121,35 @@ export async function fetchReactions(postId: string) {
     `/social-media/posts/${postId}/reactions`,
   );
   return response.data;
+}
+
+export async function fetchComments(postId: string) {
+  const response = await api.get<PublicationComment[]>(
+    `/social-media/posts/${postId}/comments`,
+  );
+  return response.data;
+}
+
+export async function createComment(postId: string, content: string) {
+  const response = await api.post<PublicationComment>(
+    `/social-media/posts/${postId}/comments`,
+    { content },
+  );
+  return response.data;
+}
+
+export async function updateComment(
+  postId: string,
+  commentId: string,
+  content: string,
+) {
+  const response = await api.patch<PublicationComment>(
+    `/social-media/posts/${postId}/comments/${commentId}`,
+    { content },
+  );
+  return response.data;
+}
+
+export async function deleteComment(postId: string, commentId: string) {
+  await api.delete(`/social-media/posts/${postId}/comments/${commentId}`);
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MessageCircle } from 'lucide-react';
 import type { ReactionSummary, ReactionType } from '../../../api/social-media.api';
 
 const REACTION_EMOJIS: Record<ReactionType, string> = {
@@ -26,6 +27,9 @@ type ReactionBarProps = {
   userReaction?: ReactionType | null;
   onReact: (reactionType: ReactionType) => void;
   onRemoveReaction: () => void;
+  onCommentClick?: () => void;
+  commentCount?: number;
+  commentsOpen?: boolean;
 };
 
 type ReactionPickerProps = {
@@ -75,6 +79,9 @@ export function ReactionBar({
   userReaction,
   onReact,
   onRemoveReaction,
+  onCommentClick,
+  commentCount = 0,
+  commentsOpen = false,
 }: ReactionBarProps) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const totalReactions = reactions?.total ?? 0;
@@ -120,41 +127,62 @@ export function ReactionBar({
         </div>
       )}
 
-      {/* Like button with reaction picker */}
-      <div
-        className="relative inline-block pt-1"
-        onMouseEnter={() => setIsPickerOpen(true)}
-        onMouseLeave={() => setIsPickerOpen(false)}
-      >
-        {userReaction && userReaction !== 'like' ? (
-          // Show selected reaction
+      {/* Like + Comment on same line (comment centered) */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center pt-1">
+        <div
+          className="relative inline-block justify-self-start"
+          onMouseEnter={() => setIsPickerOpen(true)}
+          onMouseLeave={() => setIsPickerOpen(false)}
+        >
+          {userReaction && userReaction !== 'like' ? (
+            <button
+              type="button"
+              onClick={handleRemoveReaction}
+              className="relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 font-medium text-sm transition-colors bg-blue-50 text-blue-700 hover:bg-blue-100"
+              title={`${REACTION_LABELS[userReaction]} - cliquez pour retirer`}
+            >
+              <span className="text-lg">{REACTION_EMOJIS[userReaction]}</span>
+              <span>{REACTION_LABELS[userReaction]}</span>
+              <ReactionPicker onSelect={handleReactionSelect} isOpen={isPickerOpen} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => handleReactionSelect('like')}
+              className={`relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 font-medium text-sm transition-colors ${
+                userReaction === 'like'
+                  ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+              }`}
+              title="Cliquez ou survolez pour réagir"
+            >
+              <span className="text-lg">👍</span>
+              <span>{userReaction === 'like' ? "J'aime" : 'J\'aime'}</span>
+              <ReactionPicker onSelect={handleReactionSelect} isOpen={isPickerOpen} />
+            </button>
+          )}
+        </div>
+
+        {onCommentClick ? (
           <button
             type="button"
-            onClick={handleRemoveReaction}
-            className="relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 font-medium text-sm transition-colors bg-blue-50 text-blue-700 hover:bg-blue-100"
-            title={`${REACTION_LABELS[userReaction]} - cliquez pour retirer`}
+            onClick={onCommentClick}
+            className={`justify-self-center rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+              commentsOpen
+                ? 'bg-[#f7f3e9] text-[#2f5560]'
+                : 'text-[#436D75] hover:bg-[#f7f3e9]'
+            }`}
           >
-            <span className="text-lg">{REACTION_EMOJIS[userReaction]}</span>
-            <span>{REACTION_LABELS[userReaction]}</span>
-            <ReactionPicker onSelect={handleReactionSelect} isOpen={isPickerOpen} />
+            <span className="inline-flex items-center gap-1.5">
+              <MessageCircle size={16} />
+              Commentaire ({commentCount})
+            </span>
           </button>
         ) : (
-          // Show like button (gray or with like reaction)
-          <button
-            type="button"
-            onClick={() => handleReactionSelect('like')}
-            className={`relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 font-medium text-sm transition-colors ${
-              userReaction === 'like'
-                ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-            }`}
-            title="Cliquez ou survolez pour réagir"
-          >
-            <span className="text-lg">👍</span>
-            <span>{userReaction === 'like' ? "J'aime" : 'J\'aime'}</span>
-            <ReactionPicker onSelect={handleReactionSelect} isOpen={isPickerOpen} />
-          </button>
+          <div />
         )}
+
+        <div className="justify-self-end" />
       </div>
     </div>
   );
