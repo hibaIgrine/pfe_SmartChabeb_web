@@ -1,6 +1,14 @@
 import api from "./axios";
 
 export type PublicationMediaType = "image" | "video" | "document";
+export type ReactionType =
+  | "like"
+  | "love"
+  | "wow"
+  | "bravo"
+  | "instructif"
+  | "soutien"
+  | "haha";
 
 export type PublicationMediaItem = {
   type: PublicationMediaType;
@@ -21,6 +29,12 @@ export type MentionUser = {
   prenom: string;
 };
 
+export type ReactionSummary = {
+  aggregated: Record<ReactionType, PublicationAuthor[]>;
+  total: number;
+  userReaction: ReactionType | null;
+};
+
 export type Publication = {
   id: string;
   content: string;
@@ -28,6 +42,7 @@ export type Publication = {
   media?: PublicationMediaItem[] | null;
   hashtags?: Array<{ hashtag: string }>;
   mentions?: Array<{ mentioned_user: PublicationAuthor }>;
+  reactions?: ReactionSummary;
   created_at: string;
   updated_at: string;
   user: PublicationAuthor;
@@ -73,5 +88,27 @@ export async function deletePublication(postId: string) {
 
 export async function fetchMentionUsers() {
   const response = await api.get<MentionUser[]>("/users");
+  return response.data;
+}
+
+export async function addReaction(postId: string, reactionType: ReactionType) {
+  const response = await api.post<ReactionSummary>(
+    `/social-media/posts/${postId}/reactions`,
+    { reaction_type: reactionType },
+  );
+  return response.data;
+}
+
+export async function removeReaction(postId: string) {
+  const response = await api.delete<ReactionSummary>(
+    `/social-media/posts/${postId}/reactions`,
+  );
+  return response.data;
+}
+
+export async function fetchReactions(postId: string) {
+  const response = await api.get<ReactionSummary>(
+    `/social-media/posts/${postId}/reactions`,
+  );
   return response.data;
 }

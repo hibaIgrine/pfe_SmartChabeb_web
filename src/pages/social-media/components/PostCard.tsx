@@ -1,27 +1,41 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Publication } from '../../../api/social-media.api';
-import { Edit2, FileText, Image, MapPin, Video } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Publication, ReactionType } from "../../../api/social-media.api";
+import { Edit2, FileText, MapPin } from "lucide-react";
+import { ReactionBar } from "./ReactionBar";
 
 type PostCardProps = {
   post: Publication;
   canDelete: boolean;
   canEdit: boolean;
+  currentUserId?: string;
   onDelete: (postId: string) => void;
   onEdit: (post: Publication) => void;
+  onReact?: (postId: string, reactionType: ReactionType) => void;
+  onRemoveReaction?: (postId: string) => void;
 };
 
-export function PostCard({ post, canDelete, canEdit, onDelete, onEdit }: PostCardProps) {
+export function PostCard({
+  post,
+  canDelete,
+  canEdit,
+  onDelete,
+  onEdit,
+  onReact,
+  onRemoveReaction,
+}: PostCardProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [previewImageIndex, setPreviewImageIndex] = useState<number | null>(null);
+  const [previewImageIndex, setPreviewImageIndex] = useState<number | null>(
+    null,
+  );
   const carouselRef = useRef<HTMLDivElement | null>(null);
 
   const imageMedia = useMemo(
-    () => (post.media ?? []).filter((item) => item.type === 'image'),
+    () => (post.media ?? []).filter((item) => item.type === "image"),
     [post.media],
   );
 
   const nonImageMedia = useMemo(
-    () => (post.media ?? []).filter((item) => item.type !== 'image'),
+    () => (post.media ?? []).filter((item) => item.type !== "image"),
     [post.media],
   );
 
@@ -35,7 +49,7 @@ export function PostCard({ post, canDelete, canEdit, onDelete, onEdit }: PostCar
     }
 
     const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
 
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -48,7 +62,7 @@ export function PostCard({ post, canDelete, canEdit, onDelete, onEdit }: PostCar
 
     const nextIndex = Math.max(0, Math.min(index, imageMedia.length - 1));
     const slideWidth = container.clientWidth;
-    container.scrollTo({ left: slideWidth * nextIndex, behavior: 'smooth' });
+    container.scrollTo({ left: slideWidth * nextIndex, behavior: "smooth" });
     setActiveImageIndex(nextIndex);
   };
 
@@ -60,7 +74,9 @@ export function PostCard({ post, canDelete, canEdit, onDelete, onEdit }: PostCar
     if (!slideWidth) return;
 
     const nextIndex = Math.round(container.scrollLeft / slideWidth);
-    setActiveImageIndex(Math.max(0, Math.min(nextIndex, imageMedia.length - 1)));
+    setActiveImageIndex(
+      Math.max(0, Math.min(nextIndex, imageMedia.length - 1)),
+    );
   };
 
   const openPreview = (index: number) => {
@@ -98,7 +114,7 @@ export function PostCard({ post, canDelete, canEdit, onDelete, onEdit }: PostCar
             </div>
           ) : null}
           <p className="text-xs text-gray-400 font-medium">
-            {new Date(post.created_at).toLocaleString('fr-FR')}
+            {new Date(post.created_at).toLocaleString("fr-FR")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -125,7 +141,9 @@ export function PostCard({ post, canDelete, canEdit, onDelete, onEdit }: PostCar
       </div>
 
       {post.content ? (
-        <p className="mt-3 text-sm text-gray-800 whitespace-pre-wrap">{post.content}</p>
+        <p className="mt-3 text-sm text-gray-800 whitespace-pre-wrap">
+          {post.content}
+        </p>
       ) : null}
 
       {post.mentions?.length ? (
@@ -201,7 +219,9 @@ export function PostCard({ post, canDelete, canEdit, onDelete, onEdit }: PostCar
                     type="button"
                     onClick={() => scrollToImage(index)}
                     className={`h-2 w-2 rounded-full transition-all ${
-                      index === activeImageIndex ? 'bg-white w-4' : 'bg-white/60'
+                      index === activeImageIndex
+                        ? "bg-white w-4"
+                        : "bg-white/60"
                     }`}
                     aria-label={`Image ${index + 1}`}
                   />
@@ -222,14 +242,14 @@ export function PostCard({ post, canDelete, canEdit, onDelete, onEdit }: PostCar
               key={`${post.id}-${media.url}-${index}`}
               className="overflow-hidden rounded-xl border border-[#ece6d8] bg-[#faf8f3]"
             >
-              {media.type === 'video' && (
+              {media.type === "video" && (
                 <video
                   controls
                   src={media.url}
                   className="h-72 w-full object-cover bg-black"
                 />
               )}
-              {media.type === 'document' && (
+              {media.type === "document" && (
                 <a
                   href={media.url}
                   target="_blank"
@@ -250,6 +270,15 @@ export function PostCard({ post, canDelete, canEdit, onDelete, onEdit }: PostCar
         </div>
       )}
 
+      {onReact && onRemoveReaction && (
+        <ReactionBar
+          reactions={post.reactions}
+          userReaction={post.reactions?.userReaction ?? undefined}
+          onReact={(type) => onReact(post.id, type)}
+          onRemoveReaction={() => onRemoveReaction(post.id)}
+        />
+      )}
+
       {previewImageIndex !== null && imageMedia[previewImageIndex] && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
@@ -261,7 +290,10 @@ export function PostCard({ post, canDelete, canEdit, onDelete, onEdit }: PostCar
           >
             <img
               src={imageMedia[previewImageIndex].url}
-              alt={imageMedia[previewImageIndex].name || `Image ${previewImageIndex + 1}`}
+              alt={
+                imageMedia[previewImageIndex].name ||
+                `Image ${previewImageIndex + 1}`
+              }
               className="max-h-[85vh] w-full object-contain"
             />
 

@@ -50,6 +50,8 @@ export default function SocialFeedPage() {
         currentUserId={feed.me?.id}
         onDelete={feed.removePost}
         onEdit={feed.startEditPost}
+        onReact={feed.reactToPost}
+        onRemoveReaction={feed.removePostReaction}
       />
     </div>
   );

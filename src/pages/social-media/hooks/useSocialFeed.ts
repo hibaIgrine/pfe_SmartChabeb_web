@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  addReaction,
   createPublication,
   deletePublication,
   fetchFeed,
   fetchMentionUsers,
+  removeReaction,
   updatePublication,
 } from "../../../api/social-media.api";
 import type {
@@ -11,6 +13,7 @@ import type {
   Publication,
   PublicationMediaItem,
   PublicationMediaType,
+  ReactionType,
 } from "../../../api/social-media.api";
 import {
   EMPTY_MEDIA,
@@ -233,6 +236,38 @@ export function useSocialFeed() {
     }
   };
 
+  const reactToPost = async (postId: string, reactionType: ReactionType) => {
+    try {
+      const reactions = await addReaction(postId, reactionType);
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId ? { ...post, reactions } : post,
+        ),
+      );
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          "Impossible de réagir à cette publication.",
+      );
+    }
+  };
+
+  const removePostReaction = async (postId: string) => {
+    try {
+      const reactions = await removeReaction(postId);
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId ? { ...post, reactions } : post,
+        ),
+      );
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          "Impossible de retirer la réaction de cette publication.",
+      );
+    }
+  };
+
   return {
     posts,
     mentionUsers,
@@ -262,5 +297,7 @@ export function useSocialFeed() {
     editingPostId,
     startEditPost,
     cancelEdit,
+    reactToPost,
+    removePostReaction,
   };
 }

@@ -1,4 +1,4 @@
-import type { Publication } from "../../../api/social-media.api";
+import type { Publication, ReactionType } from "../../../api/social-media.api";
 import { PostCard } from "./PostCard";
 
 type FeedListProps = {
@@ -7,6 +7,8 @@ type FeedListProps = {
   currentUserId?: string;
   onDelete: (postId: string) => void;
   onEdit: (post: Publication) => void;
+  onReact?: (postId: string, reactionType: ReactionType) => void;
+  onRemoveReaction?: (postId: string) => void;
 };
 
 export function FeedList({
@@ -15,6 +17,8 @@ export function FeedList({
   currentUserId,
   onDelete,
   onEdit,
+  onReact,
+  onRemoveReaction,
 }: FeedListProps) {
   if (loading) {
     return <div className="text-sm text-gray-500">Chargement du fil...</div>;
@@ -40,8 +44,11 @@ export function FeedList({
           canEdit={Boolean(
             currentUserId && post.user?.id && currentUserId === post.user.id,
           )}
+          currentUserId={currentUserId}
           onDelete={onDelete}
           onEdit={onEdit}
+          onReact={onReact}
+          onRemoveReaction={onRemoveReaction}
         />
       ))}
     </section>
