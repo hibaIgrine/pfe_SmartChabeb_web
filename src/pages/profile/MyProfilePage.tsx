@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  CalendarDays,
+  GraduationCap,
   ImagePlus,
   Mars,
+  MapPin,
   MoreVertical,
   Plus,
   UserCircle,
@@ -11,6 +14,10 @@ import {
 import api from "../../api/axios";
 import { FormUpdateInfo } from "./forms/FormUpdateInfo";
 import { FormUpdateMdp } from "./forms/FormUpdateMdp";
+import { FeedList, PostComposer } from "../social-media/components";
+import { useSocialFeed } from "../social-media/hooks/useSocialFeed";
+import { GOVERNORATES } from "../../constants/governorates";
+import { searchEtablissements } from "../../api/etablissements.api";
 
 type UserProfile = {
   id: string;
@@ -22,6 +29,15 @@ type UserProfile = {
   genre?: string | null;
   date_naissance?: string | null;
   photo_profil_url?: string | null;
+  centre?: {
+    nom?: string | null;
+    gouvernorat?: string | null;
+  } | null;
+  inscriptions_clubs?: Array<{
+    date_adhesion?: string | null;
+  }>;
+  lieu_habite?: string | null;
+  etablissement_etude?: string | null;
 };
 
 type GamificationProfile = {
@@ -87,6 +103,7 @@ function computeAge(inputDate?: string | null) {
 }
 
 export default function MyProfilePage() {
+  const feed = useSocialFeed();
   const token = localStorage.getItem("token");
   const headers = useMemo(
     () => ({ Authorization: `Bearer ${token}` }),
@@ -101,13 +118,23 @@ export default function MyProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeModal, setActiveModal] = useState<"info" | "mdp" | null>(null);
+  const [activeModal, setActiveModal] = useState<
+    "info" | "bio" | "ville" | "etude" | "mdp" | null
+  >(null);
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   const [avatarTab, setAvatarTab] = useState<"homme" | "femme" | "galerie">(
     "homme",
   );
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [profileImageError, setProfileImageError] = useState(false);
+  const [bioDraft, setBioDraft] = useState("");
+  const [villeDraft, setVilleDraft] = useState("");
+  const [etudeDraft, setEtudeDraft] = useState("");
+  const [etablissementSuggestions, setEtablissementSuggestions] = useState<
+    string[]
+  >([]);
+  const [showEtablissementSuggestions, setShowEtablissementSuggestions] =
+    useState(false);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
 
   const [form, setForm] = useState({
@@ -117,6 +144,8 @@ export default function MyProfilePage() {
     bio: "",
     genre: "",
     date_naissance: "",
+    lieu_habite: "",
+    etablissement_etude: "",
   });
 
   const profileImageSrc = useMemo(() => {
@@ -159,6 +188,8 @@ export default function MyProfilePage() {
           bio: data.bio ?? "",
           genre: data.genre ?? "",
           date_naissance: toInputDate(data.date_naissance),
+          lieu_habite: data.lieu_habite ?? "",
+          etablissement_etude: data.etablissement_etude ?? "",
         });
       } catch {
         setError("Impossible de charger vos informations de profil.");
@@ -171,11 +202,55 @@ export default function MyProfilePage() {
   }, [headers]);
 
   const age = computeAge(form.date_naissance || profile?.date_naissance);
+  const memberSince = useMemo(() => {
+    const dates = (profile?.inscriptions_clubs ?? [])
+      .map((item) => item.date_adhesion)
+      .filter((value): value is string => Boolean(value))
+      .map((value) => new Date(value))
+      .filter((date) => !Number.isNaN(date.getTime()));
 
-  const openModal = (value: "info" | "mdp") => {
+    if (!dates.length) {
+      return null;
+    }
+
+    const minDate = new Date(Math.min(...dates.map((date) => date.getTime())));
+    return minDate.toLocaleDateString("fr-FR", {
+      year: "numeric",
+      month: "long",
+    });
+  }, [profile?.inscriptions_clubs]);
+
+  const myPosts = useMemo(() => {
+    if (!profile?.id) return [];
+    return feed.posts.filter((post) => post.user?.id === profile.id);
+  }, [feed.posts, profile?.id]);
+
+  const onSubmitPost = (event: FormEvent) => {
+    event.preventDefault();
+    void feed.publish();
+  };
+
+  useEffect(() => {
+    setBioDraft(profile?.bio ?? "");
+    setVilleDraft(profile?.lieu_habite ?? "");
+    setEtudeDraft(profile?.etablissement_etude ?? "");
+  }, [profile]);
+
+  const openModal = (value: "info" | "bio" | "ville" | "etude" | "mdp") => {
     setError(null);
     setSuccess(null);
     setMenuOpen(false);
+    if (value === "bio") {
+      setBioDraft(profile?.bio ?? "");
+    }
+    if (value === "ville") {
+      setVilleDraft(profile?.lieu_habite ?? "");
+    }
+    if (value === "etude") {
+      setEtudeDraft(profile?.etablissement_etude ?? "");
+      setEtablissementSuggestions([]);
+      setShowEtablissementSuggestions(false);
+    }
     setActiveModal(value);
   };
 
@@ -195,6 +270,37 @@ export default function MyProfilePage() {
       bio: updated.bio ?? "",
       genre: updated.genre ?? "",
       date_naissance: toInputDate(updated.date_naissance),
+      lieu_habite: updated.lieu_habite ?? "",
+      etablissement_etude: updated.etablissement_etude ?? "",
+    });
+
+    const currentUserRaw = localStorage.getItem("user");
+    if (currentUserRaw) {
+      const currentUser = JSON.parse(currentUserRaw);
+      const merged = {
+        ...currentUser,
+        nom: updated.nom,
+        prenom: updated.prenom,
+        email: updated.email,
+        photo_profil_url: updated.photo_profil_url,
+      };
+      localStorage.setItem("user", JSON.stringify(merged));
+    }
+
+    window.dispatchEvent(new Event("user-updated"));
+  };
+
+  const applyUpdatedUserFromForm = (updated: UserProfile) => {
+    setProfile(updated);
+    setForm({
+      nom: updated.nom ?? "",
+      prenom: updated.prenom ?? "",
+      email: updated.email ?? "",
+      bio: updated.bio ?? "",
+      genre: updated.genre ?? "",
+      date_naissance: toInputDate(updated.date_naissance),
+      lieu_habite: updated.lieu_habite ?? "",
+      etablissement_etude: updated.etablissement_etude ?? "",
     });
 
     const currentUserRaw = localStorage.getItem("user");
@@ -220,6 +326,8 @@ export default function MyProfilePage() {
     bio: string;
     genre: string;
     date_naissance: string;
+    lieu_habite: string;
+    etablissement_etude: string;
   }) => {
     if (!profile) return;
 
@@ -235,6 +343,8 @@ export default function MyProfilePage() {
         bio: values.bio.trim() || null,
         genre: values.genre || null,
         date_naissance: values.date_naissance || null,
+        lieu_habite: values.lieu_habite.trim() || null,
+        etablissement_etude: values.etablissement_etude.trim() || null,
       };
 
       const response = await api.patch(`/users/${profile.id}`, payload, {
@@ -242,13 +352,90 @@ export default function MyProfilePage() {
       });
 
       const updated = (response.data?.user ?? response.data) as UserProfile;
-      applyUpdatedUser(updated);
+      applyUpdatedUserFromForm(updated);
       setSuccess("Profil mis a jour avec succes.");
     } catch {
       setError("Echec de la mise a jour du profil.");
     } finally {
       setSaving(false);
     }
+  };
+
+  const updateSingleProfileField = async (
+    payload: {
+      bio?: string | null;
+      lieu_habite?: string | null;
+      etablissement_etude?: string | null;
+    },
+    successMessage: string,
+  ) => {
+    if (!profile) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+
+      const response = await api.patch(`/users/${profile.id}`, payload, {
+        headers,
+      });
+
+      const updated = (response.data?.user ?? response.data) as UserProfile;
+      applyUpdatedUserFromForm(updated);
+      setSuccess(successMessage);
+      setActiveModal(null);
+    } catch {
+      setError("Echec de la mise a jour du profil.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const submitBioModal = async (event: FormEvent) => {
+    event.preventDefault();
+    await updateSingleProfileField(
+      { bio: bioDraft.trim() || null },
+      "Bio mise a jour avec succes.",
+    );
+  };
+
+  const submitVilleModal = async (event: FormEvent) => {
+    event.preventDefault();
+    await updateSingleProfileField(
+      { lieu_habite: villeDraft.trim() || null },
+      "Ville mise a jour avec succes.",
+    );
+  };
+
+  const handleEtablissementSearch = async (query: string) => {
+    setEtudeDraft(query);
+
+    if (!query.trim()) {
+      setEtablissementSuggestions([]);
+      setShowEtablissementSuggestions(false);
+      return;
+    }
+
+    try {
+      const results = await searchEtablissements(query);
+      setEtablissementSuggestions(
+        Array.isArray(results)
+          ? results.map((item: { nom: string }) => item.nom)
+          : [],
+      );
+      setShowEtablissementSuggestions(true);
+    } catch {
+      setEtablissementSuggestions([]);
+      setShowEtablissementSuggestions(false);
+    }
+  };
+
+  const submitEtudeModal = async (event: FormEvent) => {
+    event.preventDefault();
+    await updateSingleProfileField(
+      { etablissement_etude: etudeDraft.trim() || null },
+      "Etablissement mis a jour avec succes.",
+    );
   };
 
   const handleAvatarAssetSelect = async (
@@ -516,6 +703,146 @@ export default function MyProfilePage() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <aside className="lg:col-span-4 space-y-4">
+          <div className="rounded-3xl border border-[#DDE9EC] bg-white p-5 shadow-sm">
+            <div className="flex items-center">
+              <h3 className="text-sm font-black uppercase tracking-widest text-[#436D75]">
+                Intro
+              </h3>
+            </div>
+
+            <div className="mt-4 space-y-3 text-sm">
+              <div className="rounded-2xl border border-[#E6EDF0] bg-[#F9FCFD] p-3 flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-[11px] font-black uppercase tracking-widest text-gray-400">
+                    Bio
+                  </p>
+                  <p className="mt-1 font-semibold text-[#203A43]">
+                    {profile.bio?.trim() ? profile.bio : "Aucune bio"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openModal("bio")}
+                  className="ml-2 rounded-xl border border-gray-200 px-2 py-1 text-[10px] font-black text-gray-600 hover:bg-gray-50 whitespace-nowrap"
+                >
+                  {profile.bio?.trim() ? "Modifier" : "Ajouter"}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#E6EDF0] bg-white p-3">
+                <div className="flex items-center gap-3 flex-1">
+                  <MapPin size={16} className="text-[#2F7A8A] flex-shrink-0" />
+                  <p className="font-semibold text-[#203A43]">
+                    {profile.lieu_habite?.trim()
+                      ? `Habite à ${profile.lieu_habite}`
+                      : "Lieu d'habitation"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openModal("ville")}
+                  className="rounded-xl border border-gray-200 px-2 py-1 text-[10px] font-black text-gray-600 hover:bg-gray-50 whitespace-nowrap flex-shrink-0"
+                >
+                  {profile.lieu_habite?.trim() ? "Modifier" : "Ajouter"}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#E6EDF0] bg-white p-3">
+                <div className="flex items-center gap-3 flex-1">
+                  <GraduationCap
+                    size={16}
+                    className="text-[#8B5E2C] flex-shrink-0"
+                  />
+                  <p className="font-semibold text-[#203A43]">
+                    {profile.etablissement_etude?.trim()
+                      ? `Étudie à ${profile.etablissement_etude}`
+                      : "Établissement"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openModal("etude")}
+                  className="rounded-xl border border-gray-200 px-2 py-1 text-[10px] font-black text-gray-600 hover:bg-gray-50 whitespace-nowrap flex-shrink-0"
+                >
+                  {profile.etablissement_etude?.trim() ? "Modifier" : "Ajouter"}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-2xl border border-[#E6EDF0] bg-white p-3">
+                <CalendarDays size={16} className="text-[#2C7A4B]" />
+                <p className="font-semibold text-[#203A43]">
+                  Membre depuis {memberSince || "-"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section className="lg:col-span-8 space-y-4">
+          <div className="rounded-3xl border border-[#DDE9EC] bg-white p-4 shadow-sm">
+            <PostComposer
+              composerText={feed.composerText}
+              draftMediaItems={feed.draftMediaItems}
+              location={feed.location}
+              mentions={feed.mentions}
+              hashtagInput={feed.hashtagInput}
+              hashtags={feed.hashtags}
+              mentionUsers={feed.mentionUsers}
+              canSubmit={feed.canSubmit}
+              submitting={feed.submitting}
+              onSubmit={onSubmitPost}
+              setComposerText={feed.setComposerText}
+              setLocation={feed.setLocation}
+              setHashtagInput={feed.setHashtagInput}
+              onAddMediaFile={feed.addMediaFile}
+              onRemoveMediaLine={feed.removeMediaLine}
+              onAddMentionById={feed.addMentionById}
+              onRemoveMention={feed.removeMention}
+              onAddHashtag={feed.addHashtag}
+              onRemoveHashtag={feed.removeHashtag}
+              isEditing={Boolean(feed.editingPostId)}
+              onCancelEdit={feed.cancelEdit}
+            />
+          </div>
+
+          <div className="rounded-3xl border border-[#DDE9EC] bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-sm font-black uppercase tracking-widest text-[#436D75]">
+                Mes publications
+              </h3>
+              <button
+                type="button"
+                onClick={() => void feed.loadFeed()}
+                className="rounded-xl border border-gray-200 px-3 py-1.5 text-[11px] font-black text-gray-600 hover:bg-gray-50"
+              >
+                Rafraichir
+              </button>
+            </div>
+
+            {feed.error && (
+              <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {feed.error}
+              </div>
+            )}
+
+            <div className="max-h-[58vh] overflow-y-auto pr-1 custom-scrollbar">
+              <FeedList
+                posts={myPosts}
+                loading={feed.loading}
+                currentUserId={feed.me?.id}
+                onDelete={feed.removePost}
+                onEdit={feed.startEditPost}
+                onReact={feed.reactToPost}
+                onRemoveReaction={feed.removePostReaction}
+                onShare={feed.sharePost}
+              />
+            </div>
+          </div>
+        </section>
+      </div>
+
       {activeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           {activeModal === "info" ? (
@@ -527,7 +854,7 @@ export default function MyProfilePage() {
               onCancel={() => setActiveModal(null)}
               onSubmit={onSubmitInfo}
             />
-          ) : (
+          ) : activeModal === "mdp" ? (
             <FormUpdateMdp
               saving={saving}
               resettingPassword={resettingPassword}
@@ -537,6 +864,172 @@ export default function MyProfilePage() {
               onSubmit={onSubmitPassword}
               onResetPassword={handlePasswordReset}
             />
+          ) : activeModal === "bio" ? (
+            <form
+              onSubmit={submitBioModal}
+              className="w-full max-w-lg rounded-3xl border border-[#DDE9EC] bg-white p-6 shadow-2xl"
+            >
+              <h3 className="text-xl font-black italic text-[#203A43]">
+                Ajouter une bio
+              </h3>
+              <label className="mt-4 block space-y-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                  Bio
+                </span>
+                <textarea
+                  value={bioDraft}
+                  onChange={(e) => setBioDraft(e.target.value)}
+                  rows={5}
+                  className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#436D75]/40"
+                  placeholder="Parlez un peu de vous..."
+                />
+              </label>
+
+              {error && (
+                <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+                  {error}
+                </div>
+              )}
+
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal(null)}
+                  className="rounded-2xl border border-gray-200 px-5 py-2 text-sm font-black text-gray-600 hover:bg-gray-50"
+                >
+                  Fermer
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-2xl bg-gradient-to-r from-[#436D75] to-[#2F525A] px-5 py-2 text-sm font-black text-white hover:from-[#355860] hover:to-[#294A51] disabled:opacity-60"
+                >
+                  {saving ? "Enregistrement..." : "Enregistrer"}
+                </button>
+              </div>
+            </form>
+          ) : activeModal === "ville" ? (
+            <form
+              onSubmit={submitVilleModal}
+              className="w-full max-w-lg rounded-3xl border border-[#DDE9EC] bg-white p-6 shadow-2xl"
+            >
+              <h3 className="text-xl font-black italic text-[#203A43]">
+                Choisir votre ville
+              </h3>
+              <label className="mt-4 block space-y-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                  Gouvernorat
+                </span>
+                <select
+                  value={villeDraft}
+                  onChange={(e) => setVilleDraft(e.target.value)}
+                  className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#436D75]/40"
+                >
+                  <option value="">Choisissez un gouvernorat</option>
+                  {GOVERNORATES.map((gov) => (
+                    <option key={gov} value={gov}>
+                      {gov}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {error && (
+                <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+                  {error}
+                </div>
+              )}
+
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal(null)}
+                  className="rounded-2xl border border-gray-200 px-5 py-2 text-sm font-black text-gray-600 hover:bg-gray-50"
+                >
+                  Fermer
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-2xl bg-gradient-to-r from-[#436D75] to-[#2F525A] px-5 py-2 text-sm font-black text-white hover:from-[#355860] hover:to-[#294A51] disabled:opacity-60"
+                >
+                  {saving ? "Enregistrement..." : "Enregistrer"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form
+              onSubmit={submitEtudeModal}
+              className="w-full max-w-lg rounded-3xl border border-[#DDE9EC] bg-white p-6 shadow-2xl"
+            >
+              <h3 className="text-xl font-black italic text-[#203A43]">
+                Ajouter votre etablissement
+              </h3>
+              <label className="mt-4 block space-y-1 relative">
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                  Etablissement
+                </span>
+                <input
+                  type="text"
+                  value={etudeDraft}
+                  onChange={(e) =>
+                    void handleEtablissementSearch(e.target.value)
+                  }
+                  onFocus={() =>
+                    etudeDraft && setShowEtablissementSuggestions(true)
+                  }
+                  onBlur={() =>
+                    setTimeout(
+                      () => setShowEtablissementSuggestions(false),
+                      200,
+                    )
+                  }
+                  placeholder="Tapez votre lycee ou universite"
+                  className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#436D75]/40"
+                />
+                {showEtablissementSuggestions &&
+                  etablissementSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg max-h-48 overflow-y-auto z-10">
+                      {etablissementSuggestions.map((nom) => (
+                        <button
+                          key={nom}
+                          type="button"
+                          onClick={() => {
+                            setEtudeDraft(nom);
+                            setShowEtablissementSuggestions(false);
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-[#F1F6F8] text-sm"
+                        >
+                          {nom}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+              </label>
+
+              {error && (
+                <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+                  {error}
+                </div>
+              )}
+
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal(null)}
+                  className="rounded-2xl border border-gray-200 px-5 py-2 text-sm font-black text-gray-600 hover:bg-gray-50"
+                >
+                  Fermer
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-2xl bg-gradient-to-r from-[#436D75] to-[#2F525A] px-5 py-2 text-sm font-black text-white hover:from-[#355860] hover:to-[#294A51] disabled:opacity-60"
+                >
+                  {saving ? "Enregistrement..." : "Enregistrer"}
+                </button>
+              </div>
+            </form>
           )}
         </div>
       )}

@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { GOVERNORATES } from "../../../constants/governorates";
+import { searchEtablissements } from "../../../api/etablissements.api";
 
 type InfoFormValues = {
   nom: string;
@@ -7,6 +9,8 @@ type InfoFormValues = {
   bio: string;
   genre: string;
   date_naissance: string;
+  lieu_habite: string;
+  etablissement_etude: string;
 };
 
 type FormUpdateInfoProps = {
@@ -27,6 +31,11 @@ export function FormUpdateInfo({
   onSubmit,
 }: FormUpdateInfoProps) {
   const [form, setForm] = useState<InfoFormValues>(initialValues);
+  const [etablissementSuggestions, setEtablissementSuggestions] = useState<
+    string[]
+  >([]);
+  const [showEtablissementSuggestions, setShowEtablissementSuggestions] =
+    useState(false);
 
   useEffect(() => {
     setForm(initialValues);
@@ -34,6 +43,31 @@ export function FormUpdateInfo({
 
   const onChange = (key: keyof InfoFormValues, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleEtablissementSearch = async (query: string) => {
+    onChange("etablissement_etude", query);
+
+    if (!query.trim()) {
+      setEtablissementSuggestions([]);
+      setShowEtablissementSuggestions(false);
+      return;
+    }
+
+    try {
+      const results = await searchEtablissements(query);
+      setEtablissementSuggestions(
+        Array.isArray(results) ? results.map((e: any) => e.nom) : [],
+      );
+      setShowEtablissementSuggestions(true);
+    } catch {
+      setEtablissementSuggestions([]);
+    }
+  };
+
+  const handleSelectEtablissement = (nom: string) => {
+    onChange("etablissement_etude", nom);
+    setShowEtablissementSuggestions(false);
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -110,6 +144,58 @@ export function FormUpdateInfo({
             onChange={(e) => onChange("date_naissance", e.target.value)}
             className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#436D75]/40"
           />
+        </label>
+
+        <label className="space-y-1 md:col-span-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+            Habite a
+          </span>
+          <select
+            value={form.lieu_habite}
+            onChange={(e) => onChange("lieu_habite", e.target.value)}
+            className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#436D75]/40"
+          >
+            <option value="">Choisissez un gouvernorat</option>
+            {GOVERNORATES.map((gov) => (
+              <option key={gov} value={gov}>
+                {gov}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="space-y-1 md:col-span-2 relative">
+          <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+            Etudie a
+          </span>
+          <input
+            type="text"
+            value={form.etablissement_etude}
+            onChange={(e) => handleEtablissementSearch(e.target.value)}
+            onFocus={() =>
+              form.etablissement_etude && setShowEtablissementSuggestions(true)
+            }
+            onBlur={() =>
+              setTimeout(() => setShowEtablissementSuggestions(false), 200)
+            }
+            placeholder="Tapez votre lycee ou universite"
+            className="w-full rounded-2xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#436D75]/40"
+          />
+          {showEtablissementSuggestions &&
+            etablissementSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg max-h-48 overflow-y-auto z-10">
+                {etablissementSuggestions.map((nom) => (
+                  <button
+                    key={nom}
+                    type="button"
+                    onClick={() => handleSelectEtablissement(nom)}
+                    className="w-full text-left px-3 py-2 hover:bg-[#F1F6F8] text-sm"
+                  >
+                    {nom}
+                  </button>
+                ))}
+              </div>
+            )}
         </label>
 
         <label className="space-y-1 md:col-span-2">
