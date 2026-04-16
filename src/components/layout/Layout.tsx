@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -19,14 +19,31 @@ import {
   Newspaper,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
+import api from "../../api/axios";
+
+function getStoredUser() {
+  const raw = localStorage.getItem("user");
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
-
-  const userStr = localStorage.getItem("user");
-  const user = userStr ? JSON.parse(userStr) : null;
+  const [user, setUser] = useState<any>(() => getStoredUser());
+  const [dbProfile, setDbProfile] = useState<any>(null);
   const role = user?.role;
+  const displayUser = dbProfile ?? user;
+  const hasProfileImage =
+    typeof displayUser?.photo_profil_url === "string" &&
+    displayUser.photo_profil_url.trim() !== "";
+  const [topBarImageError, setTopBarImageError] = useState(false);
+  const showTopBarImage = hasProfileImage && !topBarImageError;
 
   useEffect(() => {
     if (!user) {
@@ -43,9 +60,74 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [user, role, navigate, location.pathname]);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setDbProfile(null);
+      return;
+    }
+
+    const loadDbProfile = async () => {
+      try {
+        const response = await api.get("/users/me/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setDbProfile(response.data);
+      } catch {
+        setDbProfile(null);
+      }
+    };
+
+    void loadDbProfile();
+  }, [user?.id]);
+
+  useEffect(() => {
+    const syncUser = () => {
+      setUser(getStoredUser());
+    };
+
+    const syncDbProfile = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setDbProfile(null);
+        return;
+      }
+
+      try {
+        const response = await api.get("/users/me/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setDbProfile(response.data);
+      } catch {
+        setDbProfile(null);
+      }
+    };
+
+    const handleUserUpdated = () => {
+      syncUser();
+      void syncDbProfile();
+    };
+
+    window.addEventListener("storage", syncUser);
+    window.addEventListener("user-updated", handleUserUpdated as EventListener);
+
+    return () => {
+      window.removeEventListener("storage", syncUser);
+      window.removeEventListener(
+        "user-updated",
+        handleUserUpdated as EventListener,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    setTopBarImageError(false);
+  }, [displayUser?.photo_profil_url]);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    window.dispatchEvent(new Event("user-updated"));
     navigate("/");
   };
 
@@ -276,12 +358,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               className="flex items-center space-x-3 bg-white p-1 rounded-full pr-4 border border-gray-100 shadow-sm hover:border-[#436D75]/30 hover:bg-[#F8FBFA] transition-colors"
               title="Mon profil"
             >
-              <div className="w-8 h-8 bg-[#F7F3E9] rounded-full flex items-center justify-center text-[#436D75] shadow-inner">
-                <UserCircle size={20} />
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-[#ECEFF3] flex items-center justify-center text-[#9AA3AF] shadow-inner">
+                {showTopBarImage ? (
+                  <img
+                    src={displayUser.photo_profil_url}
+                    alt={`${displayUser.nom} ${displayUser.prenom}`}
+                    className="w-full h-full object-cover"
+                    onError={() => setTopBarImageError(true)}
+                  />
+                ) : (
+                  <UserCircle size={20} />
+                )}
               </div>
               <div className="text-left">
                 <p className="text-[10px] font-black text-[#436D75] leading-none">
-                  {user.nom} {user.prenom}
+                  {displayUser?.nom} {displayUser?.prenom}
                 </p>
                 <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest italic">
                   {role}
