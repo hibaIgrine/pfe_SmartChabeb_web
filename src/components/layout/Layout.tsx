@@ -122,12 +122,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          <SidebarItem
-            to="/fil-actualite"
-            icon={<Newspaper size={18} />}
-            label="Fil d'actualité"
-            active={location.pathname === "/fil-actualite"}
-          />
+          
 
           {(role === "ADHERENT" ||
             role === "ADMIN" ||

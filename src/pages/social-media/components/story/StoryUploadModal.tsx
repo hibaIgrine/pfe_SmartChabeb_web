@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { X, Upload } from "lucide-react";
-import { createStory, type MediaItem } from "../../../api/stories.api";
+import { createStory, type MediaItem } from "../../../../api/stories.api";
 
 type StoryUploadModalProps = {
   onClose: () => void;
@@ -48,7 +48,7 @@ export function StoryUploadModal({
       onStoryCreated?.();
       onClose();
     } catch (err) {
-      console.error("Erreur création story:", err);
+      console.error("Erreur creation story:", err);
     } finally {
       setUploading(false);
     }
@@ -58,7 +58,7 @@ export function StoryUploadModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h3 className="text-lg font-bold text-gray-900">Créer une story</h3>
+          <h3 className="text-lg font-bold text-gray-900">Creer une story</h3>
           <button
             type="button"
             onClick={onClose}
@@ -69,7 +69,6 @@ export function StoryUploadModal({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
-          {/* Preview */}
           {preview && (
             <div className="relative aspect-video overflow-hidden rounded-lg bg-gray-100">
               {media[0]?.type === "video" ? (
@@ -101,7 +100,6 @@ export function StoryUploadModal({
             </div>
           )}
 
-          {/* File Upload */}
           <input
             ref={fileInputRef}
             type="file"
@@ -116,11 +114,10 @@ export function StoryUploadModal({
           >
             <Upload className="mx-auto mb-2 text-gray-400" size={24} />
             <p className="text-sm font-medium text-gray-600">
-              Cliquez pour ajouter une photo/vidéo
+              Cliquez pour ajouter une photo/video
             </p>
           </button>
 
-          {/* Text Content */}
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -129,13 +126,12 @@ export function StoryUploadModal({
             rows={3}
           />
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={uploading || (!content && !media.length)}
             className="w-full rounded-lg bg-[#436D75] px-4 py-2 text-white font-semibold hover:bg-[#2d4a53] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {uploading ? "Création..." : "Publier la story"}
+            {uploading ? "Creation..." : "Publier la story"}
           </button>
         </form>
       </div>

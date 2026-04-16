@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
 import {
   markStoryAsViewed,
   deleteStory,
   type Story,
-} from "../../../api/stories.api";
+} from "../../../../api/stories.api";
 
 type StoryViewerProps = {
   stories: Story[];
@@ -21,12 +21,12 @@ export function StoryViewer({
 }: StoryViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const duration = 5;
-  const [displayDuration, setDisplayDuration] = useState(duration); // Start fresh for each story
+  const [displayDuration, setDisplayDuration] = useState(duration);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const viewedStoryIdsRef = useRef(new Set<string>());
 
   const currentStory = stories[currentIndex];
 
-  // Mark as viewed
   useEffect(() => {
     if (currentStory && !viewedStoryIdsRef.current.has(currentStory.id)) {
       viewedStoryIdsRef.current.add(currentStory.id);
@@ -34,7 +34,6 @@ export function StoryViewer({
     }
   }, [currentStory?.id]);
 
-  // Auto progress
   useEffect(() => {
     if (displayDuration <= 0) {
       if (currentIndex < stories.length - 1) {
@@ -73,6 +72,7 @@ export function StoryViewer({
     if (currentStory && currentStory.user_id === currentUserId) {
       try {
         await deleteStory(currentStory.id);
+        setConfirmDeleteOpen(false);
         handleNext();
       } catch (err) {
         console.error("Erreur suppression story:", err);
@@ -116,7 +116,6 @@ export function StoryViewer({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
-      {/* Progress Bar */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-white/30">
         <div
           className="h-full bg-white transition-all"
@@ -126,7 +125,6 @@ export function StoryViewer({
         />
       </div>
 
-      {/* Close Button */}
       <button
         type="button"
         onClick={onClose}
@@ -135,7 +133,6 @@ export function StoryViewer({
         <X size={24} />
       </button>
 
-      {/* Story Content */}
       <div className="relative w-full max-w-2xl aspect-video max-h-screen overflow-hidden rounded-lg">
         {hasMedia ? (
           mediaList[0].type === "video" ? (
@@ -163,7 +160,6 @@ export function StoryViewer({
           </div>
         )}
 
-        {/* User Info */}
         <div className="absolute top-12 left-4 flex items-center gap-3">
           {currentStory?.user?.photo_profil_url ? (
             <img
@@ -193,7 +189,6 @@ export function StoryViewer({
           </div>
         </div>
 
-        {/* Navigation & Actions */}
         <div className="absolute inset-0 flex items-center justify-between px-4">
           <button
             type="button"
@@ -214,25 +209,54 @@ export function StoryViewer({
           </button>
         </div>
 
-        {/* View Count & Delete */}
         <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-sm">
           <p>{currentStory?.viewCount || 0} vue(s)</p>
           {isOwnStory && (
             <button
               type="button"
-              onClick={handleDelete}
-              className="rounded-lg bg-red-500/80 px-3 py-1 hover:bg-red-600"
+              onClick={() => setConfirmDeleteOpen(true)}
+              title="Supprimer la story"
+              aria-label="Supprimer la story"
+              className="rounded-full bg-red-500/80 p-2 hover:bg-red-600"
             >
-              Supprimer
+              <Trash2 size={16} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Story Counter */}
       <div className="absolute bottom-4 right-4 text-white text-sm">
         {currentIndex + 1} / {stories.length}
       </div>
+
+      {confirmDeleteOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+            <h3 className="text-base font-bold text-gray-900">
+              Supprimer cette story ?
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Cette action est irreversible.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteOpen(false)}
+                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="rounded-lg bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

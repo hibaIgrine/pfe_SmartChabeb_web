@@ -4,7 +4,7 @@ import {
   fetchStoriesByUser,
   fetchStoriesForFeed,
   type Story,
-} from "../../../api/stories.api";
+} from "../../../../api/stories.api";
 import { StoryUploadModal } from "./StoryUploadModal";
 import { StoryViewer } from "./StoryViewer";
 
@@ -72,7 +72,7 @@ export function StoryReel({ currentUserId, onStoryCreated }: StoryReelProps) {
     void loadStories();
     const interval = setInterval(() => {
       void loadStories();
-    }, 30000); // Refresh every 30s
+    }, 30000);
     return () => clearInterval(interval);
   }, [currentUserId]);
 
@@ -114,7 +114,6 @@ export function StoryReel({ currentUserId, onStoryCreated }: StoryReelProps) {
     <>
       <div className="bg-white rounded-2xl border border-[#e7dfcf] p-4 shadow-sm">
         <div className="flex gap-3 overflow-x-auto pb-2">
-          {/* Add Story Button */}
           <button
             type="button"
             onClick={handleMyStoryClick}
@@ -151,7 +150,6 @@ export function StoryReel({ currentUserId, onStoryCreated }: StoryReelProps) {
             </p>
           </button>
 
-          {/* Stories */}
           {stories.map((story, index) => {
             const hasViewed = story.hasViewed;
             return (

@@ -1,8 +1,7 @@
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { FeedHeader, FeedList, PostComposer } from "./components";
-import { StoryReel } from "./components/StoryReel";
+import { FeedHeader, FeedList, PostComposer, StoryReel } from "./components";
 import { useSocialFeed } from "./hooks/useSocialFeed";
 import { OriginalPostModal } from "./components/post-card/OriginalPostModal";
 
