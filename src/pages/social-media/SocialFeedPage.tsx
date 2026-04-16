@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { FeedHeader, FeedList, PostComposer } from "./components";
+import { StoryReel } from "./components/StoryReel";
 import { useSocialFeed } from "./hooks/useSocialFeed";
 import { OriginalPostModal } from "./components/post-card/OriginalPostModal";
 
@@ -31,6 +32,8 @@ export default function SocialFeedPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <FeedHeader onRefresh={feed.loadFeed} />
+
+      <StoryReel currentUserId={feed.me?.id} onStoryCreated={feed.loadFeed} />
 
       <PostComposer
         composerText={feed.composerText}
