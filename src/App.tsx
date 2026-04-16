@@ -26,6 +26,7 @@ import EventRequestsPage from "./pages/events/EventRequestsPage";
 import EventParticipantsPage from "./pages/events/EventParticipantsPage";
 import EventWaitingListPage from "./pages/events/EventWaitingListPage";
 import ProfileGamificationPage from "./pages/profile/ProfileGamificationPage";
+import MyProfilePage from "./pages/profile/MyProfilePage";
 import SocialFeedPage from "./pages/social-media/SocialFeedPage";
 
 function App() {
@@ -208,6 +209,14 @@ function App() {
           element={
             <Layout>
               <EventWaitingListPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/mon-profil"
+          element={
+            <Layout>
+              <MyProfilePage />
             </Layout>
           }
         />

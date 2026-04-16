@@ -122,8 +122,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          
-
           {(role === "ADHERENT" ||
             role === "ADMIN" ||
             role === "RESPONSABLE_CENTRE") && (
@@ -273,7 +271,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Newspaper size={18} />
             </Link>
             <NotificationBell />
-            <div className="flex items-center space-x-3 bg-white p-1 rounded-full pr-4 border border-gray-100 shadow-sm">
+            <Link
+              to="/mon-profil"
+              className="flex items-center space-x-3 bg-white p-1 rounded-full pr-4 border border-gray-100 shadow-sm hover:border-[#436D75]/30 hover:bg-[#F8FBFA] transition-colors"
+              title="Mon profil"
+            >
               <div className="w-8 h-8 bg-[#F7F3E9] rounded-full flex items-center justify-center text-[#436D75] shadow-inner">
                 <UserCircle size={20} />
               </div>
@@ -285,7 +287,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {role}
                 </p>
               </div>
-            </div>
+            </Link>
           </div>
         </header>
 
