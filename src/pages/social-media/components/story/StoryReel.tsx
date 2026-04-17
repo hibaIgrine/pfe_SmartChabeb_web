@@ -191,7 +191,9 @@ export function StoryReel({ currentUserId, onStoryCreated }: StoryReelProps) {
                 </div>
 
                 <div className="absolute bottom-2 left-2 right-2">
-                  <p className="truncate text-[11px] font-black text-white">Votre story</p>
+                  <p className="truncate text-[11px] font-black text-white">
+                    Votre story
+                  </p>
                   <p className="truncate text-[10px] font-semibold text-white/80">
                     {formatStoryTime(myStories[0]?.created_at)}
                   </p>

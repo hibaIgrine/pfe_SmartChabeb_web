@@ -113,6 +113,10 @@ export function StoryViewer({
     return [];
   })().filter((item) => item && typeof item.url === "string");
   const hasMedia = mediaList.length > 0;
+  const mediaTextY =
+    typeof mediaList[0]?.textY === "number"
+      ? Math.max(-35, Math.min(35, mediaList[0].textY))
+      : 0;
   const isOwnStory = currentStory?.user_id === currentUserId;
   const progressPercent = ((duration - displayDuration) / duration) * 100;
   const viewers = currentStory?.views ?? [];
@@ -172,12 +176,15 @@ export function StoryViewer({
               />
             )
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#436D75] via-[#4F7F88] to-[#8a5d2a]">
-              <div className="px-8 text-center text-white">
-                <p className="text-2xl font-bold mb-4">
-                  {currentStory?.user?.prenom} {currentStory?.user?.nom}
+            <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#102229] px-6">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(95,168,182,0.35),transparent_35%),radial-gradient(circle_at_80%_90%,rgba(199,142,78,0.3),transparent_40%)]" />
+              <div className="absolute -left-10 top-10 h-44 w-44 rounded-full bg-[#4BA7B5]/20 blur-3xl" />
+              <div className="absolute -right-12 bottom-8 h-52 w-52 rounded-full bg-[#BE7A3D]/20 blur-3xl" />
+
+              <div className="relative w-full max-w-xl rounded-3xl border border-white/15 bg-white/8 p-6 text-center backdrop-blur-[2px] sm:p-8">
+                <p className="whitespace-pre-wrap break-words text-xl font-bold leading-relaxed text-white sm:text-2xl">
+                  {currentStory?.content?.trim() || "Story sans texte"}
                 </p>
-                <p className="text-lg">{currentStory?.content}</p>
               </div>
             </div>
           )}
@@ -217,8 +224,11 @@ export function StoryViewer({
             </div>
           </div>
 
-          {currentStory?.content?.trim() && (
-            <div className="absolute bottom-16 left-3 right-3 rounded-xl bg-black/55 px-3 py-2 text-sm text-white">
+          {hasMedia && currentStory?.content?.trim() && (
+            <div
+              className="absolute left-0 right-0 z-10 -translate-y-1/2 bg-black/55 px-4 py-2.5 text-center text-sm font-bold text-white"
+              style={{ top: `calc(50% + ${mediaTextY}%)` }}
+            >
               {currentStory.content}
             </div>
           )}
@@ -268,7 +278,11 @@ export function StoryViewer({
         )}
 
         {isOwnStory && viewersOpen && (
-          <div className="absolute inset-0 z-40 flex items-end" role="dialog" aria-modal="true">
+          <div
+            className="absolute inset-0 z-40 flex items-end"
+            role="dialog"
+            aria-modal="true"
+          >
             <button
               type="button"
               onClick={() => setViewersOpen(false)}
@@ -288,7 +302,9 @@ export function StoryViewer({
               </div>
 
               {viewers.length === 0 ? (
-                <p className="py-4 text-sm text-gray-500">Aucune vue pour le moment.</p>
+                <p className="py-4 text-sm text-gray-500">
+                  Aucune vue pour le moment.
+                </p>
               ) : (
                 <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
                   {viewers.map((view) => {
@@ -314,14 +330,19 @@ export function StoryViewer({
                               {(view.viewer?.nom?.[0] || "").toUpperCase()}
                             </div>
                           )}
-                          <p className="text-sm font-semibold text-[#203A43]">{name}</p>
+                          <p className="text-sm font-semibold text-[#203A43]">
+                            {name}
+                          </p>
                         </div>
 
                         <p className="text-xs text-gray-500">
-                          {new Date(view.viewed_at).toLocaleTimeString("fr-FR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {new Date(view.viewed_at).toLocaleTimeString(
+                            "fr-FR",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}
                         </p>
                       </div>
                     );

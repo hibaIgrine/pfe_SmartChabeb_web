@@ -18,6 +18,8 @@ import { FeedList, PostComposer } from "../social-media/components";
 import { useSocialFeed } from "../social-media/hooks/useSocialFeed";
 import { GOVERNORATES } from "../../constants/governorates";
 import { searchEtablissements } from "../../api/etablissements.api";
+import { fetchMyStoryArchive, type Story } from "../../api/stories.api";
+import { StoryArchiveModal } from "./components/StoryArchiveModal";
 
 type UserProfile = {
   id: string;
@@ -135,6 +137,12 @@ export default function MyProfilePage() {
   >([]);
   const [showEtablissementSuggestions, setShowEtablissementSuggestions] =
     useState(false);
+  const [storyArchiveOpen, setStoryArchiveOpen] = useState(false);
+  const [storyArchiveLoading, setStoryArchiveLoading] = useState(false);
+  const [storyArchiveError, setStoryArchiveError] = useState<string | null>(
+    null,
+  );
+  const [storyArchiveStories, setStoryArchiveStories] = useState<Story[]>([]);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
 
   const [form, setForm] = useState({
@@ -259,6 +267,25 @@ export default function MyProfilePage() {
     setSuccess(null);
     setMenuOpen(false);
     setAvatarModalOpen(true);
+  };
+
+  const loadStoryArchive = async () => {
+    try {
+      setStoryArchiveLoading(true);
+      setStoryArchiveError(null);
+      const data = await fetchMyStoryArchive();
+      setStoryArchiveStories(Array.isArray(data) ? data : []);
+    } catch {
+      setStoryArchiveError("Impossible de charger l'archive des stories.");
+    } finally {
+      setStoryArchiveLoading(false);
+    }
+  };
+
+  const openStoryArchiveFromMenu = () => {
+    setMenuOpen(false);
+    setStoryArchiveOpen(true);
+    void loadStoryArchive();
   };
 
   const applyUpdatedUser = (updated: UserProfile) => {
@@ -646,6 +673,13 @@ export default function MyProfilePage() {
                   className="w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#203A43] hover:bg-[#FFF3F6]"
                 >
                   Modifier mot de passe
+                </button>
+                <button
+                  type="button"
+                  onClick={openStoryArchiveFromMenu}
+                  className="w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#203A43] hover:bg-[#F7F0FF]"
+                >
+                  Archive stories
                 </button>
               </div>
             )}
@@ -1160,6 +1194,16 @@ export default function MyProfilePage() {
             )}
           </div>
         </div>
+      )}
+
+      {storyArchiveOpen && (
+        <StoryArchiveModal
+          stories={storyArchiveStories}
+          loading={storyArchiveLoading}
+          error={storyArchiveError}
+          onClose={() => setStoryArchiveOpen(false)}
+          onRetry={() => void loadStoryArchive()}
+        />
       )}
     </div>
   );

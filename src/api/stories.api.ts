@@ -2,6 +2,7 @@ import api from "./axios";
 export interface MediaItem {
   type: "image" | "video";
   url: string;
+  textY?: number;
 }
 
 export interface Story {
@@ -29,6 +30,7 @@ export interface Story {
   }>;
   hasViewed?: boolean;
   viewCount?: number;
+  isExpired?: boolean;
 }
 
 export async function fetchStoriesForFeed(): Promise<Story[]> {
@@ -58,4 +60,9 @@ export async function markStoryAsViewed(storyId: string): Promise<void> {
 
 export async function deleteStory(storyId: string): Promise<void> {
   await api.delete(`/stories/${storyId}`);
+}
+
+export async function fetchMyStoryArchive(): Promise<Story[]> {
+  const response = await api.get("/stories/me/archive");
+  return response.data || [];
 }
