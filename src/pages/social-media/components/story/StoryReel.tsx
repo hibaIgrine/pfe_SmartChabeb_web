@@ -37,6 +37,21 @@ function getStoryMediaCount(story: Story) {
   return 0;
 }
 
+function formatStoryTime(value?: string) {
+  if (!value) return "Maintenant";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Maintenant";
+
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.max(1, Math.floor(diffMs / 60000));
+
+  if (diffMinutes < 60) return `Il y a ${diffMinutes} min`;
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `Il y a ${diffHours} h`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `Il y a ${diffDays} j`;
+}
+
 type StoryReelProps = {
   currentUserId?: string;
   onStoryCreated?: () => void;
@@ -53,14 +68,18 @@ export function StoryReel({ currentUserId, onStoryCreated }: StoryReelProps) {
   const loadStories = async () => {
     try {
       setLoading(true);
-      const [feedStories, myStories] = await Promise.all([
+      const [feedStories, myUserStories] = await Promise.all([
         fetchStoriesForFeed(),
         currentUserId ? fetchStoriesByUser(currentUserId) : Promise.resolve([]),
       ]);
 
-      const data = feedStories ?? [];
-      setStories(data || []);
-      setMyStories(myStories ?? []);
+      setStories(feedStories ?? []);
+      const sortedMyStories = [...(myUserStories ?? [])].sort((a, b) => {
+        const aTime = new Date(a.created_at).getTime();
+        const bTime = new Date(b.created_at).getTime();
+        return aTime - bTime;
+      });
+      setMyStories(sortedMyStories);
     } catch (err) {
       console.error("Erreur chargement stories:", err);
     } finally {
@@ -73,6 +92,7 @@ export function StoryReel({ currentUserId, onStoryCreated }: StoryReelProps) {
     const interval = setInterval(() => {
       void loadStories();
     }, 30000);
+
     return () => clearInterval(interval);
   }, [currentUserId]);
 
@@ -92,18 +112,15 @@ export function StoryReel({ currentUserId, onStoryCreated }: StoryReelProps) {
     setSelectedStoryIndex(0);
   };
 
-  const handleMyStoryClick = () => {
-    if (myStories.length > 0) {
-      const preferredIndex = myStories.findIndex(
-        (story) => getStoryMediaCount(story) > 0,
-      );
-      const nextIndex = preferredIndex >= 0 ? preferredIndex : 0;
-      setSelectedStory(myStories[nextIndex]);
-      setSelectedStoryIndex(nextIndex);
-      return;
-    }
+  const handleOpenMyStories = () => {
+    if (!myStories.length) return;
 
-    setShowUploadModal(true);
+    const preferredIndex = myStories.findIndex(
+      (story) => getStoryMediaCount(story) > 0,
+    );
+    const nextIndex = preferredIndex >= 0 ? preferredIndex : 0;
+    setSelectedStory(myStories[nextIndex]);
+    setSelectedStoryIndex(nextIndex);
   };
 
   if (loading && !stories.length) {
@@ -112,81 +129,142 @@ export function StoryReel({ currentUserId, onStoryCreated }: StoryReelProps) {
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-[#e7dfcf] p-4 shadow-sm">
-        <div className="flex gap-3 overflow-x-auto pb-2">
+      <section className="rounded-3xl border border-[#DDE9EC] bg-gradient-to-br from-white via-[#F8FCFD] to-[#EEF5F7] p-4 shadow-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-black uppercase tracking-widest text-[#436D75]">
+            Stories
+          </h3>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+            Dernieres 24h
+          </p>
+        </div>
+
+        <div className="flex gap-3 overflow-x-auto pb-1">
           <button
             type="button"
-            onClick={handleMyStoryClick}
-            className="flex flex-col items-center gap-2 flex-shrink-0 group cursor-pointer"
+            onClick={() => setShowUploadModal(true)}
+            className="group relative h-32 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-[#D4E3E7] bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
           >
-            {myStories.length > 0 ? (
-              <div className="relative w-16 h-16 rounded-full flex-shrink-0 border-2 border-[#436D75] ring-2 ring-[#436D75]/30 overflow-hidden">
-                {myStories[0]?.user?.photo_profil_url ? (
-                  <img
-                    src={myStories[0].user.photo_profil_url}
-                    alt="Votre story"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-[#436D75] to-[#8a5d2a] flex items-center justify-center text-white font-bold">
-                    {myStories[0]?.user?.nom?.[0]}
-                    {myStories[0]?.user?.prenom?.[0]}
-                  </div>
-                )}
-                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-[#436D75] border-2 border-white flex items-center justify-center">
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[radial-gradient(circle_at_30%_20%,#f5fafb_0,#edf5f7_55%,#e6eff2_100%)]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-[#90AEB6] text-[#436D75] transition-colors group-hover:border-[#436D75]">
+                <Plus size={20} />
+              </div>
+              <p className="px-2 text-center text-[11px] font-black text-[#436D75]">
+                + Creer
+              </p>
+            </div>
+          </button>
+
+          {myStories.length > 0 && (
+            <button
+              type="button"
+              onClick={handleOpenMyStories}
+              className="group relative h-32 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-[#D4E3E7] bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <>
+                <div className="h-full w-full">
+                  {myStories[0]?.user?.photo_profil_url ? (
+                    <img
+                      src={myStories[0].user.photo_profil_url}
+                      alt="Votre story"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gradient-to-br from-[#436D75] via-[#4F7F88] to-[#8a5d2a]" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
+                </div>
+
+                <div className="absolute left-2 top-2 h-8 w-8 rounded-full border-2 border-white bg-white/15 p-[2px] backdrop-blur">
+                  {myStories[0]?.user?.photo_profil_url ? (
+                    <img
+                      src={myStories[0].user.photo_profil_url}
+                      alt="Vous"
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center rounded-full bg-white/25 text-[10px] font-black text-white">
+                      {myStories[0]?.user?.nom?.[0]}
+                      {myStories[0]?.user?.prenom?.[0]}
+                    </div>
+                  )}
+                </div>
+
+                <div className="absolute bottom-2 left-2 right-2">
+                  <p className="truncate text-[11px] font-black text-white">Votre story</p>
+                  <p className="truncate text-[10px] font-semibold text-white/80">
+                    {formatStoryTime(myStories[0]?.created_at)}
+                  </p>
+                </div>
+
+                <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-[#436D75] shadow">
                   <Plus size={12} className="text-white" />
                 </div>
-              </div>
-            ) : (
-              <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center group-hover:border-[#436D75] transition-colors">
-                <Plus
-                  size={24}
-                  className="text-gray-400 group-hover:text-[#436D75]"
-                />
-              </div>
-            )}
-            <p className="text-xs text-center text-gray-600 w-16 truncate">
-              Votre story
-            </p>
-          </button>
+              </>
+            </button>
+          )}
 
           {stories.map((story, index) => {
             const hasViewed = story.hasViewed;
+
             return (
               <button
                 key={story.id}
                 type="button"
                 onClick={() => handleOpenStory(story, index)}
-                className="flex flex-col items-center gap-2 flex-shrink-0 group cursor-pointer"
+                className="group relative h-32 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-[#D4E3E7] bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
+                <div className="h-full w-full">
+                  {story.user?.photo_profil_url ? (
+                    <img
+                      src={story.user.photo_profil_url}
+                      alt={`${story.user.nom} ${story.user.prenom}`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gradient-to-br from-[#436D75] via-[#4F7F88] to-[#8a5d2a]" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
+                </div>
+
                 <div
-                  className={`w-16 h-16 rounded-full flex-shrink-0 border-2 overflow-hidden ${
+                  className={`absolute left-2 top-2 h-8 w-8 rounded-full border-2 p-[2px] backdrop-blur ${
                     hasViewed
-                      ? "border-gray-300"
-                      : "border-[#436D75] ring-2 ring-[#436D75]/30"
+                      ? "border-white/70 bg-white/10"
+                      : "border-[#FFD57A] bg-white/20"
                   }`}
                 >
                   {story.user?.photo_profil_url ? (
                     <img
                       src={story.user.photo_profil_url}
-                      alt={`${story.user.nom} ${story.user.prenom}`}
-                      className="w-full h-full object-cover"
+                      alt={story.user.prenom}
+                      className="h-full w-full rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[#436D75] to-[#8a5d2a] flex items-center justify-center text-white font-bold">
+                    <div className="flex h-full w-full items-center justify-center rounded-full bg-white/25 text-[10px] font-black text-white">
                       {story.user?.nom?.[0]}
                       {story.user?.prenom?.[0]}
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-center text-gray-600 w-16 truncate">
-                  {story.user?.prenom}
-                </p>
+
+                <div className="absolute bottom-2 left-2 right-2">
+                  <p className="truncate text-[11px] font-black text-white">
+                    {story.user?.prenom}
+                  </p>
+                  <p className="truncate text-[10px] font-semibold text-white/80">
+                    {formatStoryTime(story.created_at)}
+                  </p>
+                </div>
+
+                {!hasViewed && (
+                  <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#FFD57A] shadow-[0_0_0_3px_rgba(255,213,122,0.25)]" />
+                )}
               </button>
             );
           })}
         </div>
-      </div>
+      </section>
 
       {showUploadModal && (
         <StoryUploadModal

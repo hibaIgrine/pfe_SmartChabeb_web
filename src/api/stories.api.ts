@@ -20,6 +20,12 @@ export interface Story {
   views: Array<{
     viewer_id: string;
     viewed_at: string;
+    viewer?: {
+      id: string;
+      nom: string;
+      prenom: string;
+      photo_profil_url?: string;
+    };
   }>;
   hasViewed?: boolean;
   viewCount?: number;

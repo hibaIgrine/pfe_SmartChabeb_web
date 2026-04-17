@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Trash2, X } from "lucide-react";
 import {
   markStoryAsViewed,
   deleteStory,
@@ -23,6 +23,7 @@ export function StoryViewer({
   const duration = 5;
   const [displayDuration, setDisplayDuration] = useState(duration);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [viewersOpen, setViewersOpen] = useState(false);
   const viewedStoryIdsRef = useRef(new Set<string>());
 
   const currentStory = stories[currentIndex];
@@ -113,120 +114,223 @@ export function StoryViewer({
   })().filter((item) => item && typeof item.url === "string");
   const hasMedia = mediaList.length > 0;
   const isOwnStory = currentStory?.user_id === currentUserId;
+  const progressPercent = ((duration - displayDuration) / duration) * 100;
+  const viewers = currentStory?.views ?? [];
+
+  useEffect(() => {
+    setViewersOpen(false);
+  }, [currentStory?.id]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
-      <div className="absolute top-0 left-0 right-0 h-1 bg-white/30">
-        <div
-          className="h-full bg-white transition-all"
-          style={{
-            width: `${((duration - displayDuration) / duration) * 100}%`,
-          }}
-        />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(67,109,117,0.35),transparent_40%),radial-gradient(circle_at_80%_90%,rgba(138,93,42,0.28),transparent_35%)]" />
+
+      <div className="absolute left-1/2 top-3 z-20 flex w-full max-w-3xl -translate-x-1/2 gap-1.5 px-4">
+        {stories.map((story, index) => (
+          <div
+            key={story.id}
+            className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/20"
+          >
+            <div
+              className="h-full rounded-full bg-white transition-all"
+              style={{
+                width:
+                  index < currentIndex
+                    ? "100%"
+                    : index === currentIndex
+                      ? `${progressPercent}%`
+                      : "0%",
+              }}
+            />
+          </div>
+        ))}
       </div>
 
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+        className="absolute right-4 top-4 z-30 rounded-full border border-white/20 bg-black/50 p-2 text-white backdrop-blur hover:bg-black/70"
       >
         <X size={24} />
       </button>
 
-      <div className="relative w-full max-w-2xl aspect-video max-h-screen overflow-hidden rounded-lg">
-        {hasMedia ? (
-          mediaList[0].type === "video" ? (
-            <video
-              src={mediaList[0].url}
-              autoPlay
-              controls
-              className="w-full h-full object-cover"
-            />
+      <div className="relative z-10 w-full max-w-3xl">
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black shadow-[0_30px_80px_rgba(0,0,0,0.45)] aspect-[9/16] sm:aspect-video max-h-[82vh]">
+          {hasMedia ? (
+            mediaList[0].type === "video" ? (
+              <video
+                src={mediaList[0].url}
+                autoPlay
+                controls
+                className="h-full w-full bg-black object-contain"
+              />
+            ) : (
+              <img
+                src={mediaList[0].url}
+                alt="Story"
+                className="h-full w-full bg-black object-contain"
+              />
+            )
           ) : (
-            <img
-              src={mediaList[0].url}
-              alt="Story"
-              className="w-full h-full object-cover"
-            />
-          )
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[#436D75] to-[#8a5d2a] flex items-center justify-center">
-            <div className="text-center text-white px-8">
-              <p className="text-2xl font-bold mb-4">
-                {currentStory?.user?.prenom} {currentStory?.user?.nom}
-              </p>
-              <p className="text-lg">{currentStory?.content}</p>
-            </div>
-          </div>
-        )}
-
-        <div className="absolute top-12 left-4 flex items-center gap-3">
-          {currentStory?.user?.photo_profil_url ? (
-            <img
-              src={currentStory.user.photo_profil_url}
-              alt={currentStory.user.prenom}
-              className="w-10 h-10 rounded-full object-cover border-2 border-white"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-white/30 border border-white flex items-center justify-center text-white font-bold">
-              {currentStory?.user?.nom?.[0]}
-              {currentStory?.user?.prenom?.[0]}
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#436D75] via-[#4F7F88] to-[#8a5d2a]">
+              <div className="px-8 text-center text-white">
+                <p className="text-2xl font-bold mb-4">
+                  {currentStory?.user?.prenom} {currentStory?.user?.nom}
+                </p>
+                <p className="text-lg">{currentStory?.content}</p>
+              </div>
             </div>
           )}
-          <div className="text-white">
-            <p className="font-semibold">
-              {currentStory?.user?.prenom} {currentStory?.user?.nom}
-            </p>
-            <p className="text-xs opacity-75">
-              {new Date(currentStory?.created_at || "").toLocaleTimeString(
-                "fr-FR",
-                {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                },
+
+          <div className="absolute left-3 right-3 top-3 flex items-center justify-between gap-3 px-1">
+            <div className="flex items-center gap-3">
+              {currentStory?.user?.photo_profil_url ? (
+                <img
+                  src={currentStory.user.photo_profil_url}
+                  alt={currentStory.user.prenom}
+                  className="h-10 w-10 rounded-full object-cover border-2 border-white/70"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/20 font-bold text-white">
+                  {currentStory?.user?.nom?.[0]}
+                  {currentStory?.user?.prenom?.[0]}
+                </div>
               )}
-            </p>
+              <div className="text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.8)]">
+                <p className="text-sm font-semibold leading-tight">
+                  {currentStory?.user?.prenom} {currentStory?.user?.nom}
+                </p>
+                <p className="text-xs text-white/80">
+                  {new Date(currentStory?.created_at || "").toLocaleTimeString(
+                    "fr-FR",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-full border border-white/30 bg-black/30 px-2.5 py-1 text-xs font-bold text-white">
+              {currentIndex + 1} / {stories.length}
+            </div>
+          </div>
+
+          {currentStory?.content?.trim() && (
+            <div className="absolute bottom-16 left-3 right-3 rounded-xl bg-black/55 px-3 py-2 text-sm text-white">
+              {currentStory.content}
+            </div>
+          )}
+
+          <div className="absolute inset-0 flex items-center justify-between px-3 sm:px-4">
+            <button
+              type="button"
+              onClick={handlePrev}
+              disabled={currentIndex === 0}
+              className="rounded-full border border-white/20 bg-black/35 p-2.5 text-white hover:bg-black/50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft size={22} />
+            </button>
+
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={currentIndex === stories.length - 1}
+              className="rounded-full border border-white/20 bg-black/35 p-2.5 text-white hover:bg-black/50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronRight size={22} />
+            </button>
           </div>
         </div>
 
-        <div className="absolute inset-0 flex items-center justify-between px-4">
-          <button
-            type="button"
-            onClick={handlePrev}
-            disabled={currentIndex === 0}
-            className="rounded-full bg-white/30 p-3 text-white hover:bg-white/50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft size={24} />
-          </button>
+        {isOwnStory && (
+          <div className="mt-2 flex items-center justify-between px-1 text-white">
+            <button
+              type="button"
+              onClick={() => setViewersOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-sm font-semibold hover:bg-black/55"
+            >
+              <Eye size={16} />
+              {currentStory?.viewCount || 0} vue(s)
+            </button>
 
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={currentIndex === stories.length - 1}
-            className="rounded-full bg-white/30 p-3 text-white hover:bg-white/50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronRight size={24} />
-          </button>
-        </div>
-
-        <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-sm">
-          <p>{currentStory?.viewCount || 0} vue(s)</p>
-          {isOwnStory && (
             <button
               type="button"
               onClick={() => setConfirmDeleteOpen(true)}
               title="Supprimer la story"
               aria-label="Supprimer la story"
-              className="rounded-full bg-red-500/80 p-2 hover:bg-red-600"
+              className="rounded-full bg-red-500/85 p-2 text-white hover:bg-red-600"
             >
               <Trash2 size={16} />
             </button>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
 
-      <div className="absolute bottom-4 right-4 text-white text-sm">
-        {currentIndex + 1} / {stories.length}
+        {isOwnStory && viewersOpen && (
+          <div className="absolute inset-0 z-40 flex items-end" role="dialog" aria-modal="true">
+            <button
+              type="button"
+              onClick={() => setViewersOpen(false)}
+              className="absolute inset-0 bg-black/50"
+              aria-label="Fermer la liste des vues"
+            />
+
+            <div className="relative z-10 w-full rounded-t-3xl bg-white px-4 pb-4 pt-3 text-gray-900 shadow-2xl">
+              <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-gray-300" />
+              <div className="mb-3 flex items-center justify-between">
+                <h4 className="text-sm font-black uppercase tracking-wider text-[#355860]">
+                  Vu par
+                </h4>
+                <span className="text-xs font-bold text-gray-500">
+                  {viewers.length} utilisateur(s)
+                </span>
+              </div>
+
+              {viewers.length === 0 ? (
+                <p className="py-4 text-sm text-gray-500">Aucune vue pour le moment.</p>
+              ) : (
+                <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                  {viewers.map((view) => {
+                    const name = view.viewer
+                      ? `${view.viewer.prenom} ${view.viewer.nom}`
+                      : view.viewer_id;
+
+                    return (
+                      <div
+                        key={`${view.viewer_id}-${view.viewed_at}`}
+                        className="flex items-center justify-between rounded-2xl border border-gray-100 bg-[#F7FAFC] px-3 py-2"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          {view.viewer?.photo_profil_url ? (
+                            <img
+                              src={view.viewer.photo_profil_url}
+                              alt={name}
+                              className="h-8 w-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#DCE9EC] text-[11px] font-black text-[#355860]">
+                              {(view.viewer?.prenom?.[0] || "?").toUpperCase()}
+                              {(view.viewer?.nom?.[0] || "").toUpperCase()}
+                            </div>
+                          )}
+                          <p className="text-sm font-semibold text-[#203A43]">{name}</p>
+                        </div>
+
+                        <p className="text-xs text-gray-500">
+                          {new Date(view.viewed_at).toLocaleTimeString("fr-FR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {confirmDeleteOpen && (

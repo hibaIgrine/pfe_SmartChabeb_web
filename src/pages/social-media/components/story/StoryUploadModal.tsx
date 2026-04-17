@@ -55,14 +55,19 @@ export function StoryUploadModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h3 className="text-lg font-bold text-gray-900">Creer une story</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4">
+      <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-[#DDE9EC] bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#E7EFF2] bg-gradient-to-r from-[#F6FBFC] to-[#EEF5F7] px-6 py-4">
+          <div>
+            <h3 className="text-lg font-black text-[#203A43]">Creer une story</h3>
+            <p className="text-xs font-semibold text-[#5A7380]">
+              Photo, video ou texte rapide
+            </p>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-gray-500 hover:bg-gray-100"
+            className="rounded-xl p-1.5 text-gray-500 hover:bg-white"
           >
             <X size={20} />
           </button>
@@ -70,7 +75,7 @@ export function StoryUploadModal({
 
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
           {preview && (
-            <div className="relative aspect-video overflow-hidden rounded-lg bg-gray-100">
+            <div className="relative aspect-video overflow-hidden rounded-2xl border border-[#DDE9EC] bg-gray-100">
               {media[0]?.type === "video" ? (
                 <video
                   src={preview}
@@ -93,7 +98,7 @@ export function StoryUploadModal({
                     fileInputRef.current.value = "";
                   }
                 }}
-                className="absolute right-2 top-2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
+                className="absolute right-2 top-2 rounded-full bg-black/55 p-1.5 text-white hover:bg-black/75"
               >
                 <X size={16} />
               </button>
@@ -110,10 +115,10 @@ export function StoryUploadModal({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full rounded-lg border-2 border-dashed border-gray-300 py-8 text-center hover:border-[#436D75] hover:bg-blue-50 transition-colors"
+            className="w-full rounded-2xl border-2 border-dashed border-[#9FB7BE] bg-[radial-gradient(circle_at_20%_20%,#f8fcfd_0,#f1f7f9_60%,#ecf3f6_100%)] py-8 text-center transition-colors hover:border-[#436D75]"
           >
-            <Upload className="mx-auto mb-2 text-gray-400" size={24} />
-            <p className="text-sm font-medium text-gray-600">
+            <Upload className="mx-auto mb-2 text-[#5E7C86]" size={24} />
+            <p className="text-sm font-bold text-[#355860]">
               Cliquez pour ajouter une photo/video
             </p>
           </button>
@@ -122,14 +127,14 @@ export function StoryUploadModal({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Ajouter un texte (optionnel)..."
-            className="w-full rounded-lg border border-gray-300 p-3 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#436D75]"
+            className="w-full rounded-2xl border border-[#D4E2E6] p-3 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#436D75]/35"
             rows={3}
           />
 
           <button
             type="submit"
             disabled={uploading || (!content && !media.length)}
-            className="w-full rounded-lg bg-[#436D75] px-4 py-2 text-white font-semibold hover:bg-[#2d4a53] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-2xl bg-gradient-to-r from-[#436D75] to-[#2F525A] px-4 py-2.5 text-sm font-black text-white hover:from-[#355860] hover:to-[#294A51] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {uploading ? "Creation..." : "Publier la story"}
           </button>
