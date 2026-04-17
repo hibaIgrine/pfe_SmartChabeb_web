@@ -143,10 +143,14 @@ export async function fetchComments(postId: string) {
   return response.data;
 }
 
-export async function createComment(postId: string, content: string) {
+export async function createComment(
+  postId: string,
+  content: string,
+  mentionedUserIds?: string[],
+) {
   const response = await api.post<PublicationComment>(
     `/social-media/posts/${postId}/comments`,
-    { content },
+    { content, mentioned_user_ids: mentionedUserIds },
   );
   return response.data;
 }
@@ -155,10 +159,11 @@ export async function updateComment(
   postId: string,
   commentId: string,
   content: string,
+  mentionedUserIds?: string[],
 ) {
   const response = await api.patch<PublicationComment>(
     `/social-media/posts/${postId}/comments/${commentId}`,
-    { content },
+    { content, mentioned_user_ids: mentionedUserIds },
   );
   return response.data;
 }
