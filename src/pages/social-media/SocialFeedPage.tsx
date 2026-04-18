@@ -1,12 +1,14 @@
 import type { FormEvent } from "react";
-import { useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { FeedHeader, FeedList, PostComposer, StoryReel } from "./components";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { FeedHeader, FeedList, PostComposer } from "./components";
 import { useSocialFeed } from "./hooks/useSocialFeed";
 import { OriginalPostModal } from "./components/post-card/OriginalPostModal";
+import { StoryReel } from "./components/story/StoryReel";
 
 export default function SocialFeedPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const feed = useSocialFeed();
   const [originalPostId, setOriginalPostId] = useState<string | null>(null);
 
@@ -16,12 +18,26 @@ export default function SocialFeedPage() {
     return value && value.trim() ? value.trim() : undefined;
   }, [location.search]);
 
-  // Ouvrir le modal si postId dans l'URL
-  useMemo(() => {
-    if (targetPostId && !originalPostId) {
-      setOriginalPostId(targetPostId);
+  useEffect(() => {
+    setOriginalPostId(targetPostId ?? null);
+  }, [targetPostId]);
+
+  const handleCloseOriginalPostModal = () => {
+    setOriginalPostId(null);
+
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.has("postId")) {
+      searchParams.delete("postId");
+      const nextSearch = searchParams.toString();
+      navigate(
+        {
+          pathname: location.pathname,
+          search: nextSearch ? `?${nextSearch}` : "",
+        },
+        { replace: true },
+      );
     }
-  }, [targetPostId, originalPostId]);
+  };
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -73,15 +89,17 @@ export default function SocialFeedPage() {
         onReact={feed.reactToPost}
         onRemoveReaction={feed.removePostReaction}
         onShare={feed.sharePost}
+        onToggleFavorite={feed.toggleFavoritePost}
       />
 
       <OriginalPostModal
         originalPostId={originalPostId}
-        onClose={() => setOriginalPostId(null)}
+        onClose={handleCloseOriginalPostModal}
         currentUserId={feed.me?.id}
         onReact={feed.reactToPost}
         onRemoveReaction={feed.removePostReaction}
         onShare={feed.sharePost}
+        onToggleFavorite={feed.toggleFavoritePost}
       />
     </div>
   );

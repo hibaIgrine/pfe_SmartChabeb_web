@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  addFavorite,
   addReaction,
   createPublication,
   deletePublication,
   fetchFeed,
   fetchMentionUsers,
+  removeFavorite,
   removeReaction,
   sharePublication,
   updatePublication,
@@ -282,6 +284,26 @@ export function useSocialFeed() {
     }
   };
 
+  const toggleFavoritePost = async (postId: string, isFavorite: boolean) => {
+    try {
+      const updatedPost = isFavorite
+        ? await removeFavorite(postId)
+        : await addFavorite(postId);
+
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId ? { ...post, ...updatedPost } : post,
+        ),
+      );
+      window.dispatchEvent(new Event("social-favorites-updated"));
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          "Impossible de mettre a jour les favoris pour cette publication.",
+      );
+    }
+  };
+
   return {
     posts,
     mentionUsers,
@@ -314,5 +336,6 @@ export function useSocialFeed() {
     reactToPost,
     removePostReaction,
     sharePost,
+    toggleFavoritePost,
   };
 }

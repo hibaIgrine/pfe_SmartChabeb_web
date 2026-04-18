@@ -17,6 +17,7 @@ import type {
 import {
   Edit2,
   FileText,
+  Heart,
   ImagePlus,
   MapPin,
   Reply,
@@ -48,6 +49,7 @@ type PostCardProps = {
   onReact?: (postId: string, reactionType: ReactionType) => void;
   onRemoveReaction?: (postId: string) => void;
   onShare?: (postId: string, message?: string) => void | Promise<void>;
+  onToggleFavorite?: (postId: string, isFavorite: boolean) => void;
 };
 
 export function PostCard({
@@ -61,6 +63,7 @@ export function PostCard({
   onReact,
   onRemoveReaction,
   onShare,
+  onToggleFavorite,
 }: PostCardProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [previewImageIndex, setPreviewImageIndex] = useState<number | null>(
@@ -164,6 +167,8 @@ export function PostCard({
     () => (post.media ?? []).filter((item) => item.type !== "image"),
     [post.media],
   );
+  const isFavorite = Boolean(post.is_favorite);
+  const favoriteCount = post.favorite_count ?? 0;
 
   useEffect(() => {
     setActiveImageIndex(0);
@@ -881,6 +886,23 @@ export function PostCard({
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {onToggleFavorite && (
+              <button
+                type="button"
+                onClick={() => onToggleFavorite(post.id, isFavorite)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-colors ${
+                  isFavorite
+                    ? "border-[#ef8f84] bg-[#fff1ef] text-[#c65142] hover:bg-[#ffe7e3]"
+                    : "border-[#d8d1c2] text-[#7a6a58] hover:bg-[#f7f3e9]"
+                }`}
+                title={
+                  isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"
+                }
+              >
+                <Heart size={13} className={isFavorite ? "fill-current" : ""} />
+                {favoriteCount}
+              </button>
+            )}
             {canEdit && (
               <button
                 type="button"

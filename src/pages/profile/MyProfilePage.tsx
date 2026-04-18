@@ -871,6 +871,7 @@ export default function MyProfilePage() {
                 onReact={feed.reactToPost}
                 onRemoveReaction={feed.removePostReaction}
                 onShare={feed.sharePost}
+                onToggleFavorite={feed.toggleFavoritePost}
               />
             </div>
           </div>

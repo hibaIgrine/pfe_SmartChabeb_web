@@ -19,6 +19,7 @@ import {
   Newspaper,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
+import { FavoritePostsBell } from "./FavoritePostsBell";
 import api from "../../api/axios";
 
 function getStoredUser() {
@@ -352,6 +353,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               <Newspaper size={18} />
             </Link>
+            <FavoritePostsBell />
             <NotificationBell />
             <Link
               to="/mon-profil"

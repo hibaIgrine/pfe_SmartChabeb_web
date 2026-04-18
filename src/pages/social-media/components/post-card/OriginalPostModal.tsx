@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import type { Publication, ReactionType } from "../../../../api/social-media.api";
+import type {
+  Publication,
+  ReactionType,
+} from "../../../../api/social-media.api";
 import { fetchPost, fetchReactions } from "../../../../api/social-media.api";
 import { PostCard } from "./PostCard";
 
@@ -11,6 +14,7 @@ type OriginalPostModalProps = {
   onReact?: (postId: string, reactionType: ReactionType) => void;
   onRemoveReaction?: (postId: string) => void;
   onShare?: (postId: string, message?: string) => void | Promise<void>;
+  onToggleFavorite?: (postId: string, isFavorite: boolean) => void;
 };
 
 export function OriginalPostModal({
@@ -20,6 +24,7 @@ export function OriginalPostModal({
   onReact,
   onRemoveReaction,
   onShare,
+  onToggleFavorite,
 }: OriginalPostModalProps) {
   const [post, setPost] = useState<Publication | null>(null);
   const [loading, setLoading] = useState(false);
@@ -51,7 +56,9 @@ export function OriginalPostModal({
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
         <div className="rounded-lg bg-white p-6">
-          <p className="text-sm text-gray-600">Chargement du post original...</p>
+          <p className="text-sm text-gray-600">
+            Chargement du post original...
+          </p>
         </div>
       </div>
     );
@@ -71,7 +78,9 @@ export function OriginalPostModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 border-b border-gray-200 bg-white px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Publication originale</h2>
+          <h2 className="text-lg font-bold text-gray-900">
+            Publication originale
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -93,6 +102,7 @@ export function OriginalPostModal({
             onReact={onReact}
             onRemoveReaction={onRemoveReaction}
             onShare={onShare}
+            onToggleFavorite={onToggleFavorite}
           />
         </div>
       </div>

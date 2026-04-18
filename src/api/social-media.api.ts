@@ -56,9 +56,15 @@ export type Publication = {
   created_at: string;
   updated_at: string;
   user: PublicationAuthor;
+  is_favorite?: boolean;
+  favorite_count?: number;
   _count?: {
     comments: number;
   };
+};
+
+export type FavoriteCountResponse = {
+  count: number;
 };
 
 export type CreatePublicationPayload = {
@@ -78,6 +84,23 @@ export async function fetchFeed(limit = 20, offset = 0) {
 
 export async function fetchPost(postId: string) {
   const response = await api.get<Publication>(`/social-media/posts/${postId}`);
+  return response.data;
+}
+
+export async function fetchFavoritePosts(limit = 20, offset = 0) {
+  const response = await api.get<Publication[]>(
+    "/social-media/favorites/posts",
+    {
+      params: { limit, offset },
+    },
+  );
+  return response.data;
+}
+
+export async function fetchFavoritePostsCount() {
+  const response = await api.get<FavoriteCountResponse>(
+    "/social-media/favorites/count",
+  );
   return response.data;
 }
 
@@ -132,6 +155,20 @@ export async function removeReaction(postId: string) {
 export async function fetchReactions(postId: string) {
   const response = await api.get<ReactionSummary>(
     `/social-media/posts/${postId}/reactions`,
+  );
+  return response.data;
+}
+
+export async function addFavorite(postId: string) {
+  const response = await api.post<Publication>(
+    `/social-media/posts/${postId}/favorites`,
+  );
+  return response.data;
+}
+
+export async function removeFavorite(postId: string) {
+  const response = await api.delete<Publication>(
+    `/social-media/posts/${postId}/favorites`,
   );
   return response.data;
 }
