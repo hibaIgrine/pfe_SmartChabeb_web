@@ -1,9 +1,7 @@
-import { X, LayoutGrid } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export const AssignClubModal = ({
   isOpen,
-  onClose,
   onConfirm,
   clubs,
   userName,

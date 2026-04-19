@@ -1,4 +1,4 @@
-import { Filter, X, Search } from "lucide-react";
+import { X, Search } from "lucide-react";
 
 export const RoleFilters = ({
   search,

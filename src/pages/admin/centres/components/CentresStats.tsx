@@ -1,4 +1,4 @@
-import { TrendingUp, Building2, Map } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 
 export const CentreStats = ({ count }: { count: number }) => {
   return (

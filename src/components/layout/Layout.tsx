@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { FavoritePostsBell } from "./FavoritePostsBell";
+import { MessageBell } from "./MessageBell";
 import api from "../../api/axios";
 
 function getStoredUser() {
@@ -55,7 +56,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     if (
       role === "ADHERENT" &&
       location.pathname !== "/club-creation-requests" &&
-      location.pathname !== "/fil-actualite"
+      location.pathname !== "/fil-actualite" &&
+      location.pathname !== "/messagerie"
     ) {
       navigate("/club-creation-requests");
     }
@@ -346,6 +348,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3">
+            <MessageBell />
             <Link
               to="/fil-actualite"
               className="w-10 h-10 rounded-full border border-gray-200 bg-white text-[#436D75] flex items-center justify-center hover:bg-[#F7F3E9] hover:border-[#cfdad3] transition-colors"

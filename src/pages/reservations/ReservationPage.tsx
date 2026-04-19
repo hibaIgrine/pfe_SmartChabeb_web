@@ -1,16 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
-import {
-  Check,
-  X,
-  Clock,
-  Calendar,
-  User,
-  AlertCircle,
-  CheckCircle2,
-  Eye,
-  Layout,
-} from "lucide-react";
+import { Check, X, Clock, Calendar, Eye } from "lucide-react";
 
 // 💡 TON COMPOSANT D'OCCUPATION
 const AvailabilityMiniCalendar = ({ occupiedSlots, localName }: any) => {

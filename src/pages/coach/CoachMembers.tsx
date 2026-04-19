@@ -204,21 +204,3 @@ export default function CoachMembers() {
     </div>
   );
 }
-
-function StatCard({ icon, val, label, color }: any) {
-  return (
-    <div
-      className={`${color} p-7 rounded-[40px] border border-white flex items-center space-x-5 shadow-sm`}
-    >
-      <div className="bg-white/40 p-4 rounded-2xl text-smart-teal">{icon}</div>
-      <div>
-        <p className="text-3xl font-black text-smart-teal leading-none tracking-tighter italic">
-          {val}
-        </p>
-        <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest mt-1">
-          {label}
-        </p>
-      </div>
-    </div>
-  );
-}

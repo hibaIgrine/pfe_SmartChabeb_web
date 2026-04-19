@@ -1,13 +1,4 @@
-import {
-  X,
-  FileText,
-  MapPin,
-  Map,
-  AlertCircle,
-  Building2,
-  Users,
-  CheckCircle,
-} from "lucide-react";
+import { X, Map, Building2, CheckCircle } from "lucide-react";
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import api from "../../../api/axios";
 import { getCategoryIcon, ALL_CATEGORIES } from "./AddClubModal";
@@ -17,7 +8,8 @@ const validateForm = (data: any, lockedCentreId?: string) => {
   const errors: any = {};
   if (!data.nom || data.nom.trim().length < 3) errors.nom = "Nom trop court.";
   if (!data.categorie) errors.categorie = "Catégorie requise.";
-  if (!lockedCentreId && !data.id_salle) errors.id_salle = "Établissement requis.";
+  if (!lockedCentreId && !data.id_salle)
+    errors.id_salle = "Établissement requis.";
   if (!data.locale) errors.locale = "Veuillez choisir un local.";
   if (data.capacite === "" || parseInt(data.capacite) < 0)
     errors.capacite = "Invalide.";
@@ -25,7 +17,9 @@ const validateForm = (data: any, lockedCentreId?: string) => {
   if (data.planning) {
     try {
       const parsed =
-        typeof data.planning === "string" ? JSON.parse(data.planning) : data.planning;
+        typeof data.planning === "string"
+          ? JSON.parse(data.planning)
+          : data.planning;
       const slots = Array.isArray(parsed?.slots) ? parsed.slots : [];
       const hasInvalidRange = slots.some((slot: any) => {
         const start = slot?.startTime;
@@ -421,15 +415,13 @@ export const EditClubModal = ({
             </div>
             {isCustomCategory && (
               <input
-                className={inputCls}
+                className={inputCls()}
                 placeholder="Saisir la catégorie..."
                 value={formData.categorie || ""}
-                onChange={(e) =>
-                  {
-                    setFormData({ ...formData, categorie: e.target.value });
-                    setErrors({ ...errors, categorie: null });
-                  }
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, categorie: e.target.value });
+                  setErrors({ ...errors, categorie: null });
+                }}
               />
             )}
           </div>

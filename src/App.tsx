@@ -28,6 +28,7 @@ import EventWaitingListPage from "./pages/events/EventWaitingListPage";
 import ProfileGamificationPage from "./pages/profile/ProfileGamificationPage";
 import MyProfilePage from "./pages/profile/MyProfilePage";
 import SocialFeedPage from "./pages/social-media/SocialFeedPage";
+import MessageriePage from "./pages/messagerie/MessageriePage";
 
 function App() {
   const getCentrePage = () => {
@@ -233,6 +234,14 @@ function App() {
           element={
             <Layout>
               <SocialFeedPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/messagerie"
+          element={
+            <Layout>
+              <MessageriePage />
             </Layout>
           }
         />

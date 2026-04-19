@@ -3,15 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import {
   ArrowLeft,
-  Activity,
-  Ruler,
-  Weight,
   PlusCircle,
   Loader2,
-  CheckCircle2,
   History,
   Edit3,
-  Calendar,
   Clock,
 } from "lucide-react";
 
@@ -22,7 +17,6 @@ export default function MemberDetails() {
   const [loading, setLoading] = useState(true);
 
   const token = localStorage.getItem("token");
-  const userMe = JSON.parse(localStorage.getItem("user") || "{}");
 
   useEffect(() => {
     fetchDetails();

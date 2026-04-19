@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Home, Map as MapIcon, Ghost, ArrowLeft } from "lucide-react";
+import { Home, Ghost, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   const navigate = useNavigate();

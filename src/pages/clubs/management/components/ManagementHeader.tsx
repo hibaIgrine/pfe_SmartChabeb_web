@@ -1,10 +1,6 @@
-import { ArrowLeft, CheckCircle, Users, Hourglass } from "lucide-react";
+import { ArrowLeft, CheckCircle, Users } from "lucide-react";
 
-export const ManagementHeader = ({
-  club,
-  membersCount,
-  onBack,
-}: any) => {
+export const ManagementHeader = ({ club, membersCount, onBack }: any) => {
   const freePlaces = club.capacite ? club.capacite - membersCount : "∞";
 
   return (
@@ -46,7 +42,6 @@ export const ManagementHeader = ({
             icon={<CheckCircle size={14} />}
             color="text-green-500"
           />
-          
         </div>
       </div>
     </div>

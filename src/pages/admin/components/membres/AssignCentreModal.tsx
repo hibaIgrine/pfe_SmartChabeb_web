@@ -1,4 +1,4 @@
-import { X, MapPin, Building2 } from "lucide-react";
+import { X, Building2 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 
 interface AssignCentreModalProps {

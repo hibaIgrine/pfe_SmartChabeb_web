@@ -7,10 +7,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
-  X,
   Dumbbell,
-  Timer,
-  Repeat,
   Loader2,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";

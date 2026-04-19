@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Smartphone, Zap, MapPin, ArrowRight } from "lucide-react";
+import { Smartphone, Zap, ArrowRight } from "lucide-react";
 
 export default function Home() {
   const navigate = useNavigate();

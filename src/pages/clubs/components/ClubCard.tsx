@@ -3,9 +3,7 @@ import {
   Power,
   Edit,
   MapPin,
-  User,
   Calendar,
-  ChevronRight,
   CheckCircle2,
 } from "lucide-react";
 import api from "../../../api/axios";
