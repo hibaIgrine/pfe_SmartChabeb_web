@@ -1,6 +1,7 @@
 import api from "./axios";
 
 export type PublicationMediaType = "image" | "video" | "document";
+export type PublicationVisibility = "PUBLIC" | "PRIVATE" | "MASKED";
 export type ReactionType =
   | "like"
   | "love"
@@ -48,10 +49,15 @@ export type ReactionSummary = {
 export type Publication = {
   id: string;
   content: string;
+  visibility?: PublicationVisibility;
   location?: string | null;
   media?: PublicationMediaItem[] | null;
   hashtags?: Array<{ hashtag: string }>;
   mentions?: Array<{ mentioned_user: PublicationAuthor }>;
+  hidden_users?: Array<{
+    hidden_user_id: string;
+    hidden_user: PublicationAuthor;
+  }>;
   reactions?: ReactionSummary;
   created_at: string;
   updated_at: string;
@@ -69,10 +75,20 @@ export type FavoriteCountResponse = {
 
 export type CreatePublicationPayload = {
   content?: string;
+  visibility?: PublicationVisibility;
   location?: string;
   media?: PublicationMediaItem[];
   hashtags?: string[];
   mentioned_user_ids?: string[];
+  hidden_user_ids?: string[];
+};
+
+export type HiddenUserLink = {
+  id: string;
+  user_id: string;
+  hidden_user_id: string;
+  created_at: string;
+  hidden_user: PublicationAuthor;
 };
 
 export async function fetchFeed(limit = 20, offset = 0) {
@@ -207,4 +223,25 @@ export async function updateComment(
 
 export async function deleteComment(postId: string, commentId: string) {
   await api.delete(`/social-media/posts/${postId}/comments/${commentId}`);
+}
+
+export async function hideUser(userId: string) {
+  const response = await api.post<{ success: boolean }>(
+    `/social-media/users/${userId}/hide`,
+  );
+  return response.data;
+}
+
+export async function unhideUser(userId: string) {
+  const response = await api.delete<{ success: boolean }>(
+    `/social-media/users/${userId}/hide`,
+  );
+  return response.data;
+}
+
+export async function fetchHiddenUsers() {
+  const response = await api.get<HiddenUserLink[]>(
+    "/social-media/users/hidden",
+  );
+  return response.data;
 }

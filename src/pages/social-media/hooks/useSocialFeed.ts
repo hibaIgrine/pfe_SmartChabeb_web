@@ -4,18 +4,23 @@ import {
   addReaction,
   createPublication,
   deletePublication,
+  fetchHiddenUsers,
   fetchFeed,
+  hideUser,
   fetchMentionUsers,
   removeFavorite,
   removeReaction,
   sharePublication,
+  unhideUser,
   updatePublication,
 } from "../../../api/social-media.api";
 import type {
+  HiddenUserLink,
   MentionUser,
   Publication,
   PublicationMediaItem,
   PublicationMediaType,
+  PublicationVisibility,
   ReactionType,
 } from "../../../api/social-media.api";
 import {
@@ -27,6 +32,7 @@ import {
 export function useSocialFeed() {
   const [posts, setPosts] = useState<Publication[]>([]);
   const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([]);
+  const [hiddenAuthors, setHiddenAuthors] = useState<HiddenUserLink[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +40,9 @@ export function useSocialFeed() {
   const [composerText, setComposerText] = useState("");
   const [draftMediaItems, setDraftMediaItems] = useState<DraftMediaItem[]>([]);
   const [location, setLocation] = useState("");
+  const [visibility, setVisibility] = useState<PublicationVisibility>("PUBLIC");
   const [mentions, setMentions] = useState<MentionUser[]>([]);
+  const [hiddenUsers, setHiddenUsers] = useState<MentionUser[]>([]);
   const [hashtagInput, setHashtagInput] = useState("");
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
@@ -81,9 +89,19 @@ export function useSocialFeed() {
     }
   };
 
+  const loadHiddenAuthors = async () => {
+    try {
+      const hidden = await fetchHiddenUsers();
+      setHiddenAuthors(Array.isArray(hidden) ? hidden : []);
+    } catch {
+      setHiddenAuthors([]);
+    }
+  };
+
   useEffect(() => {
     loadFeed();
     loadMentionUsers();
+    loadHiddenAuthors();
   }, []);
 
   const fileToDataUrl = (file: File) =>
@@ -144,6 +162,21 @@ export function useSocialFeed() {
     setMentions((prev) => prev.filter((user) => user.id !== id));
   };
 
+  const addHiddenUserById = (id: string) => {
+    if (!id) return;
+    const selected = mentionUsers.find((user) => user.id === id);
+    if (!selected) return;
+
+    setHiddenUsers((prev) => {
+      if (prev.some((user) => user.id === selected.id)) return prev;
+      return [...prev, selected];
+    });
+  };
+
+  const removeHiddenUser = (id: string) => {
+    setHiddenUsers((prev) => prev.filter((user) => user.id !== id));
+  };
+
   const addHashtag = () => {
     const clean = hashtagInput.trim().replace(/^#+/, "").replace(/\s+/g, "_");
     if (!clean) return;
@@ -164,7 +197,9 @@ export function useSocialFeed() {
     setComposerText("");
     setDraftMediaItems([]);
     setLocation("");
+    setVisibility("PUBLIC");
     setMentions([]);
+    setHiddenUsers([]);
     setHashtagInput("");
     setHashtags([]);
   };
@@ -181,7 +216,9 @@ export function useSocialFeed() {
       })),
     );
     setLocation(post.location ?? "");
+    setVisibility(post.visibility ?? "PUBLIC");
     setMentions((post.mentions ?? []).map((item) => item.mentioned_user));
+    setHiddenUsers((post.hidden_users ?? []).map((item) => item.hidden_user));
     setHashtagInput("");
     setHashtags((post.hashtags ?? []).map((item) => item.hashtag));
   };
@@ -203,10 +240,13 @@ export function useSocialFeed() {
 
       const payload = {
         content: composerText.trim() || undefined,
+        visibility,
         location: location.trim() || undefined,
         media: mediaPayload.length ? mediaPayload : undefined,
         hashtags: hashtags.length ? hashtags : undefined,
         mentioned_user_ids: mentions.map((user) => user.id),
+        hidden_user_ids:
+          visibility === "MASKED" ? hiddenUsers.map((user) => user.id) : [],
       };
 
       if (editingPostId) {
@@ -304,9 +344,46 @@ export function useSocialFeed() {
     }
   };
 
+  const hideAuthorPosts = async (userIdToHide: string) => {
+    if (!userIdToHide || userIdToHide === me?.id) {
+      return;
+    }
+
+    try {
+      await hideUser(userIdToHide);
+      setPosts((prev) => prev.filter((post) => post.user?.id !== userIdToHide));
+      await loadHiddenAuthors();
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          "Impossible de masquer cette personne pour le moment.",
+      );
+    }
+  };
+
+  const unhideAuthorPosts = async (userIdToUnhide: string) => {
+    if (!userIdToUnhide) {
+      return;
+    }
+
+    try {
+      await unhideUser(userIdToUnhide);
+      setHiddenAuthors((prev) =>
+        prev.filter((item) => item.hidden_user_id !== userIdToUnhide),
+      );
+      await loadFeed();
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          "Impossible de demasquer cette personne pour le moment.",
+      );
+    }
+  };
+
   return {
     posts,
     mentionUsers,
+    hiddenAuthors,
     loading,
     submitting,
     error,
@@ -314,18 +391,24 @@ export function useSocialFeed() {
     composerText,
     draftMediaItems,
     location,
+    visibility,
     mentions,
+    hiddenUsers,
     hashtagInput,
     hashtags,
     canSubmit,
     setComposerText,
     setLocation,
+    setVisibility,
     setHashtagInput,
     loadFeed,
+    loadHiddenAuthors,
     addMediaFile,
     removeMediaLine,
     addMentionById,
     removeMention,
+    addHiddenUserById,
+    removeHiddenUser,
     addHashtag,
     removeHashtag,
     publish,
@@ -337,5 +420,7 @@ export function useSocialFeed() {
     removePostReaction,
     sharePost,
     toggleFavoritePost,
+    hideAuthorPosts,
+    unhideAuthorPosts,
   };
 }

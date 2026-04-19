@@ -46,7 +46,11 @@ export default function SocialFeedPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <FeedHeader onRefresh={feed.loadFeed} />
+      <FeedHeader
+        onRefresh={feed.loadFeed}
+        hiddenUsers={feed.hiddenAuthors}
+        onUnhideUser={feed.unhideAuthorPosts}
+      />
 
       <StoryReel currentUserId={feed.me?.id} onStoryCreated={feed.loadFeed} />
 
@@ -54,7 +58,9 @@ export default function SocialFeedPage() {
         composerText={feed.composerText}
         draftMediaItems={feed.draftMediaItems}
         location={feed.location}
+        visibility={feed.visibility}
         mentions={feed.mentions}
+        hiddenUsers={feed.hiddenUsers}
         hashtagInput={feed.hashtagInput}
         hashtags={feed.hashtags}
         mentionUsers={feed.mentionUsers}
@@ -63,11 +69,14 @@ export default function SocialFeedPage() {
         onSubmit={onSubmit}
         setComposerText={feed.setComposerText}
         setLocation={feed.setLocation}
+        setVisibility={feed.setVisibility}
         setHashtagInput={feed.setHashtagInput}
         onAddMediaFile={feed.addMediaFile}
         onRemoveMediaLine={feed.removeMediaLine}
         onAddMentionById={feed.addMentionById}
         onRemoveMention={feed.removeMention}
+        onAddHiddenUserById={feed.addHiddenUserById}
+        onRemoveHiddenUser={feed.removeHiddenUser}
         onAddHashtag={feed.addHashtag}
         onRemoveHashtag={feed.removeHashtag}
         isEditing={Boolean(feed.editingPostId)}
@@ -90,6 +99,7 @@ export default function SocialFeedPage() {
         onRemoveReaction={feed.removePostReaction}
         onShare={feed.sharePost}
         onToggleFavorite={feed.toggleFavoritePost}
+        onHideAuthor={feed.hideAuthorPosts}
       />
 
       <OriginalPostModal
@@ -100,6 +110,7 @@ export default function SocialFeedPage() {
         onRemoveReaction={feed.removePostReaction}
         onShare={feed.sharePost}
         onToggleFavorite={feed.toggleFavoritePost}
+        onHideAuthor={feed.hideAuthorPosts}
       />
     </div>
   );

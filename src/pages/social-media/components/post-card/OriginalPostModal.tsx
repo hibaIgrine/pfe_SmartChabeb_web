@@ -15,6 +15,7 @@ type OriginalPostModalProps = {
   onRemoveReaction?: (postId: string) => void;
   onShare?: (postId: string, message?: string) => void | Promise<void>;
   onToggleFavorite?: (postId: string, isFavorite: boolean) => void;
+  onHideAuthor?: (userId: string) => void | Promise<void>;
 };
 
 export function OriginalPostModal({
@@ -25,6 +26,7 @@ export function OriginalPostModal({
   onRemoveReaction,
   onShare,
   onToggleFavorite,
+  onHideAuthor,
 }: OriginalPostModalProps) {
   const [post, setPost] = useState<Publication | null>(null);
   const [loading, setLoading] = useState(false);
@@ -103,6 +105,7 @@ export function OriginalPostModal({
             onRemoveReaction={onRemoveReaction}
             onShare={onShare}
             onToggleFavorite={onToggleFavorite}
+            onHideAuthor={onHideAuthor}
           />
         </div>
       </div>

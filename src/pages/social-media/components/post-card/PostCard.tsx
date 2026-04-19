@@ -16,6 +16,7 @@ import type {
 } from "../../../../api/social-media.api";
 import {
   Edit2,
+  EyeOff,
   FileText,
   Heart,
   ImagePlus,
@@ -50,6 +51,7 @@ type PostCardProps = {
   onRemoveReaction?: (postId: string) => void;
   onShare?: (postId: string, message?: string) => void | Promise<void>;
   onToggleFavorite?: (postId: string, isFavorite: boolean) => void;
+  onHideAuthor?: (userId: string) => void | Promise<void>;
 };
 
 export function PostCard({
@@ -64,6 +66,7 @@ export function PostCard({
   onRemoveReaction,
   onShare,
   onToggleFavorite,
+  onHideAuthor,
 }: PostCardProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [previewImageIndex, setPreviewImageIndex] = useState<number | null>(
@@ -167,6 +170,13 @@ export function PostCard({
     () => (post.media ?? []).filter((item) => item.type !== "image"),
     [post.media],
   );
+  const isOwnPost = Boolean(currentUserId && post.user?.id === currentUserId);
+  const visibilityLabel =
+    post.visibility === "PRIVATE"
+      ? "Prive"
+      : post.visibility === "MASKED"
+        ? "Masque"
+        : "Public";
   const isFavorite = Boolean(post.is_favorite);
   const favoriteCount = post.favorite_count ?? 0;
 
@@ -884,6 +894,9 @@ export function PostCard({
             <p className="text-xs text-gray-400 font-medium">
               {new Date(post.created_at).toLocaleString("fr-FR")}
             </p>
+            <span className="mt-1 inline-flex rounded-full bg-[#f0f4f7] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-[#4b6c79]">
+              {visibilityLabel}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             {onToggleFavorite && (
@@ -901,6 +914,17 @@ export function PostCard({
               >
                 <Heart size={13} className={isFavorite ? "fill-current" : ""} />
                 {favoriteCount}
+              </button>
+            )}
+            {!isOwnPost && onHideAuthor && post.user?.id && (
+              <button
+                type="button"
+                onClick={() => onHideAuthor(post.user.id)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#d8d1c2] px-3 py-1 text-xs font-bold text-[#7a6a58] hover:bg-[#f7f3e9]"
+                title="Masquer cette personne"
+              >
+                <EyeOff size={13} />
+                Masquer
               </button>
             )}
             {canEdit && (

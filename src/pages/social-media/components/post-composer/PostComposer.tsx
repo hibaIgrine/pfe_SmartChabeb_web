@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import type { MentionUser, PublicationMediaType } from "../../../../api/social-media.api";
+import type {
+  MentionUser,
+  PublicationMediaType,
+} from "../../../../api/social-media.api";
 import {
   AtSign,
   FileText,
@@ -24,7 +27,9 @@ export function PostComposer({
   composerText,
   draftMediaItems,
   location,
+  visibility,
   mentions,
+  hiddenUsers,
   hashtagInput,
   hashtags,
   mentionUsers,
@@ -34,11 +39,14 @@ export function PostComposer({
   onSubmit,
   setComposerText,
   setLocation,
+  setVisibility,
   setHashtagInput,
   onAddMediaFile,
   onRemoveMediaLine,
   onAddMentionById,
   onRemoveMention,
+  onAddHiddenUserById,
+  onRemoveHiddenUser,
   onAddHashtag,
   onRemoveHashtag,
   onCancelEdit,
@@ -48,6 +56,7 @@ export function PostComposer({
   const [isHashtagPopupOpen, setIsHashtagPopupOpen] = useState(false);
   const [mentionSearch, setMentionSearch] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
+  const [hiddenUsersSearch, setHiddenUsersSearch] = useState("");
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>(() =>
     readCustomLocationSuggestions(),
   );
@@ -83,6 +92,23 @@ export function PostComposer({
       .filter((item) => item.toLowerCase().includes(query))
       .slice(0, 12);
   }, [locationSearch, locationSuggestions]);
+
+  const filteredHiddenUsers = useMemo(() => {
+    const query = hiddenUsersSearch.trim().toLowerCase();
+    const candidates = mentionUsers.filter(
+      (user) => !hiddenUsers.some((hiddenUser) => hiddenUser.id === user.id),
+    );
+
+    if (!query) {
+      return candidates.slice(0, 12);
+    }
+
+    return candidates
+      .filter((user) =>
+        `${user.nom} ${user.prenom}`.toLowerCase().includes(query),
+      )
+      .slice(0, 20);
+  }, [hiddenUsersSearch, mentionUsers, hiddenUsers]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -161,6 +187,76 @@ export function PostComposer({
         rows={4}
         className="w-full rounded-xl border border-[#d8d1c2] bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#436D75]/30"
       />
+
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-[#e7dfcf] bg-white px-3 py-2">
+        <p className="text-xs font-black uppercase tracking-[0.12em] text-gray-500">
+          Visibilite
+        </p>
+        <select
+          value={visibility}
+          onChange={(event) =>
+            setVisibility(event.target.value as "PUBLIC" | "PRIVATE")
+          }
+          className="rounded-lg border border-[#d8d1c2] px-2.5 py-1.5 text-xs font-bold text-[#436D75] outline-none focus:border-[#436D75]"
+        >
+          <option value="PUBLIC">Public</option>
+          <option value="PRIVATE">Prive</option>
+          <option value="MASKED">Masque</option>
+        </select>
+      </div>
+
+      {visibility === "MASKED" && (
+        <div className="rounded-xl border border-[#e7dfcf] bg-white p-3 space-y-3">
+          <p className="text-xs font-black uppercase tracking-[0.12em] text-gray-500">
+            Masquer cette publication pour des personnes
+          </p>
+
+          <input
+            value={hiddenUsersSearch}
+            onChange={(event) => setHiddenUsersSearch(event.target.value)}
+            placeholder="Rechercher une personne a masquer"
+            className="w-full rounded-lg border border-[#d8d1c2] px-3 py-2 text-sm outline-none focus:border-[#436D75]"
+          />
+
+          <div className="max-h-40 overflow-y-auto space-y-1 rounded-lg border border-[#eee8db] p-2">
+            {filteredHiddenUsers.length ? (
+              filteredHiddenUsers.map((user) => (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => onAddHiddenUserById(user.id)}
+                  className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-[#705a44] hover:bg-[#f9f2e8]"
+                >
+                  {user.nom} {user.prenom}
+                </button>
+              ))
+            ) : (
+              <p className="px-2 py-2 text-xs text-gray-400">Aucun resultat.</p>
+            )}
+          </div>
+
+          {hiddenUsers.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {hiddenUsers.map((user) => (
+                <span
+                  key={user.id}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#fbeeea] px-3 py-1 text-xs font-semibold text-[#9a5e46]"
+                >
+                  {user.nom} {user.prenom}
+                  <button
+                    type="button"
+                    onClick={() => onRemoveHiddenUser(user.id)}
+                    className="rounded-full p-0.5 hover:bg-[#f5ddd6]"
+                    aria-label="Retirer"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="relative rounded-2xl border border-[#ddd3c3] bg-white p-3">
         <p className="text-xs font-black uppercase tracking-[0.15em] text-gray-400 mb-3">

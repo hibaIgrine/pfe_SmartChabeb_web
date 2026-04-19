@@ -820,7 +820,9 @@ export default function MyProfilePage() {
               composerText={feed.composerText}
               draftMediaItems={feed.draftMediaItems}
               location={feed.location}
+              visibility={feed.visibility}
               mentions={feed.mentions}
+              hiddenUsers={feed.hiddenUsers}
               hashtagInput={feed.hashtagInput}
               hashtags={feed.hashtags}
               mentionUsers={feed.mentionUsers}
@@ -829,11 +831,14 @@ export default function MyProfilePage() {
               onSubmit={onSubmitPost}
               setComposerText={feed.setComposerText}
               setLocation={feed.setLocation}
+              setVisibility={feed.setVisibility}
               setHashtagInput={feed.setHashtagInput}
               onAddMediaFile={feed.addMediaFile}
               onRemoveMediaLine={feed.removeMediaLine}
               onAddMentionById={feed.addMentionById}
               onRemoveMention={feed.removeMention}
+              onAddHiddenUserById={feed.addHiddenUserById}
+              onRemoveHiddenUser={feed.removeHiddenUser}
               onAddHashtag={feed.addHashtag}
               onRemoveHashtag={feed.removeHashtag}
               isEditing={Boolean(feed.editingPostId)}

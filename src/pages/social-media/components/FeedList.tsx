@@ -11,6 +11,7 @@ type FeedListProps = {
   onRemoveReaction?: (postId: string) => void;
   onShare?: (postId: string, message?: string) => void | Promise<void>;
   onToggleFavorite?: (postId: string, isFavorite: boolean) => void;
+  onHideAuthor?: (userId: string) => void | Promise<void>;
 };
 
 export function FeedList({
@@ -23,6 +24,7 @@ export function FeedList({
   onRemoveReaction,
   onShare,
   onToggleFavorite,
+  onHideAuthor,
 }: FeedListProps) {
   if (loading) {
     return <div className="text-sm text-gray-500">Chargement du fil...</div>;
@@ -55,6 +57,7 @@ export function FeedList({
           onRemoveReaction={onRemoveReaction}
           onShare={onShare}
           onToggleFavorite={onToggleFavorite}
+          onHideAuthor={onHideAuthor}
         />
       ))}
     </section>
