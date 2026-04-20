@@ -1,5 +1,6 @@
 import { Search } from "lucide-react";
 import type { MessengerConversationSummary } from "../types";
+import { getUserPresenceLabel } from "../utils/presence";
 
 type ConversationListProps = {
   conversations: MessengerConversationSummary[];
@@ -71,7 +72,7 @@ export function ConversationList({
               const metadata =
                 conversation.type === "group"
                   ? `${conversation.participant_count ?? 0} membres`
-                  : "Conversation privée";
+                  : getUserPresenceLabel(conversation.counterpart);
 
               return (
                 <button

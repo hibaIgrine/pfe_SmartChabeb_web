@@ -1,6 +1,7 @@
 import { PlusCircle, Save, Trash2, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { MessengerConversation, MessengerUser } from "../types";
+import { getUserPresenceLabel } from "../utils/presence";
 
 type GroupManagementPanelProps = {
   conversation: MessengerConversation;
@@ -210,6 +211,9 @@ export function GroupManagementPanel({
                     </p>
                     <p className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-400">
                       {isCreator ? "Créateur" : participant.role}
+                    </p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">
+                      {getUserPresenceLabel(participant.user)}
                     </p>
                   </div>
                   {canRemove ? (

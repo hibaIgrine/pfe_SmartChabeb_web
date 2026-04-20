@@ -6,6 +6,8 @@ export type MessengerUser = {
   prenom: string;
   photo_profil_url?: string | null;
   role?: string;
+  is_online?: boolean;
+  last_seen_at?: string | null;
 };
 
 export type MessengerMessageType = "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT";
@@ -190,5 +192,21 @@ export async function fetchUnreadMessagesCount() {
   const response = await api.get<MessengerUnreadCountResponse>(
     "/messagerie/unread-count",
   );
+  return response.data;
+}
+
+export async function sendPresenceHeartbeat() {
+  const response = await api.patch<{
+    is_online: boolean;
+    last_seen_at: string;
+  }>("/messagerie/presence/heartbeat");
+  return response.data;
+}
+
+export async function setPresenceOffline() {
+  const response = await api.patch<{
+    is_online: boolean;
+    last_seen_at: string;
+  }>("/messagerie/presence/offline");
   return response.data;
 }

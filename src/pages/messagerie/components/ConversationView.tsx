@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { GroupManagementPanel } from "./GroupManagementPanel";
 import { MessageBubble } from "./MessageBubble";
+import { getUserPresenceLabel } from "../utils/presence";
 import type {
   MessengerConversation,
   MessengerMessage,
@@ -151,7 +152,14 @@ export function ConversationView({
                   conversation.participants.length}{" "}
                 membres
               </p>
-            ) : null}
+            ) : (
+              <p className="mt-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-gray-500">
+                <span
+                  className={`h-2 w-2 rounded-full ${conversation.counterpart?.is_online ? "bg-emerald-500" : "bg-gray-300"}`}
+                />
+                {getUserPresenceLabel(conversation.counterpart)}
+              </p>
+            )}
           </div>
 
           {isGroupConversation ? (

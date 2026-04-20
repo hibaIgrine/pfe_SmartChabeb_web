@@ -11,7 +11,9 @@ import {
   markConversationAsRead,
   removeGroupConversationMember,
   renameGroupConversation,
+  sendPresenceHeartbeat,
   sendConversationMessage,
+  setPresenceOffline,
 } from "../../../api/messagerie.api";
 import type {
   MessengerConversation,
@@ -167,6 +169,53 @@ export function useMessageriePage() {
 
   useEffect(() => {
     void refreshAll();
+  }, []);
+
+  useEffect(() => {
+    const sendHeartbeat = async () => {
+      try {
+        await sendPresenceHeartbeat();
+      } catch {
+        // Ignore heartbeat errors to avoid disrupting messaging flow.
+      }
+    };
+
+    const markOffline = async () => {
+      try {
+        await setPresenceOffline();
+      } catch {
+        // Ignore offline update errors when tab is closed or hidden.
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void sendHeartbeat();
+        return;
+      }
+
+      void markOffline();
+    };
+
+    const onBeforeUnload = () => {
+      void markOffline();
+    };
+
+    void sendHeartbeat();
+
+    const heartbeatInterval = window.setInterval(() => {
+      void sendHeartbeat();
+    }, 30000);
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("beforeunload", onBeforeUnload);
+
+    return () => {
+      window.clearInterval(heartbeatInterval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      void markOffline();
+    };
   }, []);
 
   useEffect(() => {
