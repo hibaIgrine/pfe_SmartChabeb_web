@@ -44,6 +44,8 @@ export type MessengerConversationSummary = {
   created_at: string;
   updated_at: string;
   last_message_at?: string | null;
+  participant_count?: number;
+  current_user_role?: string | null;
   counterpart?: MessengerUser | null;
   last_message?: MessengerMessage | null;
 };
@@ -55,6 +57,19 @@ export type MessengerConversation = MessengerConversationSummary & {
 
 export type CreatePrivateConversationPayload = {
   recipientId: string;
+};
+
+export type CreateGroupConversationPayload = {
+  title: string;
+  participantIds: string[];
+};
+
+export type UpdateConversationTitlePayload = {
+  title: string;
+};
+
+export type UpdateConversationMembersPayload = {
+  userIds: string[];
 };
 
 export type CreateMessengerMessagePayload = {
@@ -72,6 +87,13 @@ export async function fetchMessengerUsers() {
   return response.data;
 }
 
+export async function fetchCurrentUserProfile() {
+  const response = await api.get<MessengerUser & { role?: string }>(
+    "/users/me/profile",
+  );
+  return response.data;
+}
+
 export async function fetchMyConversations() {
   const response = await api.get<MessengerConversationSummary[]>(
     "/messagerie/conversations/me",
@@ -84,6 +106,16 @@ export async function createPrivateConversation(
 ) {
   const response = await api.post<MessengerConversation>(
     "/messagerie/conversations/private",
+    payload,
+  );
+  return response.data;
+}
+
+export async function createGroupConversation(
+  payload: CreateGroupConversationPayload,
+) {
+  const response = await api.post<MessengerConversation>(
+    "/messagerie/conversations/group",
     payload,
   );
   return response.data;
@@ -110,6 +142,38 @@ export async function sendConversationMessage(
   const response = await api.post<MessengerMessage>(
     `/messagerie/conversations/${conversationId}/messages`,
     payload,
+  );
+  return response.data;
+}
+
+export async function renameGroupConversation(
+  conversationId: string,
+  payload: UpdateConversationTitlePayload,
+) {
+  const response = await api.patch<MessengerConversation>(
+    `/messagerie/conversations/${conversationId}/title`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function addGroupConversationMembers(
+  conversationId: string,
+  payload: UpdateConversationMembersPayload,
+) {
+  const response = await api.post<MessengerConversation>(
+    `/messagerie/conversations/${conversationId}/members`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function removeGroupConversationMember(
+  conversationId: string,
+  memberUserId: string,
+) {
+  const response = await api.delete<MessengerConversation>(
+    `/messagerie/conversations/${conversationId}/members/${memberUserId}`,
   );
   return response.data;
 }

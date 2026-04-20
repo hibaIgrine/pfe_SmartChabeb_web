@@ -23,6 +23,13 @@ export default function MessageriePage() {
           onSelectRecipient={page.setSelectedRecipientId}
           onCreateConversation={page.startPrivateConversation}
           submitting={page.submitting}
+          mode={page.conversationMode}
+          onModeChange={page.setConversationMode}
+          groupTitle={page.groupTitle}
+          onGroupTitleChange={page.setGroupTitle}
+          selectedGroupRecipientIds={page.selectedGroupRecipientIds}
+          onToggleGroupRecipient={page.toggleGroupRecipient}
+          onCreateGroupConversation={page.startGroupConversation}
         />
 
         <ConversationList
@@ -52,11 +59,15 @@ export default function MessageriePage() {
           attachmentPreview={page.attachmentPreview}
           attachmentName={page.attachmentName}
           attachmentMimeType={page.attachmentMimeType}
+          availableUsers={page.groupCandidateUsers}
           onComposerTextChange={page.setComposerText}
           onMessageTypeChange={page.setMessageType}
           onAttachmentChange={page.handleAttachmentChange}
           onClearAttachment={page.clearAttachment}
           onSendMessage={page.sendMessage}
+          onRenameGroup={page.renameActiveGroup}
+          onAddGroupMembers={page.addMembersToActiveGroup}
+          onRemoveGroupMember={page.removeMemberFromActiveGroup}
         />
       </div>
     </div>

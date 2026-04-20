@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  addGroupConversationMembers,
+  createGroupConversation,
   createPrivateConversation,
   fetchConversation,
   fetchConversationMessages,
+  fetchCurrentUserProfile,
   fetchMessengerUsers,
   fetchMyConversations,
   markConversationAsRead,
+  removeGroupConversationMember,
+  renameGroupConversation,
   sendConversationMessage,
 } from "../../../api/messagerie.api";
 import type {
@@ -15,18 +20,6 @@ import type {
   MessengerMessageType,
   MessengerUser,
 } from "../types";
-
-function readStoredUserId() {
-  const raw = localStorage.getItem("user");
-  if (!raw) return null;
-
-  try {
-    const user = JSON.parse(raw) as { id?: string };
-    return typeof user.id === "string" ? user.id : null;
-  } catch {
-    return null;
-  }
-}
 
 async function fileToDataUrl(file: File) {
   return await new Promise<string>((resolve, reject) => {
@@ -45,7 +38,7 @@ export function useMessageriePage() {
     useState<MessengerConversation | null>(null);
   const [activeMessages, setActiveMessages] = useState<MessengerMessage[]>([]);
   const [users, setUsers] = useState<MessengerUser[]>([]);
-  const [currentUserId] = useState<string | null>(() => readStoredUserId());
+  const [currentUser, setCurrentUser] = useState<MessengerUser | null>(null);
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -53,7 +46,14 @@ export function useMessageriePage() {
   const [composerText, setComposerText] = useState("");
   const [messageType, setMessageType] = useState<MessengerMessageType>("TEXT");
   const [selectedRecipientId, setSelectedRecipientId] = useState("");
+  const [groupTitle, setGroupTitle] = useState("");
+  const [selectedGroupRecipientIds, setSelectedGroupRecipientIds] = useState<
+    string[]
+  >([]);
   const [searchRecipient, setSearchRecipient] = useState("");
+  const [conversationMode, setConversationMode] = useState<"private" | "group">(
+    "private",
+  );
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(
     null,
   );
@@ -69,27 +69,31 @@ export function useMessageriePage() {
     }
   };
 
-  const me = useMemo(() => {
-    const raw = localStorage.getItem("user");
-    if (!raw) return null;
-
-    try {
-      return JSON.parse(raw) as MessengerUser;
-    } catch {
-      return null;
-    }
-  }, []);
+  const me = currentUser;
 
   const filteredUsers = useMemo(() => {
     const query = searchRecipient.trim().toLowerCase();
     return users
-      .filter((user) => user.id !== currentUserId)
+      .filter((user) => user.id !== currentUser?.id)
       .filter((user) => {
         if (!query) return true;
         const haystack = `${user.nom} ${user.prenom}`.toLowerCase();
         return haystack.includes(query);
       });
-  }, [currentUserId, searchRecipient, users]);
+  }, [currentUser?.id, searchRecipient, users]);
+
+  const groupCandidateUsers = useMemo(() => {
+    return users.filter((user) => user.id !== currentUser?.id);
+  }, [currentUser?.id, users]);
+
+  const refreshCurrentUser = async () => {
+    try {
+      const data = await fetchCurrentUserProfile();
+      setCurrentUser(data);
+    } catch {
+      setCurrentUser(null);
+    }
+  };
 
   const refreshConversations = async () => {
     try {
@@ -111,7 +115,7 @@ export function useMessageriePage() {
       const data = await fetchMessengerUsers();
       setUsers(Array.isArray(data) ? data : []);
       if (!selectedRecipientId && data.length > 0) {
-        const firstOther = data.find((user) => user.id !== currentUserId);
+        const firstOther = data.find((user) => user.id !== currentUser?.id);
         if (firstOther) {
           setSelectedRecipientId(firstOther.id);
         }
@@ -119,6 +123,11 @@ export function useMessageriePage() {
     } catch {
       setUsers([]);
     }
+  };
+
+  const refreshAll = async () => {
+    await refreshCurrentUser();
+    await Promise.all([refreshConversations(), refreshUsers()]);
   };
 
   const openConversation = async (conversationId: string) => {
@@ -136,6 +145,11 @@ export function useMessageriePage() {
           item.id === conversationId
             ? {
                 ...item,
+                title: conversation.title,
+                type: conversation.type,
+                participant_count: conversation.participant_count,
+                current_user_role: conversation.current_user_role,
+                counterpart: conversation.counterpart,
                 last_message: messages[messages.length - 1] ?? null,
                 last_message_at: conversation.last_message_at,
               }
@@ -152,8 +166,7 @@ export function useMessageriePage() {
   };
 
   useEffect(() => {
-    void refreshConversations();
-    void refreshUsers();
+    void refreshAll();
   }, []);
 
   useEffect(() => {
@@ -177,6 +190,7 @@ export function useMessageriePage() {
       await refreshConversations();
       setActiveConversation(conversation);
       setActiveMessages(conversation.messages ?? []);
+      setConversationMode("private");
     } catch (err: any) {
       setError(
         err?.response?.data?.message || "Impossible de créer la conversation.",
@@ -184,6 +198,48 @@ export function useMessageriePage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const startGroupConversation = async () => {
+    const title = groupTitle.trim();
+    if (!title) {
+      setError("Nom de groupe obligatoire.");
+      return;
+    }
+
+    if (selectedGroupRecipientIds.length === 0) {
+      setError("Ajoute au moins un utilisateur au groupe.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError(null);
+      const conversation = await createGroupConversation({
+        title,
+        participantIds: selectedGroupRecipientIds,
+      });
+      await refreshConversations();
+      setActiveConversation(conversation);
+      setActiveMessages(conversation.messages ?? []);
+      setGroupTitle("");
+      setSelectedGroupRecipientIds([]);
+      setConversationMode("group");
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message || "Impossible de créer le groupe.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const toggleGroupRecipient = (recipientId: string) => {
+    setSelectedGroupRecipientIds((prev) =>
+      prev.includes(recipientId)
+        ? prev.filter((item) => item !== recipientId)
+        : [...prev, recipientId],
+    );
   };
 
   const handleAttachmentChange = async (file: File | null) => {
@@ -265,6 +321,55 @@ export function useMessageriePage() {
     }
   };
 
+  const renameActiveGroup = async (title: string) => {
+    if (!activeConversation) return;
+
+    try {
+      setSubmitting(true);
+      const updated = await renameGroupConversation(activeConversation.id, {
+        title,
+      });
+      setActiveConversation(updated);
+      setActiveMessages(updated.messages ?? []);
+      await refreshConversations();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const addMembersToActiveGroup = async (userIds: string[]) => {
+    if (!activeConversation) return;
+
+    try {
+      setSubmitting(true);
+      const updated = await addGroupConversationMembers(activeConversation.id, {
+        userIds,
+      });
+      setActiveConversation(updated);
+      setActiveMessages(updated.messages ?? []);
+      await refreshConversations();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const removeMemberFromActiveGroup = async (userId: string) => {
+    if (!activeConversation) return;
+
+    try {
+      setSubmitting(true);
+      const updated = await removeGroupConversationMember(
+        activeConversation.id,
+        userId,
+      );
+      setActiveConversation(updated);
+      setActiveMessages(updated.messages ?? []);
+      await refreshConversations();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const openOrReloadConversation = async (conversationId: string) => {
     await openConversation(conversationId);
   };
@@ -272,6 +377,7 @@ export function useMessageriePage() {
   return {
     me,
     users,
+    groupCandidateUsers,
     filteredUsers,
     conversations,
     activeConversation,
@@ -288,6 +394,12 @@ export function useMessageriePage() {
     setSelectedRecipientId,
     searchRecipient,
     setSearchRecipient,
+    conversationMode,
+    setConversationMode,
+    groupTitle,
+    setGroupTitle,
+    selectedGroupRecipientIds,
+    toggleGroupRecipient,
     attachmentPreview,
     attachmentName,
     attachmentMimeType,
@@ -295,7 +407,11 @@ export function useMessageriePage() {
     clearAttachment,
     refreshConversations,
     startPrivateConversation,
+    startGroupConversation,
     openOrReloadConversation,
     sendMessage,
+    renameActiveGroup,
+    addMembersToActiveGroup,
+    removeMemberFromActiveGroup,
   };
 }

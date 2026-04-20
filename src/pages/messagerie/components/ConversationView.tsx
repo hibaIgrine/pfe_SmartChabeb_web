@@ -1,11 +1,23 @@
-import { FileImage, FileText, Send, Type, Video, X } from "lucide-react";
-import { useRef } from "react";
+import {
+  FileImage,
+  FileText,
+  MoreVertical,
+  Send,
+  Settings,
+  Type,
+  Users,
+  Video,
+  X,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { GroupManagementPanel } from "./GroupManagementPanel";
 import { MessageBubble } from "./MessageBubble";
 import type {
   MessengerConversation,
   MessengerMessage,
   MessengerMessageType,
+  MessengerUser,
 } from "../types";
 
 type ConversationViewProps = {
@@ -19,11 +31,15 @@ type ConversationViewProps = {
   attachmentPreview: string | null;
   attachmentName: string;
   attachmentMimeType: string;
+  availableUsers: MessengerUser[];
   onComposerTextChange: (value: string) => void;
   onMessageTypeChange: (value: MessengerMessageType) => void;
   onAttachmentChange: (file: File | null) => void;
   onClearAttachment: () => void;
   onSendMessage: () => void;
+  onRenameGroup: (title: string) => void;
+  onAddGroupMembers: (userIds: string[]) => void;
+  onRemoveGroupMember: (userId: string) => void;
 };
 
 export function ConversationView({
@@ -37,15 +53,28 @@ export function ConversationView({
   attachmentPreview,
   attachmentName,
   attachmentMimeType,
+  availableUsers,
   onComposerTextChange,
   onMessageTypeChange,
   onAttachmentChange,
   onClearAttachment,
   onSendMessage,
+  onRenameGroup,
+  onAddGroupMembers,
+  onRemoveGroupMember,
 }: ConversationViewProps) {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const documentInputRef = useRef<HTMLInputElement | null>(null);
+  const [groupMenuOpen, setGroupMenuOpen] = useState(false);
+  const [openGroupPanel, setOpenGroupPanel] = useState<
+    "settings" | "members" | null
+  >(null);
+
+  useEffect(() => {
+    setGroupMenuOpen(false);
+    setOpenGroupPanel(null);
+  }, [conversation?.id]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     onAttachmentChange(event.target.files?.[0] ?? null);
@@ -95,20 +124,109 @@ export function ConversationView({
     );
   }
 
-  const counterpart = conversation.counterpart
-    ? `${conversation.counterpart.nom} ${conversation.counterpart.prenom}`
-    : "Conversation privée";
+  const isGroupConversation = conversation.type === "group";
+  const canManageGroup = conversation.current_user_role === "ADMIN";
+  const conversationTitle = isGroupConversation
+    ? conversation.title || "Groupe sans nom"
+    : conversation.counterpart
+      ? `${conversation.counterpart.nom} ${conversation.counterpart.prenom}`
+      : "Conversation privée";
 
   return (
     <section className="flex h-full flex-col rounded-[28px] border border-white bg-white/85 shadow-xl backdrop-blur-md">
       <header className="border-b border-gray-100 px-5 py-4">
-        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#436D75]">
-          Conversation privée
-        </p>
-        <h3 className="text-xl font-black tracking-tight text-gray-900">
-          {counterpart}
-        </h3>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#436D75]">
+              {isGroupConversation
+                ? "Conversation de groupe"
+                : "Conversation privée"}
+            </p>
+            <h3 className="text-xl font-black tracking-tight text-gray-900">
+              {conversationTitle}
+            </h3>
+            {isGroupConversation ? (
+              <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">
+                {conversation.participant_count ??
+                  conversation.participants.length}{" "}
+                membres
+              </p>
+            ) : null}
+          </div>
+
+          {isGroupConversation ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setGroupMenuOpen((prev) => !prev)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-[#436D75] transition hover:bg-[#F7F3E9]"
+                title="Actions du groupe"
+              >
+                <MoreVertical size={16} />
+              </button>
+
+              {groupMenuOpen ? (
+                <div className="absolute right-0 z-30 mt-2 w-56 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenGroupPanel("settings");
+                      setGroupMenuOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
+                  >
+                    <Settings size={14} />
+                    Paramètres du groupe
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenGroupPanel("members");
+                      setGroupMenuOpen(false);
+                    }}
+                    className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
+                  >
+                    <Users size={14} />
+                    Membres du groupe
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </header>
+
+      {isGroupConversation && openGroupPanel ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-3xl rounded-[28px] border border-white/40 bg-white p-4 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#436D75]">
+                {openGroupPanel === "settings"
+                  ? "Paramètres du groupe"
+                  : "Membres du groupe"}
+              </p>
+              <button
+                type="button"
+                onClick={() => setOpenGroupPanel(null)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:bg-gray-50"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <GroupManagementPanel
+              section={openGroupPanel}
+              conversation={conversation}
+              availableUsers={availableUsers}
+              canManage={canManageGroup}
+              submitting={submitting}
+              onRenameGroup={onRenameGroup}
+              onAddMembers={onAddGroupMembers}
+              onRemoveMember={onRemoveGroupMember}
+            />
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex-1 overflow-y-auto p-5">
         {loading ? (

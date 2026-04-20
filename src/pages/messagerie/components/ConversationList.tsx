@@ -61,10 +61,17 @@ export function ConversationList({
           <div className="space-y-2">
             {conversations.map((conversation) => {
               const isActive = conversation.id === activeConversationId;
-              const counterpartName = conversation.counterpart
-                ? `${conversation.counterpart.nom} ${conversation.counterpart.prenom}`
-                : "Conversation privée";
+              const counterpartName =
+                conversation.type === "group"
+                  ? conversation.title || "Groupe sans nom"
+                  : conversation.counterpart
+                    ? `${conversation.counterpart.nom} ${conversation.counterpart.prenom}`
+                    : "Conversation privée";
               const preview = conversation.last_message?.content?.trim();
+              const metadata =
+                conversation.type === "group"
+                  ? `${conversation.participant_count ?? 0} membres`
+                  : "Conversation privée";
 
               return (
                 <button
@@ -83,7 +90,7 @@ export function ConversationList({
                         {counterpartName}
                       </p>
                       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#436D75]/70">
-                        {conversation.type}
+                        {metadata}
                       </p>
                     </div>
                     <span className="text-[10px] font-bold text-gray-400">
