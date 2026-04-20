@@ -13,6 +13,18 @@ type AttachmentPreview = {
   mimeType: string;
 };
 
+function getMessageStatusLabel(status: MessengerMessage["status"]) {
+  if (status === "READ") {
+    return "Vu";
+  }
+
+  if (status === "DELIVERED") {
+    return "Livré";
+  }
+
+  return "Envoyé";
+}
+
 function getDataUrlMimeType(value: string) {
   const match = /^data:([^;]+);/i.exec(value);
   return match?.[1] ?? "";
@@ -169,7 +181,7 @@ export function MessageBubble({ message, isMine }: MessageBubbleProps) {
               })}
             </span>
             <span>•</span>
-            <span>{message.status}</span>
+            <span>{getMessageStatusLabel(message.status)}</span>
           </div>
         </div>
       </div>
