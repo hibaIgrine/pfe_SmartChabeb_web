@@ -38,6 +38,9 @@ type ConversationViewProps = {
   onAttachmentChange: (file: File | null) => void;
   onClearAttachment: () => void;
   onSendMessage: () => void;
+  onEditMessage: (messageId: string, content: string) => void;
+  onDeleteMessageForMe: (messageId: string) => void;
+  onDeleteMessageForEveryone: (messageId: string) => void;
   onRenameGroup: (title: string) => void;
   onAddGroupMembers: (userIds: string[]) => void;
   onRemoveGroupMember: (userId: string) => void;
@@ -60,6 +63,9 @@ export function ConversationView({
   onAttachmentChange,
   onClearAttachment,
   onSendMessage,
+  onEditMessage,
+  onDeleteMessageForMe,
+  onDeleteMessageForEveryone,
   onRenameGroup,
   onAddGroupMembers,
   onRemoveGroupMember,
@@ -252,6 +258,10 @@ export function ConversationView({
                 key={message.id}
                 message={message}
                 isMine={message.sender_id === meId}
+                submitting={submitting}
+                onEditMessage={onEditMessage}
+                onDeleteForMe={onDeleteMessageForMe}
+                onDeleteForEveryone={onDeleteMessageForEveryone}
               />
             ))}
           </div>

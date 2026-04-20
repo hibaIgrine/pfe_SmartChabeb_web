@@ -156,6 +156,9 @@ export default function MessageriePage() {
           onAttachmentChange={page.handleAttachmentChange}
           onClearAttachment={page.clearAttachment}
           onSendMessage={page.sendMessage}
+          onEditMessage={page.editMessage}
+          onDeleteMessageForMe={page.deleteMessageForMe}
+          onDeleteMessageForEveryone={page.deleteMessageForEveryone}
           onRenameGroup={page.renameActiveGroup}
           onAddGroupMembers={page.addMembersToActiveGroup}
           onRemoveGroupMember={page.removeMemberFromActiveGroup}

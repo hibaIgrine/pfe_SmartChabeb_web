@@ -35,8 +35,12 @@ export type MessengerMessage = {
   edited_at?: string | null;
   delivered_at?: string | null;
   read_at?: string | null;
+  deleted_for_everyone_at?: string | null;
+  deleted_for_everyone_by?: string | null;
   sender: MessengerUser;
 };
+
+export type DeleteMessageScope = "ME" | "EVERYONE";
 
 export type MessengerConversationSummary = {
   id: string;
@@ -76,6 +80,12 @@ export type UpdateConversationMembersPayload = {
 
 export type CreateMessengerMessagePayload = {
   type: MessengerMessageType;
+  content?: string;
+  media?: string[];
+};
+
+export type UpdateMessengerMessagePayload = {
+  type?: MessengerMessageType;
   content?: string;
   media?: string[];
 };
@@ -145,6 +155,37 @@ export async function sendConversationMessage(
     `/messagerie/conversations/${conversationId}/messages`,
     payload,
   );
+  return response.data;
+}
+
+export async function updateConversationMessage(
+  conversationId: string,
+  messageId: string,
+  payload: UpdateMessengerMessagePayload,
+) {
+  const response = await api.patch<MessengerMessage>(
+    `/messagerie/conversations/${conversationId}/messages/${messageId}`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function deleteConversationMessage(
+  conversationId: string,
+  messageId: string,
+  scope: DeleteMessageScope,
+) {
+  const response = await api.delete<
+    | MessengerMessage
+    | {
+        success: boolean;
+        scope: DeleteMessageScope;
+        messageId: string;
+      }
+  >(`/messagerie/conversations/${conversationId}/messages/${messageId}`, {
+    data: { scope },
+  });
+
   return response.data;
 }
 

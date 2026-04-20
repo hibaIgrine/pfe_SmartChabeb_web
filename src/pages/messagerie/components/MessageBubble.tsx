@@ -1,10 +1,22 @@
 import { useState } from "react";
-import { Download, Printer, X } from "lucide-react";
+import {
+  Check,
+  Download,
+  MoreVertical,
+  Pencil,
+  Printer,
+  Trash2,
+  X,
+} from "lucide-react";
 import type { MessengerMessage } from "../types";
 
 type MessageBubbleProps = {
   message: MessengerMessage;
   isMine: boolean;
+  submitting: boolean;
+  onEditMessage: (messageId: string, content: string) => void;
+  onDeleteForMe: (messageId: string) => void;
+  onDeleteForEveryone: (messageId: string) => void;
 };
 
 type AttachmentPreview = {
@@ -131,8 +143,48 @@ function renderMedia(
   );
 }
 
-export function MessageBubble({ message, isMine }: MessageBubbleProps) {
+export function MessageBubble({
+  message,
+  isMine,
+  submitting,
+  onEditMessage,
+  onDeleteForMe,
+  onDeleteForEveryone,
+}: MessageBubbleProps) {
   const [preview, setPreview] = useState<AttachmentPreview | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(message.content ?? "");
+
+  const isDeletedForEveryone = Boolean(message.deleted_for_everyone_at);
+  const canEdit = isMine && !isDeletedForEveryone && message.type === "TEXT";
+
+  const handleStartEdit = () => {
+    setDraft(message.content ?? "");
+    setEditing(true);
+    setMenuOpen(false);
+  };
+
+  const handleSaveEdit = () => {
+    const normalized = draft.trim();
+    if (!normalized || normalized === (message.content ?? "")) {
+      setEditing(false);
+      return;
+    }
+
+    onEditMessage(message.id, normalized);
+    setEditing(false);
+  };
+
+  const handleDeleteForMe = () => {
+    setMenuOpen(false);
+    onDeleteForMe(message.id);
+  };
+
+  const handleDeleteForEveryone = () => {
+    setMenuOpen(false);
+    onDeleteForEveryone(message.id);
+  };
 
   const openPreview = (value: string, fileName: string) => {
     const { mimeType } = getAttachmentMeta(message, value);
@@ -161,15 +213,121 @@ export function MessageBubble({ message, isMine }: MessageBubbleProps) {
             </p>
           ) : null}
 
-          {message.content ? (
-            <p
-              className={`mt-1 whitespace-pre-wrap text-sm leading-relaxed ${isMine ? "text-white" : "text-gray-700"}`}
-            >
-              {message.content}
-            </p>
-          ) : null}
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              {editing ? (
+                <div className="mt-1 space-y-2">
+                  <textarea
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    rows={3}
+                    className={`w-full resize-none rounded-2xl border px-3 py-2 text-sm leading-relaxed outline-none ${
+                      isMine
+                        ? "border-white/30 bg-white/10 text-white placeholder:text-white/60"
+                        : "border-gray-200 bg-white text-gray-700"
+                    }`}
+                    placeholder="Modifier le message"
+                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditing(false);
+                        setDraft(message.content ?? "");
+                      }}
+                      className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-gray-500"
+                    >
+                      <X size={12} />
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveEdit}
+                      disabled={submitting}
+                      className="inline-flex items-center gap-1 rounded-full bg-[#436D75] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Check size={12} />
+                      Enregistrer
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {isDeletedForEveryone ? (
+                    <p
+                      className={`mt-1 italic text-sm leading-relaxed ${isMine ? "text-white/80" : "text-gray-500"}`}
+                    >
+                      Ce message a été supprimé.
+                    </p>
+                  ) : message.content ? (
+                    <p
+                      className={`mt-1 whitespace-pre-wrap text-sm leading-relaxed ${isMine ? "text-white" : "text-gray-700"}`}
+                    >
+                      {message.content}
+                    </p>
+                  ) : null}
 
-          {renderMedia(message, openPreview)}
+                  {!isDeletedForEveryone
+                    ? renderMedia(message, openPreview)
+                    : null}
+                </>
+              )}
+            </div>
+
+            {!editing ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen((prev) => !prev)}
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full border transition ${
+                    isMine
+                      ? "border-white/25 bg-white/10 text-white hover:bg-white/20"
+                      : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
+                  }`}
+                  title="Actions message"
+                >
+                  <MoreVertical size={13} />
+                </button>
+
+                {menuOpen ? (
+                  <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+                    {canEdit ? (
+                      <button
+                        type="button"
+                        onClick={handleStartEdit}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-gray-700 transition hover:bg-[#F7F3E9]"
+                      >
+                        <Pencil size={13} />
+                        Modifier
+                      </button>
+                    ) : null}
+
+                    {isMine && !isDeletedForEveryone ? (
+                      <button
+                        type="button"
+                        onClick={handleDeleteForEveryone}
+                        disabled={submitting}
+                        className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Trash2 size={13} />
+                        Retirer pour tout le monde
+                      </button>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={handleDeleteForMe}
+                      disabled={submitting}
+                      className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Trash2 size={13} />
+                      Retirer pour vous
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
 
           <div
             className={`mt-2 flex items-center justify-end gap-2 text-[10px] font-bold ${isMine ? "text-white/70" : "text-gray-400"}`}

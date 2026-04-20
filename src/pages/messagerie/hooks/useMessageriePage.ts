@@ -3,6 +3,7 @@ import {
   addGroupConversationMembers,
   createGroupConversation,
   createPrivateConversation,
+  deleteConversationMessage,
   fetchConversation,
   fetchConversationMessages,
   fetchCurrentUserProfile,
@@ -14,6 +15,7 @@ import {
   sendPresenceHeartbeat,
   sendConversationMessage,
   setPresenceOffline,
+  updateConversationMessage,
 } from "../../../api/messagerie.api";
 import type {
   MessengerConversation,
@@ -489,6 +491,104 @@ export function useMessageriePage() {
     await openConversation(conversationId);
   };
 
+  const editMessage = async (messageId: string, content: string) => {
+    if (!activeConversation) return;
+
+    try {
+      setSubmitting(true);
+      const updated = await updateConversationMessage(
+        activeConversation.id,
+        messageId,
+        {
+          content,
+          type: "TEXT",
+        },
+      );
+
+      setActiveMessages((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item)),
+      );
+
+      setConversations((prev) =>
+        prev.map((item) => {
+          if (item.id !== activeConversation.id) return item;
+
+          const isLastMessage = item.last_message?.id === updated.id;
+          return {
+            ...item,
+            last_message: isLastMessage ? updated : item.last_message,
+          };
+        }),
+      );
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message || "Impossible de modifier ce message.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const deleteMessageForMe = async (messageId: string) => {
+    if (!activeConversation) return;
+
+    try {
+      setSubmitting(true);
+      await deleteConversationMessage(activeConversation.id, messageId, "ME");
+      setActiveMessages((prev) => prev.filter((item) => item.id !== messageId));
+      await refreshConversations();
+      window.dispatchEvent(new Event("messagerie-updated"));
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          "Impossible de supprimer ce message pour vous.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const deleteMessageForEveryone = async (messageId: string) => {
+    if (!activeConversation) return;
+
+    try {
+      setSubmitting(true);
+      const result = await deleteConversationMessage(
+        activeConversation.id,
+        messageId,
+        "EVERYONE",
+      );
+
+      if (typeof result === "object" && "id" in result) {
+        const updated = result;
+        setActiveMessages((prev) =>
+          prev.map((item) => (item.id === updated.id ? updated : item)),
+        );
+
+        setConversations((prev) =>
+          prev.map((item) => {
+            if (item.id !== activeConversation.id) return item;
+            const isLastMessage = item.last_message?.id === updated.id;
+
+            return {
+              ...item,
+              last_message: isLastMessage ? updated : item.last_message,
+            };
+          }),
+        );
+      }
+
+      window.dispatchEvent(new Event("messagerie-updated"));
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          "Impossible de supprimer ce message pour tout le monde.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return {
     me,
     users,
@@ -525,6 +625,9 @@ export function useMessageriePage() {
     startGroupConversation,
     openOrReloadConversation,
     sendMessage,
+    editMessage,
+    deleteMessageForMe,
+    deleteMessageForEveryone,
     renameActiveGroup,
     addMembersToActiveGroup,
     removeMemberFromActiveGroup,
