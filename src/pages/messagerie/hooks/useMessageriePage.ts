@@ -3,6 +3,7 @@ import {
   addGroupConversationMembers,
   createGroupConversation,
   createPrivateConversation,
+  deleteConversation,
   deleteConversationMessage,
   fetchConversation,
   fetchConversationMessages,
@@ -491,6 +492,37 @@ export function useMessageriePage() {
     await openConversation(conversationId);
   };
 
+  const deleteConversationById = async (conversationId: string) => {
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      await deleteConversation(conversationId);
+
+      setConversations((prev) =>
+        prev.filter((item) => item.id !== conversationId),
+      );
+
+      setActiveMessages((prev) =>
+        activeConversation?.id === conversationId ? [] : prev,
+      );
+
+      setActiveConversation((prev) =>
+        prev?.id === conversationId ? null : prev,
+      );
+
+      window.dispatchEvent(new Event("messagerie-updated"));
+      await refreshConversations();
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          "Impossible de supprimer cette conversation.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const editMessage = async (messageId: string, content: string) => {
     if (!activeConversation) return;
 
@@ -624,6 +656,7 @@ export function useMessageriePage() {
     startPrivateConversation,
     startGroupConversation,
     openOrReloadConversation,
+    deleteConversationById,
     sendMessage,
     editMessage,
     deleteMessageForMe,

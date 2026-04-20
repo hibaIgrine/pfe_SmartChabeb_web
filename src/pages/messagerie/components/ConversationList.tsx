@@ -1,4 +1,5 @@
-import { Search } from "lucide-react";
+import { MoreVertical, Search, Trash2 } from "lucide-react";
+import { useState } from "react";
 import type { MessengerConversationSummary } from "../types";
 import { getUserPresenceLabel } from "../utils/presence";
 
@@ -7,6 +8,7 @@ type ConversationListProps = {
   activeConversationId?: string | null;
   loading: boolean;
   onOpenConversation: (conversationId: string) => void;
+  onDeleteConversation: (conversationId: string) => void;
   onRefresh: () => void;
 };
 
@@ -26,8 +28,13 @@ export function ConversationList({
   activeConversationId,
   loading,
   onOpenConversation,
+  onDeleteConversation,
   onRefresh,
 }: ConversationListProps) {
+  const [menuConversationId, setMenuConversationId] = useState<string | null>(
+    null,
+  );
+
   return (
     <section className="flex h-full flex-col rounded-[28px] border border-white bg-white/85 shadow-xl backdrop-blur-md">
       <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
@@ -75,41 +82,82 @@ export function ConversationList({
                   : getUserPresenceLabel(conversation.counterpart);
 
               return (
-                <button
+                <div
                   key={conversation.id}
-                  type="button"
-                  onClick={() => onOpenConversation(conversation.id)}
-                  className={`w-full rounded-[22px] border px-4 py-4 text-left transition ${
+                  className={`group relative rounded-[22px] border px-4 py-4 transition ${
                     isActive
                       ? "border-[#436D75]/25 bg-[#436D75]/6 shadow-sm"
                       : "border-transparent bg-[#F7F3E9]/60 hover:border-gray-200 hover:bg-white"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-black text-gray-900">
-                        {counterpartName}
-                      </p>
-                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#436D75]/70">
-                        {metadata}
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-bold text-gray-400">
-                      {formatRelativeDate(conversation.last_message_at)}
-                    </span>
-                  </div>
-                  <p
-                    className="mt-3 text-sm text-gray-600"
-                    style={{
-                      display: "-webkit-box",
-                      WebkitBoxOrient: "vertical",
-                      WebkitLineClamp: 2,
-                      overflow: "hidden",
-                    }}
+                  <button
+                    type="button"
+                    onClick={() => onOpenConversation(conversation.id)}
+                    className="w-full pr-9 text-left"
                   >
-                    {preview || "Aucun message."}
-                  </p>
-                </button>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-black text-gray-900">
+                          {counterpartName}
+                        </p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#436D75]/70">
+                          {metadata}
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-400">
+                        {formatRelativeDate(conversation.last_message_at)}
+                      </span>
+                    </div>
+                    <p
+                      className="mt-3 text-sm text-gray-600"
+                      style={{
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical",
+                        WebkitLineClamp: 2,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {preview || "Aucun message."}
+                    </p>
+                  </button>
+
+                  <div className="absolute right-3 top-3">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setMenuConversationId((prev) =>
+                          prev === conversation.id ? null : conversation.id,
+                        );
+                      }}
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:bg-gray-50 ${
+                        menuConversationId === conversation.id
+                          ? "opacity-100"
+                          : "opacity-0 group-hover:opacity-100"
+                      }`}
+                      title="Actions conversation"
+                    >
+                      <MoreVertical size={13} />
+                    </button>
+
+                    {menuConversationId === conversation.id ? (
+                      <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setMenuConversationId(null);
+                            onDeleteConversation(conversation.id);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-red-700 transition hover:bg-red-50"
+                        >
+                          <Trash2 size={13} />
+                          Supprimer conversation
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
               );
             })}
           </div>

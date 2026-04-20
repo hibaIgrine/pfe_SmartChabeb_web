@@ -51,6 +51,7 @@ export default function MessageriePage() {
             activeConversationId={page.activeConversation?.id}
             loading={page.loadingConversations}
             onOpenConversation={page.openOrReloadConversation}
+            onDeleteConversation={page.deleteConversationById}
             onRefresh={page.refreshConversations}
           />
 
@@ -159,6 +160,7 @@ export default function MessageriePage() {
           onEditMessage={page.editMessage}
           onDeleteMessageForMe={page.deleteMessageForMe}
           onDeleteMessageForEveryone={page.deleteMessageForEveryone}
+          onDeleteConversation={page.deleteConversationById}
           onRenameGroup={page.renameActiveGroup}
           onAddGroupMembers={page.addMembersToActiveGroup}
           onRemoveGroupMember={page.removeMemberFromActiveGroup}

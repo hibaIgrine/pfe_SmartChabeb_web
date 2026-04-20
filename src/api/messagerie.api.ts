@@ -147,6 +147,16 @@ export async function fetchConversationMessages(conversationId: string) {
   return response.data;
 }
 
+export async function deleteConversation(conversationId: string) {
+  const response = await api.delete<{
+    deleted: boolean;
+    scope: "ME" | "EVERYONE";
+    conversationId: string;
+  }>(`/messagerie/conversations/${conversationId}`);
+
+  return response.data;
+}
+
 export async function sendConversationMessage(
   conversationId: string,
   payload: CreateMessengerMessagePayload,

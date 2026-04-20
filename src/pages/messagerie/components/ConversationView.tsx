@@ -4,6 +4,7 @@ import {
   MoreVertical,
   Send,
   Settings,
+  Trash2,
   Type,
   Users,
   Video,
@@ -41,6 +42,7 @@ type ConversationViewProps = {
   onEditMessage: (messageId: string, content: string) => void;
   onDeleteMessageForMe: (messageId: string) => void;
   onDeleteMessageForEveryone: (messageId: string) => void;
+  onDeleteConversation: (conversationId: string) => void;
   onRenameGroup: (title: string) => void;
   onAddGroupMembers: (userIds: string[]) => void;
   onRemoveGroupMember: (userId: string) => void;
@@ -66,6 +68,7 @@ export function ConversationView({
   onEditMessage,
   onDeleteMessageForMe,
   onDeleteMessageForEveryone,
+  onDeleteConversation,
   onRenameGroup,
   onAddGroupMembers,
   onRemoveGroupMember,
@@ -73,13 +76,13 @@ export function ConversationView({
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const documentInputRef = useRef<HTMLInputElement | null>(null);
-  const [groupMenuOpen, setGroupMenuOpen] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [openGroupPanel, setOpenGroupPanel] = useState<
     "settings" | "members" | null
   >(null);
 
   useEffect(() => {
-    setGroupMenuOpen(false);
+    setHeaderMenuOpen(false);
     setOpenGroupPanel(null);
   }, [conversation?.id]);
 
@@ -168,45 +171,61 @@ export function ConversationView({
             )}
           </div>
 
-          {isGroupConversation ? (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setGroupMenuOpen((prev) => !prev)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-[#436D75] transition hover:bg-[#F7F3E9]"
-                title="Actions du groupe"
-              >
-                <MoreVertical size={16} />
-              </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setHeaderMenuOpen((prev) => !prev)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-[#436D75] transition hover:bg-[#F7F3E9]"
+              title="Actions conversation"
+            >
+              <MoreVertical size={16} />
+            </button>
 
-              {groupMenuOpen ? (
-                <div className="absolute right-0 z-30 mt-2 w-56 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpenGroupPanel("settings");
-                      setGroupMenuOpen(false);
-                    }}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
-                  >
-                    <Settings size={14} />
-                    Paramètres du groupe
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpenGroupPanel("members");
-                      setGroupMenuOpen(false);
-                    }}
-                    className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
-                  >
-                    <Users size={14} />
-                    Membres du groupe
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
+            {headerMenuOpen ? (
+              <div className="absolute right-0 z-30 mt-2 w-56 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+                {isGroupConversation ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpenGroupPanel("settings");
+                        setHeaderMenuOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
+                    >
+                      <Settings size={14} />
+                      Paramètres du groupe
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpenGroupPanel("members");
+                        setHeaderMenuOpen(false);
+                      }}
+                      className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
+                    >
+                      <Users size={14} />
+                      Membres du groupe
+                    </button>
+                  </>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderMenuOpen(false);
+                    onDeleteConversation(conversation.id);
+                  }}
+                  className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 ${
+                    isGroupConversation ? "mt-1" : ""
+                  }`}
+                >
+                  <Trash2 size={14} />
+                  Supprimer conversation
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
 
