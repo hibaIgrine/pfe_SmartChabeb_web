@@ -2,6 +2,7 @@ import {
   FileImage,
   FileText,
   MoreVertical,
+  Search,
   Send,
   Settings,
   Trash2,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { ConversationMessageSearch } from "./ConversationMessageSearch";
 import { GroupManagementPanel } from "./GroupManagementPanel";
 import { MessageBubble } from "./MessageBubble";
 import { getUserPresenceLabel } from "../utils/presence";
@@ -76,15 +78,36 @@ export function ConversationView({
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const documentInputRef = useRef<HTMLInputElement | null>(null);
+  const messageNodesRef = useRef<Record<string, HTMLDivElement | null>>({});
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [messageSearchOpen, setMessageSearchOpen] = useState(false);
+  const [messageSearchQuery, setMessageSearchQuery] = useState("");
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(
+    null,
+  );
   const [openGroupPanel, setOpenGroupPanel] = useState<
     "settings" | "members" | null
   >(null);
 
   useEffect(() => {
     setHeaderMenuOpen(false);
+    setMessageSearchOpen(false);
+    setMessageSearchQuery("");
+    setSelectedMessageId(null);
     setOpenGroupPanel(null);
   }, [conversation?.id]);
+
+  const handleSelectSearchResult = (messageId: string) => {
+    setSelectedMessageId(messageId);
+
+    const target = messageNodesRef.current[messageId];
+    if (!target) return;
+
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     onAttachmentChange(event.target.files?.[0] ?? null);
@@ -183,6 +206,18 @@ export function ConversationView({
 
             {headerMenuOpen ? (
               <div className="absolute right-0 z-30 mt-2 w-56 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMessageSearchOpen(true);
+                    setHeaderMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
+                >
+                  <Search size={14} />
+                  Rechercher un message
+                </button>
+
                 {isGroupConversation ? (
                   <>
                     <button
@@ -191,7 +226,7 @@ export function ConversationView({
                         setOpenGroupPanel("settings");
                         setHeaderMenuOpen(false);
                       }}
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
+                      className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
                     >
                       <Settings size={14} />
                       Paramètres du groupe
@@ -216,9 +251,7 @@ export function ConversationView({
                     setHeaderMenuOpen(false);
                     onDeleteConversation(conversation.id);
                   }}
-                  className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 ${
-                    isGroupConversation ? "mt-1" : ""
-                  }`}
+                  className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50"
                 >
                   <Trash2 size={14} />
                   Supprimer conversation
@@ -227,6 +260,20 @@ export function ConversationView({
             ) : null}
           </div>
         </div>
+
+        <ConversationMessageSearch
+          open={messageSearchOpen}
+          query={messageSearchQuery}
+          messages={messages}
+          selectedMessageId={selectedMessageId}
+          onQueryChange={setMessageSearchQuery}
+          onClose={() => {
+            setMessageSearchOpen(false);
+            setMessageSearchQuery("");
+            setSelectedMessageId(null);
+          }}
+          onSelectMessage={handleSelectSearchResult}
+        />
       </header>
 
       {isGroupConversation && openGroupPanel ? (
@@ -273,15 +320,26 @@ export function ConversationView({
         ) : (
           <div className="space-y-4">
             {messages.map((message) => (
-              <MessageBubble
+              <div
                 key={message.id}
-                message={message}
-                isMine={message.sender_id === meId}
-                submitting={submitting}
-                onEditMessage={onEditMessage}
-                onDeleteForMe={onDeleteMessageForMe}
-                onDeleteForEveryone={onDeleteMessageForEveryone}
-              />
+                ref={(node) => {
+                  messageNodesRef.current[message.id] = node;
+                }}
+                className={`rounded-[28px] transition ${
+                  selectedMessageId === message.id
+                    ? "ring-2 ring-[#436D75]/40 ring-offset-2"
+                    : ""
+                }`}
+              >
+                <MessageBubble
+                  message={message}
+                  isMine={message.sender_id === meId}
+                  submitting={submitting}
+                  onEditMessage={onEditMessage}
+                  onDeleteForMe={onDeleteMessageForMe}
+                  onDeleteForEveryone={onDeleteMessageForEveryone}
+                />
+              </div>
             ))}
           </div>
         )}
