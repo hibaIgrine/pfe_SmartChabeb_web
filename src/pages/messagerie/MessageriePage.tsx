@@ -1,5 +1,6 @@
 import { Check, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ConversationList } from "./components/ConversationList";
 import { ConversationView } from "./components/ConversationView";
 import { RecipientPanel } from "./components/RecipientPanel";
@@ -8,11 +9,23 @@ import { useMessageriePage } from "./hooks/useMessageriePage";
 export default function MessageriePage() {
   const page = useMessageriePage();
   const [showSearchUsers, setShowSearchUsers] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const recipientOptions = useMemo(
     () => page.filteredUsers,
     [page.filteredUsers],
   );
+
+  useEffect(() => {
+    const conversationId = searchParams.get("conversationId");
+    if (!conversationId) return;
+
+    void page.openOrReloadConversation(conversationId).finally(() => {
+      const next = new URLSearchParams(searchParams);
+      next.delete("conversationId");
+      setSearchParams(next, { replace: true });
+    });
+  }, [page, searchParams, setSearchParams]);
 
   return (
     <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[340px_1fr]">

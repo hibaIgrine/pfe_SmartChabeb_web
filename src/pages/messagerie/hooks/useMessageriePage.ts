@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addGroupConversationMembers,
   createGroupConversation,
@@ -62,6 +62,9 @@ export function useMessageriePage() {
   const [attachmentName, setAttachmentName] = useState("");
   const [attachmentMimeType, setAttachmentMimeType] = useState("");
 
+  const hasHydratedConversationsRef = useRef(false);
+  const previousConversationsRef = useRef<MessengerConversationSummary[]>([]);
+
   const updateMessageType = (nextType: MessengerMessageType) => {
     setMessageType(nextType);
     if (nextType === "TEXT") {
@@ -72,6 +75,48 @@ export function useMessageriePage() {
   };
 
   const me = currentUser;
+
+  const syncConversationSnapshot = (
+    nextConversations: MessengerConversationSummary[],
+  ) => {
+    if (!hasHydratedConversationsRef.current) {
+      hasHydratedConversationsRef.current = true;
+      previousConversationsRef.current = nextConversations;
+      setConversations(nextConversations);
+      return;
+    }
+
+    const previousById = new Map(
+      previousConversationsRef.current.map((item) => [item.id, item]),
+    );
+
+    const nextIncomingMessage = nextConversations.find((item) => {
+      const previous = previousById.get(item.id);
+      if (!previous) return false;
+
+      const previousMessageId = previous.last_message?.id;
+      const nextMessage = item.last_message;
+
+      if (!nextMessage || !nextMessage.id) return false;
+      if (previousMessageId === nextMessage.id) return false;
+      if (nextMessage.sender_id === currentUser?.id) return false;
+      if (
+        activeConversation?.id === item.id &&
+        document.visibilityState === "visible"
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (nextIncomingMessage) {
+      window.dispatchEvent(new Event("messagerie-updated"));
+    }
+
+    previousConversationsRef.current = nextConversations;
+    setConversations(nextConversations);
+  };
 
   const filteredUsers = useMemo(() => {
     const query = searchRecipient.trim().toLowerCase();
@@ -101,7 +146,7 @@ export function useMessageriePage() {
     try {
       setLoadingConversations(true);
       const data = await fetchMyConversations();
-      setConversations(data ?? []);
+      syncConversationSnapshot(data ?? []);
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||
@@ -223,6 +268,27 @@ export function useMessageriePage() {
       void openConversation(conversations[0].id);
     }
   }, [activeConversation, conversations]);
+
+  useEffect(() => {
+    const pollConversations = async () => {
+      try {
+        const data = await fetchMyConversations();
+        syncConversationSnapshot(data ?? []);
+      } catch {
+        // Silent polling to avoid noisy UI errors.
+      }
+    };
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void pollConversations();
+      }
+    }, 12000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [activeConversation?.id, currentUser?.id]);
 
   const startPrivateConversation = async () => {
     if (!selectedRecipientId) {

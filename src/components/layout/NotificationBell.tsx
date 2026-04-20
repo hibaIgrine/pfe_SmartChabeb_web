@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 import { createPortal } from "react-dom";
-import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   fetchMyNotifications,
@@ -10,6 +9,19 @@ import {
   markNotificationAsRead,
   type InAppNotification,
 } from "../../api/notifications.api";
+import {
+  fetchCurrentUserProfile,
+  fetchMyConversations,
+  fetchUnreadMessagesCount,
+  type MessengerConversationSummary,
+} from "../../api/messagerie.api";
+
+type MessageNotificationItem = {
+  conversationId: string;
+  title: string;
+  subtitle: string;
+  createdAt?: string | null;
+};
 
 function formatRelativeDate(value: string) {
   const date = new Date(value);
@@ -31,12 +43,18 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [messageNotifications, setMessageNotifications] = useState<
+    MessageNotificationItem[]
+  >([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMessageLoading, setIsMessageLoading] = useState(false);
   const [panelPosition, setPanelPosition] = useState({ top: 80, right: 16 });
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  const hasUnread = unreadCount > 0;
+  const totalUnreadCount = unreadCount + unreadMessagesCount;
+  const hasUnread = totalUnreadCount > 0;
 
   const displayNotifications = useMemo(
     () => notifications.slice(0, 12),
@@ -45,10 +63,72 @@ export function NotificationBell() {
 
   const refreshUnreadCount = async () => {
     try {
-      const data = await fetchUnreadNotificationsCount();
-      setUnreadCount(data.count ?? 0);
+      const [notificationsData, messagesData] = await Promise.all([
+        fetchUnreadNotificationsCount(),
+        fetchUnreadMessagesCount(),
+      ]);
+
+      setUnreadCount(notificationsData.count ?? 0);
+      setUnreadMessagesCount(messagesData.count ?? 0);
     } catch (err) {
       console.error("Erreur chargement compteur notifications:", err);
+    }
+  };
+
+  const mapMessageNotifications = (
+    conversations: MessengerConversationSummary[],
+    myUserId: string,
+  ) => {
+    return conversations
+      .filter((conversation) => {
+        const lastMessage = conversation.last_message;
+        if (!lastMessage) return false;
+        return lastMessage.sender_id !== myUserId;
+      })
+      .sort((a, b) => {
+        const aDate = new Date(a.last_message_at ?? 0).getTime();
+        const bDate = new Date(b.last_message_at ?? 0).getTime();
+        return bDate - aDate;
+      })
+      .slice(0, 8)
+      .map((conversation) => {
+        const isGroupConversation = conversation.type === "group";
+        const sender = conversation.last_message?.sender;
+        const senderName = sender
+          ? `${sender.nom} ${sender.prenom}`
+          : "Utilisateur";
+        const targetName = isGroupConversation
+          ? conversation.title || "Groupe sans nom"
+          : conversation.counterpart
+            ? `${conversation.counterpart.nom} ${conversation.counterpart.prenom}`
+            : "Conversation privée";
+
+        return {
+          conversationId: conversation.id,
+          title: isGroupConversation
+            ? `Groupe: ${targetName}`
+            : `Privé: ${targetName}`,
+          subtitle: `Nouveau message de ${senderName}`,
+          createdAt:
+            conversation.last_message?.created_at ??
+            conversation.last_message_at,
+        };
+      });
+  };
+
+  const refreshMessageNotifications = async () => {
+    try {
+      setIsMessageLoading(true);
+
+      const profile = await fetchCurrentUserProfile();
+      const conversations = await fetchMyConversations();
+      const mapped = mapMessageNotifications(conversations ?? [], profile.id);
+      setMessageNotifications(mapped);
+    } catch (err) {
+      console.error("Erreur chargement notifications messagerie:", err);
+      setMessageNotifications([]);
+    } finally {
+      setIsMessageLoading(false);
     }
   };
 
@@ -65,15 +145,40 @@ export function NotificationBell() {
   };
 
   useEffect(() => {
-    refreshUnreadCount();
-    const interval = window.setInterval(refreshUnreadCount, 25000);
-    return () => window.clearInterval(interval);
-  }, []);
+    void refreshUnreadCount();
+    void refreshMessageNotifications();
+
+    const interval = window.setInterval(() => {
+      void refreshUnreadCount();
+      void refreshMessageNotifications();
+    }, 25000);
+
+    const handleMessagingUpdate = () => {
+      void refreshUnreadCount();
+      if (isOpen) {
+        void refreshMessageNotifications();
+      }
+    };
+
+    window.addEventListener(
+      "messagerie-updated",
+      handleMessagingUpdate as EventListener,
+    );
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener(
+        "messagerie-updated",
+        handleMessagingUpdate as EventListener,
+      );
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
-      refreshNotifications();
-      refreshUnreadCount();
+      void refreshNotifications();
+      void refreshUnreadCount();
+      void refreshMessageNotifications();
 
       const updatePosition = () => {
         if (!buttonRef.current) return;
@@ -162,6 +267,13 @@ export function NotificationBell() {
     }
   };
 
+  const handleMessageNotificationClick = (conversationId: string) => {
+    setIsOpen(false);
+    navigate(
+      `/messagerie?conversationId=${encodeURIComponent(conversationId)}`,
+    );
+  };
+
   return (
     <div className="relative z-50">
       <button
@@ -175,7 +287,7 @@ export function NotificationBell() {
         <Bell size={18} />
         {hasUnread ? (
           <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#E98A7D] px-1 text-[10px] font-black text-white">
-            {unreadCount > 99 ? "99+" : unreadCount}
+            {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
           </span>
         ) : null}
       </button>
@@ -201,6 +313,48 @@ export function NotificationBell() {
               </div>
 
               <div className="max-h-[360px] overflow-y-auto p-2">
+                <div className="mb-2 rounded-xl border border-gray-100 bg-[#F7F3E9]/40 p-2">
+                  <p className="px-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#436D75]">
+                    Messagerie
+                  </p>
+                  {isMessageLoading ? (
+                    <div className="px-2 py-4 text-center text-xs font-bold text-gray-400">
+                      Chargement des messages...
+                    </div>
+                  ) : messageNotifications.length === 0 ? (
+                    <div className="px-2 py-4 text-center text-xs font-bold text-gray-400">
+                      Aucun nouveau message.
+                    </div>
+                  ) : (
+                    <div className="mt-2 space-y-1">
+                      {messageNotifications.map((item) => (
+                        <button
+                          key={item.conversationId}
+                          type="button"
+                          onClick={() =>
+                            handleMessageNotificationClick(item.conversationId)
+                          }
+                          className="w-full rounded-lg bg-white px-3 py-2 text-left transition hover:bg-[#D9E8D1]/35"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#436D75]">
+                              {item.title}
+                            </p>
+                            <span className="text-[10px] font-bold text-gray-400">
+                              {item.createdAt
+                                ? formatRelativeDate(item.createdAt)
+                                : "A l'instant"}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-600">
+                            {item.subtitle}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {isLoading ? (
                   <div className="px-3 py-6 text-center text-xs font-bold text-gray-400">
                     Chargement...
