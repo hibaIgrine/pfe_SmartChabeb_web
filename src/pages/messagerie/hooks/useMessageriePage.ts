@@ -58,6 +58,16 @@ export function useMessageriePage() {
     null,
   );
   const [attachmentName, setAttachmentName] = useState("");
+  const [attachmentMimeType, setAttachmentMimeType] = useState("");
+
+  const updateMessageType = (nextType: MessengerMessageType) => {
+    setMessageType(nextType);
+    if (nextType === "TEXT") {
+      setAttachmentPreview(null);
+      setAttachmentName("");
+      setAttachmentMimeType("");
+    }
+  };
 
   const me = useMemo(() => {
     const raw = localStorage.getItem("user");
@@ -187,9 +197,16 @@ export function useMessageriePage() {
       const dataUrl = await fileToDataUrl(file);
       setAttachmentPreview(dataUrl);
       setAttachmentName(file.name);
+      setAttachmentMimeType(file.type || "");
     } catch {
       setError("Impossible de charger le fichier.");
     }
+  };
+
+  const clearAttachment = () => {
+    setAttachmentPreview(null);
+    setAttachmentName("");
+    setAttachmentMimeType("");
   };
 
   const sendMessage = async () => {
@@ -266,14 +283,16 @@ export function useMessageriePage() {
     composerText,
     setComposerText,
     messageType,
-    setMessageType,
+    setMessageType: updateMessageType,
     selectedRecipientId,
     setSelectedRecipientId,
     searchRecipient,
     setSearchRecipient,
     attachmentPreview,
     attachmentName,
+    attachmentMimeType,
     handleAttachmentChange,
+    clearAttachment,
     refreshConversations,
     startPrivateConversation,
     openOrReloadConversation,

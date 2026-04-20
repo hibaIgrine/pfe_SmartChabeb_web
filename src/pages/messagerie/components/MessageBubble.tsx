@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Download, Printer, X } from "lucide-react";
 import type { MessengerMessage } from "../types";
 
 type MessageBubbleProps = {
@@ -5,7 +7,32 @@ type MessageBubbleProps = {
   isMine: boolean;
 };
 
-function renderMedia(message: MessengerMessage) {
+type AttachmentPreview = {
+  value: string;
+  fileName: string;
+  mimeType: string;
+};
+
+function getDataUrlMimeType(value: string) {
+  const match = /^data:([^;]+);/i.exec(value);
+  return match?.[1] ?? "";
+}
+
+function getAttachmentMeta(message: MessengerMessage, value: string) {
+  const mimeType =
+    message.type === "IMAGE"
+      ? getDataUrlMimeType(value) || "image/*"
+      : message.type === "VIDEO"
+        ? getDataUrlMimeType(value) || "video/*"
+        : getDataUrlMimeType(value) || "application/octet-stream";
+
+  return { mimeType };
+}
+
+function renderMedia(
+  message: MessengerMessage,
+  onOpen: (value: string, fileName: string) => void,
+) {
   if (!message.media || message.media.length === 0) {
     return null;
   }
@@ -19,36 +46,73 @@ function renderMedia(message: MessengerMessage) {
 
         if (message.type === "IMAGE") {
           return (
-            <img
+            <button
               key={`${message.id}-${index}`}
-              src={item}
-              alt="Pièce jointe"
-              className="max-h-72 w-full rounded-2xl object-cover"
-            />
+              type="button"
+              onClick={() => onOpen(item, `image-${index + 1}`)}
+              className="block w-full overflow-hidden rounded-2xl border border-white/20 bg-white/10 text-left transition hover:bg-white/15"
+            >
+              <img
+                src={item}
+                alt="Pièce jointe"
+                className="max-h-72 w-full object-cover"
+              />
+              <div className="px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] opacity-80">
+                  Image
+                </p>
+                <p className="text-sm font-semibold">Cliquer pour ouvrir</p>
+              </div>
+            </button>
           );
         }
 
         if (message.type === "VIDEO") {
           return (
-            <video
+            <button
               key={`${message.id}-${index}`}
-              src={item}
-              controls
-              className="max-h-72 w-full rounded-2xl bg-black"
-            />
+              type="button"
+              onClick={() => onOpen(item, `video-${index + 1}`)}
+              className="block w-full overflow-hidden rounded-2xl border border-white/20 bg-black text-left transition hover:opacity-90"
+            >
+              <video
+                src={item}
+                muted
+                className="max-h-72 w-full object-cover"
+              />
+              <div className="px-4 py-3 text-white">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] opacity-80">
+                  Vidéo
+                </p>
+                <p className="text-sm font-semibold">Cliquer pour ouvrir</p>
+              </div>
+            </button>
           );
         }
 
+        const mimeType = getDataUrlMimeType(item);
+        const isPdf = mimeType === "application/pdf";
+
         return (
-          <a
+          <button
             key={`${message.id}-${index}`}
-            href={item}
-            target="_blank"
-            rel="noreferrer"
-            className="block rounded-2xl border border-white/30 bg-white/10 px-4 py-3 text-sm font-semibold text-inherit underline decoration-dotted underline-offset-4"
+            type="button"
+            onClick={() => onOpen(item, `piece-jointe-${index + 1}`)}
+            className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-left transition hover:bg-white/15"
           >
-            Voir la pièce jointe
-          </a>
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] opacity-80">
+                {isPdf ? "PDF" : message.type}
+              </p>
+              <p className="truncate text-sm font-semibold">
+                Cliquer pour ouvrir
+              </p>
+            </div>
+
+            <span className="rounded-full border border-white/25 bg-white/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-inherit">
+              Ouvrir pièce jointe
+            </span>
+          </button>
         );
       })}
     </div>
@@ -56,41 +120,164 @@ function renderMedia(message: MessengerMessage) {
 }
 
 export function MessageBubble({ message, isMine }: MessageBubbleProps) {
+  const [preview, setPreview] = useState<AttachmentPreview | null>(null);
+
+  const openPreview = (value: string, fileName: string) => {
+    const { mimeType } = getAttachmentMeta(message, value);
+    setPreview({ value, fileName, mimeType });
+  };
+
+  const closePreview = () => setPreview(null);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
-    <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-      <div
-        className={`max-w-[78%] rounded-[26px] px-4 py-3 shadow-sm ${
-          isMine
-            ? "bg-[#436D75] text-white"
-            : "border border-gray-100 bg-white text-gray-800"
-        }`}
-      >
-        {!isMine ? (
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#436D75]">
-            {message.sender.nom} {message.sender.prenom}
-          </p>
-        ) : null}
-        {message.content ? (
-          <p
-            className={`mt-1 whitespace-pre-wrap text-sm leading-relaxed ${isMine ? "text-white" : "text-gray-700"}`}
-          >
-            {message.content}
-          </p>
-        ) : null}
-        {renderMedia(message)}
+    <>
+      <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
         <div
-          className={`mt-2 flex items-center justify-end gap-2 text-[10px] font-bold ${isMine ? "text-white/70" : "text-gray-400"}`}
+          className={`max-w-[78%] rounded-[26px] px-4 py-3 shadow-sm ${
+            isMine
+              ? "bg-[#436D75] text-white"
+              : "border border-gray-100 bg-white text-gray-800"
+          }`}
         >
-          <span>
-            {new Date(message.created_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
-          <span>•</span>
-          <span>{message.status}</span>
+          {!isMine ? (
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#436D75]">
+              {message.sender.nom} {message.sender.prenom}
+            </p>
+          ) : null}
+
+          {message.content ? (
+            <p
+              className={`mt-1 whitespace-pre-wrap text-sm leading-relaxed ${isMine ? "text-white" : "text-gray-700"}`}
+            >
+              {message.content}
+            </p>
+          ) : null}
+
+          {renderMedia(message, openPreview)}
+
+          <div
+            className={`mt-2 flex items-center justify-end gap-2 text-[10px] font-bold ${isMine ? "text-white/70" : "text-gray-400"}`}
+          >
+            <span>
+              {new Date(message.created_at).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+            <span>•</span>
+            <span>{message.status}</span>
+          </div>
         </div>
       </div>
-    </div>
+
+      {preview ? (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-4xl rounded-[30px] border border-white/30 bg-white shadow-2xl">
+            <style>{`
+              @media print {
+                body * {
+                  visibility: hidden;
+                }
+                .attachment-modal,
+                .attachment-modal * {
+                  visibility: visible;
+                }
+                .attachment-modal {
+                  position: static !important;
+                  width: 100% !important;
+                  max-width: 100% !important;
+                  box-shadow: none !important;
+                  border: none !important;
+                }
+              }
+            `}</style>
+
+            <div className="attachment-modal">
+              <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#436D75]">
+                    Pièce jointe
+                  </p>
+                  <p className="truncate text-sm font-semibold text-gray-700">
+                    {preview.fileName}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <a
+                    href={preview.value}
+                    download={preview.fileName}
+                    className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-[#436D75] transition hover:bg-[#F7F3E9]"
+                  >
+                    <Download size={12} />
+                    Télécharger
+                  </a>
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-[#436D75] transition hover:bg-[#F7F3E9]"
+                  >
+                    <Printer size={12} />
+                    Imprimer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closePreview}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#436D75] px-4 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white transition hover:bg-black"
+                  >
+                    <X size={12} />
+                    Fermer
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-5">
+                {message.type === "IMAGE" ? (
+                  <img
+                    src={preview.value}
+                    alt={preview.fileName}
+                    className="max-h-[75vh] w-full rounded-[24px] object-contain"
+                  />
+                ) : null}
+
+                {message.type === "VIDEO" ? (
+                  <video
+                    src={preview.value}
+                    controls
+                    autoPlay
+                    className="max-h-[75vh] w-full rounded-[24px] bg-black"
+                  />
+                ) : null}
+
+                {message.type === "DOCUMENT" ? (
+                  <div className="space-y-4">
+                    {preview.mimeType === "application/pdf" ? (
+                      <iframe
+                        src={preview.value}
+                        title={preview.fileName}
+                        className="h-[75vh] w-full rounded-[24px] border border-gray-200"
+                      />
+                    ) : (
+                      <div className="rounded-[24px] border border-dashed border-gray-200 bg-[#F7F3E9]/50 p-6">
+                        <p className="text-lg font-black text-gray-900">
+                          Aperçu indisponible pour ce format
+                        </p>
+                        <p className="mt-2 text-sm text-gray-500">
+                          Utilisez les boutons imprimer ou télécharger.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

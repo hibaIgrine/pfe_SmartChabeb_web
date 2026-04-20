@@ -49,10 +49,13 @@ export default function MessageriePage() {
           submitting={page.submitting}
           composerText={page.composerText}
           messageType={page.messageType}
+          attachmentPreview={page.attachmentPreview}
           attachmentName={page.attachmentName}
+          attachmentMimeType={page.attachmentMimeType}
           onComposerTextChange={page.setComposerText}
           onMessageTypeChange={page.setMessageType}
           onAttachmentChange={page.handleAttachmentChange}
+          onClearAttachment={page.clearAttachment}
           onSendMessage={page.sendMessage}
         />
       </div>

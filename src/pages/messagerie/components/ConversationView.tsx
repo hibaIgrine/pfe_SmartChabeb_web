@@ -1,4 +1,5 @@
-import { Paperclip, Send } from "lucide-react";
+import { FileImage, FileText, Send, Type, Video, X } from "lucide-react";
+import { useRef } from "react";
 import type { ChangeEvent } from "react";
 import { MessageBubble } from "./MessageBubble";
 import type {
@@ -15,10 +16,13 @@ type ConversationViewProps = {
   submitting: boolean;
   composerText: string;
   messageType: MessengerMessageType;
+  attachmentPreview: string | null;
   attachmentName: string;
+  attachmentMimeType: string;
   onComposerTextChange: (value: string) => void;
   onMessageTypeChange: (value: MessengerMessageType) => void;
   onAttachmentChange: (file: File | null) => void;
+  onClearAttachment: () => void;
   onSendMessage: () => void;
 };
 
@@ -30,16 +34,48 @@ export function ConversationView({
   submitting,
   composerText,
   messageType,
+  attachmentPreview,
   attachmentName,
+  attachmentMimeType,
   onComposerTextChange,
   onMessageTypeChange,
   onAttachmentChange,
+  onClearAttachment,
   onSendMessage,
 }: ConversationViewProps) {
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
+  const documentInputRef = useRef<HTMLInputElement | null>(null);
+
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     onAttachmentChange(event.target.files?.[0] ?? null);
     event.target.value = "";
   };
+
+  const openPickerForType = (nextType: MessengerMessageType) => {
+    onMessageTypeChange(nextType);
+
+    if (nextType === "IMAGE") {
+      imageInputRef.current?.click();
+      return;
+    }
+
+    if (nextType === "VIDEO") {
+      videoInputRef.current?.click();
+      return;
+    }
+
+    if (nextType === "DOCUMENT") {
+      documentInputRef.current?.click();
+    }
+  };
+
+  const typeActionClass = (targetType: MessengerMessageType) =>
+    `inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition ${
+      messageType === targetType
+        ? "border-[#436D75] bg-[#436D75] text-white"
+        : "border-gray-200 bg-white text-[#436D75] hover:bg-[#F7F3E9]"
+    }`;
 
   if (!conversation) {
     return (
@@ -97,20 +133,75 @@ export function ConversationView({
       </div>
 
       <footer className="border-t border-gray-100 p-4">
-        <div className="grid gap-3 md:grid-cols-[140px_1fr]">
-          <select
-            value={messageType}
-            onChange={(event) =>
-              onMessageTypeChange(event.target.value as MessengerMessageType)
-            }
-            className="h-12 rounded-2xl border border-gray-200 bg-[#F7F3E9]/60 px-4 text-sm font-semibold outline-none transition focus:border-[#436D75]/40 focus:bg-white"
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onMessageTypeChange("TEXT")}
+            className={typeActionClass("TEXT")}
+            title="Message texte"
           >
-            <option value="TEXT">Texte</option>
-            <option value="IMAGE">Image</option>
-            <option value="VIDEO">Vidéo</option>
-            <option value="DOCUMENT">Document</option>
-          </select>
+            <Type size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => openPickerForType("IMAGE")}
+            className={typeActionClass("IMAGE")}
+            title="Envoyer une image"
+          >
+            <FileImage size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => openPickerForType("VIDEO")}
+            className={typeActionClass("VIDEO")}
+            title="Envoyer une vidéo"
+          >
+            <Video size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => openPickerForType("DOCUMENT")}
+            className={typeActionClass("DOCUMENT")}
+            title="Envoyer un document"
+          >
+            <FileText size={18} />
+          </button>
 
+          {attachmentPreview ? (
+            <button
+              type="button"
+              onClick={onClearAttachment}
+              className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-gray-500 hover:bg-gray-50"
+            >
+              <X size={12} />
+              Retirer fichier
+            </button>
+          ) : null}
+
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <input
+            ref={documentInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+        </div>
+
+        <div className="grid gap-3">
           <textarea
             value={composerText}
             onChange={(event) => onComposerTextChange(event.target.value)}
@@ -122,15 +213,70 @@ export function ConversationView({
             }
             className="w-full resize-none rounded-2xl border border-gray-200 bg-[#F7F3E9]/60 px-4 py-3 text-sm outline-none transition focus:border-[#436D75]/40 focus:bg-white"
           />
+
+          {attachmentPreview ? (
+            <div className="rounded-2xl border border-gray-200 bg-white p-3">
+              {messageType === "IMAGE" ? (
+                <img
+                  src={attachmentPreview}
+                  alt="Aperçu image"
+                  className="max-h-64 w-full rounded-xl object-cover"
+                />
+              ) : null}
+
+              {messageType === "VIDEO" ? (
+                <video
+                  src={attachmentPreview}
+                  controls
+                  className="max-h-72 w-full rounded-xl bg-black"
+                />
+              ) : null}
+
+              {messageType === "DOCUMENT" ? (
+                <div className="space-y-3 rounded-xl border border-gray-100 bg-[#F7F3E9]/60 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-black uppercase tracking-[0.14em] text-[#436D75]">
+                        Document prêt
+                      </p>
+                      <p className="truncate text-sm text-gray-600">
+                        {attachmentName || "Fichier sélectionné"}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-white px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">
+                      {attachmentMimeType || "fichier"}
+                    </span>
+                  </div>
+
+                  {attachmentMimeType === "application/pdf" ? (
+                    <iframe
+                      src={attachmentPreview}
+                      title="Aperçu document PDF"
+                      className="h-96 w-full rounded-xl border border-gray-200 bg-white"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-3 rounded-xl border border-dashed border-gray-200 bg-white px-4 py-4">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#436D75]/10 text-[#436D75]">
+                        <FileText size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-black text-gray-900">
+                          {attachmentName || "Document sélectionné"}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Aperçu visuel limité pour ce format, mais le fichier
+                          est prêt à être envoyé.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#436D75] transition hover:bg-[#436D75]/5">
-            <Paperclip size={14} />
-            Joindre un fichier
-            <input type="file" className="hidden" onChange={handleFileChange} />
-          </label>
-
           <div className="flex items-center gap-3">
             {attachmentName ? (
               <span className="max-w-[180px] truncate rounded-full bg-[#D9E8D1]/40 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#436D75]">
