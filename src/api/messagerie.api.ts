@@ -58,6 +58,7 @@ export type MessengerConversationSummary = {
   last_message_at?: string | null;
   participant_count?: number;
   current_user_role?: string | null;
+  current_user_last_read_at?: string | null;
   current_user_archived_at?: string | null;
   current_user_muted_at?: string | null;
   current_user_muted_until?: string | null;

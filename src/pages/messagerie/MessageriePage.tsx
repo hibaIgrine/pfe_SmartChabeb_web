@@ -49,6 +49,7 @@ export default function MessageriePage() {
           <ConversationList
             conversations={page.conversations}
             activeConversationId={page.activeConversation?.id}
+            meId={page.me?.id}
             loading={page.loadingConversations}
             onOpenConversation={page.openOrReloadConversation}
             onArchiveConversation={page.archiveConversationById}

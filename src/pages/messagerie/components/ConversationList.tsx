@@ -6,12 +6,18 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import { ConversationFilters } from "./ConversationFilters";
+import {
+  filterConversations,
+  type ConversationListFilterMode,
+} from "../conversationFilters";
 import type { MessengerConversationSummary } from "../types";
 import { getUserPresenceLabel } from "../utils/presence";
 
 type ConversationListProps = {
   conversations: MessengerConversationSummary[];
   activeConversationId?: string | null;
+  meId?: string | null;
   loading: boolean;
   onOpenConversation: (conversationId: string) => void;
   onArchiveConversation: (conversationId: string, isArchived: boolean) => void;
@@ -33,6 +39,7 @@ function formatRelativeDate(value?: string | null) {
 export function ConversationList({
   conversations,
   activeConversationId,
+  meId,
   loading,
   onOpenConversation,
   onArchiveConversation,
@@ -42,12 +49,14 @@ export function ConversationList({
   const [menuConversationId, setMenuConversationId] = useState<string | null>(
     null,
   );
-  const [filterMode, setFilterMode] = useState<"NORMAL" | "ARCHIVED">("NORMAL");
+  const [filterMode, setFilterMode] =
+    useState<ConversationListFilterMode>("ALL");
 
-  const filteredConversations = conversations.filter((conversation) => {
-    const isArchived = Boolean(conversation.current_user_archived_at);
-    return filterMode === "ARCHIVED" ? isArchived : !isArchived;
-  });
+  const filteredConversations = filterConversations(
+    conversations,
+    filterMode,
+    meId,
+  );
 
   return (
     <section className="flex h-full flex-col rounded-[28px] border border-white bg-white/85 shadow-xl backdrop-blur-md">
@@ -70,32 +79,7 @@ export function ConversationList({
         </button>
       </div>
 
-      <div className="px-4 pb-2 pt-3">
-        <div className="inline-flex rounded-full border border-gray-200 bg-white p-1">
-          <button
-            type="button"
-            onClick={() => setFilterMode("NORMAL")}
-            className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition ${
-              filterMode === "NORMAL"
-                ? "bg-[#436D75] text-white"
-                : "text-[#436D75] hover:bg-[#F7F3E9]"
-            }`}
-          >
-            Normal
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterMode("ARCHIVED")}
-            className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition ${
-              filterMode === "ARCHIVED"
-                ? "bg-[#436D75] text-white"
-                : "text-[#436D75] hover:bg-[#F7F3E9]"
-            }`}
-          >
-            Archivé
-          </button>
-        </div>
-      </div>
+      <ConversationFilters value={filterMode} onChange={setFilterMode} />
 
       <div className="flex-1 overflow-y-auto p-3">
         {loading ? (
@@ -106,7 +90,11 @@ export function ConversationList({
           <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm font-medium text-gray-400">
             {filterMode === "ARCHIVED"
               ? "Aucune conversation archivée."
-              : "Aucune conversation normale."}
+              : filterMode === "UNREAD"
+                ? "Aucune conversation non lue."
+                : filterMode === "GROUP"
+                  ? "Aucune conversation de groupe."
+                  : "Aucune conversation pour le moment."}
           </div>
         ) : (
           <div className="space-y-2">
