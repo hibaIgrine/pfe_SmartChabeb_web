@@ -17,6 +17,7 @@ import {
   sendPresenceHeartbeat,
   sendConversationMessage,
   setPresenceOffline,
+  updateConversationArchive,
   updateConversationMessagePin,
   updateConversationMessage,
 } from "../../../api/messagerie.api";
@@ -324,7 +325,11 @@ export function useMessageriePage() {
 
   useEffect(() => {
     if (conversations.length > 0 && !activeConversation) {
-      void openConversation(conversations[0].id);
+      const firstNormalConversation = conversations.find(
+        (item) => !item.current_user_archived_at,
+      );
+
+      void openConversation((firstNormalConversation ?? conversations[0]).id);
     }
   }, [activeConversation, conversations]);
 
@@ -750,6 +755,50 @@ export function useMessageriePage() {
     }
   };
 
+  const archiveConversationById = async (
+    conversationId: string,
+    isArchived: boolean,
+  ) => {
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      const result = await updateConversationArchive(
+        conversationId,
+        isArchived,
+      );
+
+      setConversations((prev) =>
+        prev.map((item) =>
+          item.id === conversationId
+            ? {
+                ...item,
+                current_user_archived_at: result.archived_at,
+              }
+            : item,
+        ),
+      );
+
+      setActiveConversation((prev) => {
+        if (!prev || prev.id !== conversationId) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          current_user_archived_at: result.archived_at,
+        };
+      });
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          "Impossible de mettre à jour l'archive de la conversation.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const editMessage = async (messageId: string, content: string) => {
     if (!activeConversation) return;
 
@@ -910,6 +959,7 @@ export function useMessageriePage() {
     startGroupConversation,
     openOrReloadConversation,
     deleteConversationById,
+    archiveConversationById,
     sendMessage,
     editMessage,
     deleteMessageForMe,

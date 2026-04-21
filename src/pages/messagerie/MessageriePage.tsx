@@ -51,6 +51,7 @@ export default function MessageriePage() {
             activeConversationId={page.activeConversation?.id}
             loading={page.loadingConversations}
             onOpenConversation={page.openOrReloadConversation}
+            onArchiveConversation={page.archiveConversationById}
             onDeleteConversation={page.deleteConversationById}
             onRefresh={page.refreshConversations}
           />

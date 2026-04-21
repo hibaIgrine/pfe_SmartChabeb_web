@@ -1,4 +1,10 @@
-import { MoreVertical, Search, Trash2 } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  MoreVertical,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import type { MessengerConversationSummary } from "../types";
 import { getUserPresenceLabel } from "../utils/presence";
@@ -8,6 +14,7 @@ type ConversationListProps = {
   activeConversationId?: string | null;
   loading: boolean;
   onOpenConversation: (conversationId: string) => void;
+  onArchiveConversation: (conversationId: string, isArchived: boolean) => void;
   onDeleteConversation: (conversationId: string) => void;
   onRefresh: () => void;
 };
@@ -28,12 +35,19 @@ export function ConversationList({
   activeConversationId,
   loading,
   onOpenConversation,
+  onArchiveConversation,
   onDeleteConversation,
   onRefresh,
 }: ConversationListProps) {
   const [menuConversationId, setMenuConversationId] = useState<string | null>(
     null,
   );
+  const [filterMode, setFilterMode] = useState<"NORMAL" | "ARCHIVED">("NORMAL");
+
+  const filteredConversations = conversations.filter((conversation) => {
+    const isArchived = Boolean(conversation.current_user_archived_at);
+    return filterMode === "ARCHIVED" ? isArchived : !isArchived;
+  });
 
   return (
     <section className="flex h-full flex-col rounded-[28px] border border-white bg-white/85 shadow-xl backdrop-blur-md">
@@ -56,19 +70,49 @@ export function ConversationList({
         </button>
       </div>
 
+      <div className="px-4 pb-2 pt-3">
+        <div className="inline-flex rounded-full border border-gray-200 bg-white p-1">
+          <button
+            type="button"
+            onClick={() => setFilterMode("NORMAL")}
+            className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition ${
+              filterMode === "NORMAL"
+                ? "bg-[#436D75] text-white"
+                : "text-[#436D75] hover:bg-[#F7F3E9]"
+            }`}
+          >
+            Normal
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterMode("ARCHIVED")}
+            className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition ${
+              filterMode === "ARCHIVED"
+                ? "bg-[#436D75] text-white"
+                : "text-[#436D75] hover:bg-[#F7F3E9]"
+            }`}
+          >
+            Archivé
+          </button>
+        </div>
+      </div>
+
       <div className="flex-1 overflow-y-auto p-3">
         {loading ? (
           <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm font-medium text-gray-400">
             Chargement des conversations...
           </div>
-        ) : conversations.length === 0 ? (
+        ) : filteredConversations.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm font-medium text-gray-400">
-            Aucune conversation pour le moment.
+            {filterMode === "ARCHIVED"
+              ? "Aucune conversation archivée."
+              : "Aucune conversation normale."}
           </div>
         ) : (
           <div className="space-y-2">
-            {conversations.map((conversation) => {
+            {filteredConversations.map((conversation) => {
               const isActive = conversation.id === activeConversationId;
+              const isArchived = Boolean(conversation.current_user_archived_at);
               const counterpartName =
                 conversation.type === "group"
                   ? conversation.title || "Groupe sans nom"
@@ -147,9 +191,26 @@ export function ConversationList({
                           onClick={(event) => {
                             event.stopPropagation();
                             setMenuConversationId(null);
+                            onArchiveConversation(conversation.id, !isArchived);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-gray-700 transition hover:bg-[#F7F3E9]"
+                        >
+                          {isArchived ? (
+                            <ArchiveRestore size={13} />
+                          ) : (
+                            <Archive size={13} />
+                          )}
+                          {isArchived ? "Désarchiver" : "Archiver"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setMenuConversationId(null);
                             onDeleteConversation(conversation.id);
                           }}
-                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-red-700 transition hover:bg-red-50"
+                          className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-red-700 transition hover:bg-red-50"
                         >
                           <Trash2 size={13} />
                           Supprimer conversation

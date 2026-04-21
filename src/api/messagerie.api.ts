@@ -18,6 +18,7 @@ export type MessengerParticipant = {
   user_id: string;
   role: string;
   joined_at: string;
+  archived_at?: string | null;
   last_read_at?: string | null;
   user: MessengerUser;
 };
@@ -55,6 +56,7 @@ export type MessengerConversationSummary = {
   last_message_at?: string | null;
   participant_count?: number;
   current_user_role?: string | null;
+  current_user_archived_at?: string | null;
   counterpart?: MessengerUser | null;
   last_message?: MessengerMessage | null;
 };
@@ -184,6 +186,21 @@ export async function deleteConversation(conversationId: string) {
     scope: "ME" | "EVERYONE";
     conversationId: string;
   }>(`/messagerie/conversations/${conversationId}`);
+
+  return response.data;
+}
+
+export async function updateConversationArchive(
+  conversationId: string,
+  isArchived: boolean,
+) {
+  const response = await api.patch<{
+    conversationId: string;
+    is_archived: boolean;
+    archived_at: string | null;
+  }>(`/messagerie/conversations/${conversationId}/archive`, {
+    is_archived: isArchived,
+  });
 
   return response.data;
 }
