@@ -19,6 +19,8 @@ export type MessengerParticipant = {
   role: string;
   joined_at: string;
   archived_at?: string | null;
+  muted_at?: string | null;
+  muted_until?: string | null;
   last_read_at?: string | null;
   user: MessengerUser;
 };
@@ -57,6 +59,9 @@ export type MessengerConversationSummary = {
   participant_count?: number;
   current_user_role?: string | null;
   current_user_archived_at?: string | null;
+  current_user_muted_at?: string | null;
+  current_user_muted_until?: string | null;
+  current_user_is_muted?: boolean;
   counterpart?: MessengerUser | null;
   last_message?: MessengerMessage | null;
 };
@@ -81,6 +86,11 @@ export type UpdateConversationTitlePayload = {
 
 export type UpdateConversationMembersPayload = {
   userIds: string[];
+};
+
+export type UpdateConversationMutePayload = {
+  is_muted: boolean;
+  mode?: "1H" | "UNTIL_REACTIVATED";
 };
 
 export type CreateMessengerMessagePayload = {
@@ -186,6 +196,21 @@ export async function deleteConversation(conversationId: string) {
     scope: "ME" | "EVERYONE";
     conversationId: string;
   }>(`/messagerie/conversations/${conversationId}`);
+
+  return response.data;
+}
+
+export async function updateConversationMute(
+  conversationId: string,
+  payload: UpdateConversationMutePayload,
+) {
+  const response = await api.patch<{
+    conversationId: string;
+    is_muted: boolean;
+    muted_at: string | null;
+    muted_until: string | null;
+    mode: "1H" | "UNTIL_REACTIVATED" | null;
+  }>(`/messagerie/conversations/${conversationId}/mute`, payload);
 
   return response.data;
 }

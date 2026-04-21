@@ -18,6 +18,7 @@ import {
   sendConversationMessage,
   setPresenceOffline,
   updateConversationArchive,
+  updateConversationMute,
   updateConversationMessagePin,
   updateConversationMessage,
 } from "../../../api/messagerie.api";
@@ -799,6 +800,51 @@ export function useMessageriePage() {
     }
   };
 
+  const muteConversationById = async (
+    conversationId: string,
+    payload: { is_muted: boolean; mode?: "1H" | "UNTIL_REACTIVATED" },
+  ) => {
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      const result = await updateConversationMute(conversationId, payload);
+
+      setConversations((prev) =>
+        prev.map((item) =>
+          item.id === conversationId
+            ? {
+                ...item,
+                current_user_muted_at: result.muted_at,
+                current_user_muted_until: result.muted_until,
+                current_user_is_muted: result.is_muted,
+              }
+            : item,
+        ),
+      );
+
+      setActiveConversation((prev) => {
+        if (!prev || prev.id !== conversationId) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          current_user_muted_at: result.muted_at,
+          current_user_muted_until: result.muted_until,
+          current_user_is_muted: result.is_muted,
+        };
+      });
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          "Impossible de mettre à jour le mute de la conversation.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const editMessage = async (messageId: string, content: string) => {
     if (!activeConversation) return;
 
@@ -960,6 +1006,7 @@ export function useMessageriePage() {
     openOrReloadConversation,
     deleteConversationById,
     archiveConversationById,
+    muteConversationById,
     sendMessage,
     editMessage,
     deleteMessageForMe,

@@ -164,6 +164,7 @@ export default function MessageriePage() {
           onDeleteMessageForMe={page.deleteMessageForMe}
           onDeleteMessageForEveryone={page.deleteMessageForEveryone}
           onToggleMessagePin={page.toggleMessagePin}
+          onMuteConversation={page.muteConversationById}
           onDeleteConversation={page.deleteConversationById}
           onRenameGroup={page.renameActiveGroup}
           onAddGroupMembers={page.addMembersToActiveGroup}

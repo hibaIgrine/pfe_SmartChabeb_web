@@ -124,6 +124,7 @@ export function ConversationList({
                 conversation.type === "group"
                   ? `${conversation.participant_count ?? 0} membres`
                   : getUserPresenceLabel(conversation.counterpart);
+              const isMuted = Boolean(conversation.current_user_is_muted);
 
               return (
                 <div
@@ -146,6 +147,11 @@ export function ConversationList({
                         </p>
                         <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#436D75]/70">
                           {metadata}
+                          {isMuted ? (
+                            <span className="ml-2 rounded-full bg-gray-900 px-2 py-0.5 text-[9px] text-white">
+                              Muet
+                            </span>
+                          ) : null}
                         </p>
                       </div>
                       <span className="text-[10px] font-bold text-gray-400">

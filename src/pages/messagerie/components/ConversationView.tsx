@@ -15,6 +15,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { ConversationMessageSearch } from "./ConversationMessageSearch";
+import { ConversationMuteMenu } from "./ConversationMuteMenu";
 import { GroupManagementPanel } from "./GroupManagementPanel";
 import { MessageBubble } from "./MessageBubble";
 import { VoiceMessageRecorder } from "./VoiceMessageRecorder";
@@ -53,6 +54,13 @@ type ConversationViewProps = {
   onDeleteMessageForMe: (messageId: string) => void;
   onDeleteMessageForEveryone: (messageId: string) => void;
   onToggleMessagePin: (messageId: string, isPinned: boolean) => void;
+  onMuteConversation: (
+    conversationId: string,
+    payload: {
+      is_muted: boolean;
+      mode?: "1H" | "UNTIL_REACTIVATED";
+    },
+  ) => void;
   onDeleteConversation: (conversationId: string) => void;
   onRenameGroup: (title: string) => void;
   onAddGroupMembers: (userIds: string[]) => void;
@@ -82,6 +90,7 @@ export function ConversationView({
   onDeleteMessageForMe,
   onDeleteMessageForEveryone,
   onToggleMessagePin,
+  onMuteConversation,
   onDeleteConversation,
   onRenameGroup,
   onAddGroupMembers,
@@ -92,6 +101,7 @@ export function ConversationView({
   const documentInputRef = useRef<HTMLInputElement | null>(null);
   const messageNodesRef = useRef<Record<string, HTMLDivElement | null>>({});
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [muteMenuOpen, setMuteMenuOpen] = useState(false);
   const [messageSearchOpen, setMessageSearchOpen] = useState(false);
   const [pinnedMessagesOpen, setPinnedMessagesOpen] = useState(false);
   const [messageSearchQuery, setMessageSearchQuery] = useState("");
@@ -104,6 +114,7 @@ export function ConversationView({
 
   useEffect(() => {
     setHeaderMenuOpen(false);
+    setMuteMenuOpen(false);
     setMessageSearchOpen(false);
     setPinnedMessagesOpen(false);
     setMessageSearchQuery("");
@@ -194,6 +205,7 @@ export function ConversationView({
 
   const isGroupConversation = conversation.type === "group";
   const canManageGroup = conversation.current_user_role === "ADMIN";
+  const isConversationMuted = Boolean(conversation.current_user_is_muted);
   const conversationTitle = isGroupConversation
     ? conversation.title || "Groupe sans nom"
     : conversation.counterpart
@@ -227,7 +239,7 @@ export function ConversationView({
 
   return (
     <section className="flex h-full flex-col rounded-[28px] border border-white bg-white/85 shadow-xl backdrop-blur-md">
-      <header className="border-b border-gray-100 px-5 py-4">
+      <header className="relative border-b border-gray-100 px-5 py-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#436D75]">
@@ -297,6 +309,7 @@ export function ConversationView({
                   onClick={() => {
                     setMessageSearchOpen(true);
                     setPinnedMessagesOpen(false);
+                    setMuteMenuOpen(false);
                     setHeaderMenuOpen(false);
                   }}
                   className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
@@ -310,12 +323,29 @@ export function ConversationView({
                   onClick={() => {
                     setPinnedMessagesOpen((prev) => !prev);
                     setMessageSearchOpen(false);
+                    setMuteMenuOpen(false);
                     setHeaderMenuOpen(false);
                   }}
                   className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
                 >
                   <Pin size={14} />
                   Messages épinglés
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMuteMenuOpen((prev) => !prev);
+                    setMessageSearchOpen(false);
+                    setPinnedMessagesOpen(false);
+                    setHeaderMenuOpen(false);
+                  }}
+                  className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
+                >
+                  <Pin size={14} />
+                  {isConversationMuted
+                    ? "Notifications coupées"
+                    : "Couper notifications"}
                 </button>
 
                 {isGroupConversation ? (
@@ -358,6 +388,33 @@ export function ConversationView({
                 </button>
               </div>
             ) : null}
+
+            <ConversationMuteMenu
+              open={muteMenuOpen}
+              isMuted={isConversationMuted}
+              onMuteForOneHour={() => {
+                if (!conversation) return;
+                onMuteConversation(conversation.id, {
+                  is_muted: true,
+                  mode: "1H",
+                });
+                setMuteMenuOpen(false);
+              }}
+              onMuteUntilReactivated={() => {
+                if (!conversation) return;
+                onMuteConversation(conversation.id, {
+                  is_muted: true,
+                  mode: "UNTIL_REACTIVATED",
+                });
+                setMuteMenuOpen(false);
+              }}
+              onUnmute={() => {
+                if (!conversation) return;
+                onMuteConversation(conversation.id, { is_muted: false });
+                setMuteMenuOpen(false);
+              }}
+              onClose={() => setMuteMenuOpen(false)}
+            />
           </div>
         </div>
 

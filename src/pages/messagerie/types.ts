@@ -21,3 +21,5 @@ export type MessageDraftAttachment = {
   mediaUrl: string;
   fileName: string;
 };
+
+export type ConversationMuteMode = "1H" | "UNTIL_REACTIVATED";
