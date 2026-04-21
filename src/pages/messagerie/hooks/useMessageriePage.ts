@@ -17,6 +17,7 @@ import {
   sendPresenceHeartbeat,
   sendConversationMessage,
   setPresenceOffline,
+  updateConversationMessagePin,
   updateConversationMessage,
 } from "../../../api/messagerie.api";
 import {
@@ -847,6 +848,30 @@ export function useMessageriePage() {
     }
   };
 
+  const toggleMessagePin = async (messageId: string, isPinned: boolean) => {
+    if (!activeConversation) return;
+
+    try {
+      setSubmitting(true);
+      const updated = await updateConversationMessagePin(
+        activeConversation.id,
+        messageId,
+        isPinned,
+      );
+
+      setActiveMessages((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item)),
+      );
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          "Impossible de mettre à jour l'épinglage de ce message.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return {
     me,
     users,
@@ -889,6 +914,7 @@ export function useMessageriePage() {
     editMessage,
     deleteMessageForMe,
     deleteMessageForEveryone,
+    toggleMessagePin,
     renameActiveGroup,
     addMembersToActiveGroup,
     removeMemberFromActiveGroup,

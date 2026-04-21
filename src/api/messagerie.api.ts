@@ -33,11 +33,14 @@ export type MessengerMessage = {
   created_at: string;
   updated_at: string;
   edited_at?: string | null;
+  pinned_at?: string | null;
+  pinned_by?: string | null;
   delivered_at?: string | null;
   read_at?: string | null;
   deleted_for_everyone_at?: string | null;
   deleted_for_everyone_by?: string | null;
   sender: MessengerUser;
+  pinned_by_user?: MessengerUser | null;
 };
 
 export type DeleteMessageScope = "ME" | "EVERYONE";
@@ -205,6 +208,21 @@ export async function updateConversationMessage(
     `/messagerie/conversations/${conversationId}/messages/${messageId}`,
     payload,
   );
+  return response.data;
+}
+
+export async function updateConversationMessagePin(
+  conversationId: string,
+  messageId: string,
+  isPinned: boolean,
+) {
+  const response = await api.patch<MessengerMessage>(
+    `/messagerie/conversations/${conversationId}/messages/${messageId}/pin`,
+    {
+      is_pinned: isPinned,
+    },
+  );
+
   return response.data;
 }
 

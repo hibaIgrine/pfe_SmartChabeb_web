@@ -2,6 +2,7 @@ import {
   FileImage,
   FileText,
   MoreVertical,
+  Pin,
   Search,
   Send,
   Settings,
@@ -51,6 +52,7 @@ type ConversationViewProps = {
   onEditMessage: (messageId: string, content: string) => void;
   onDeleteMessageForMe: (messageId: string) => void;
   onDeleteMessageForEveryone: (messageId: string) => void;
+  onToggleMessagePin: (messageId: string, isPinned: boolean) => void;
   onDeleteConversation: (conversationId: string) => void;
   onRenameGroup: (title: string) => void;
   onAddGroupMembers: (userIds: string[]) => void;
@@ -79,6 +81,7 @@ export function ConversationView({
   onEditMessage,
   onDeleteMessageForMe,
   onDeleteMessageForEveryone,
+  onToggleMessagePin,
   onDeleteConversation,
   onRenameGroup,
   onAddGroupMembers,
@@ -90,6 +93,7 @@ export function ConversationView({
   const messageNodesRef = useRef<Record<string, HTMLDivElement | null>>({});
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [messageSearchOpen, setMessageSearchOpen] = useState(false);
+  const [pinnedMessagesOpen, setPinnedMessagesOpen] = useState(false);
   const [messageSearchQuery, setMessageSearchQuery] = useState("");
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(
     null,
@@ -101,6 +105,7 @@ export function ConversationView({
   useEffect(() => {
     setHeaderMenuOpen(false);
     setMessageSearchOpen(false);
+    setPinnedMessagesOpen(false);
     setMessageSearchQuery("");
     setSelectedMessageId(null);
     setOpenGroupPanel(null);
@@ -116,6 +121,27 @@ export function ConversationView({
       behavior: "smooth",
       block: "center",
     });
+  };
+
+  const pinnedMessages = messages
+    .filter((message) => Boolean(message.pinned_at))
+    .sort(
+      (a, b) =>
+        new Date(b.pinned_at ?? b.created_at).getTime() -
+        new Date(a.pinned_at ?? a.created_at).getTime(),
+    );
+
+  const latestPinnedMessage = pinnedMessages[0] ?? null;
+
+  const formatPinnedMessagePreview = (message: MessengerMessage) => {
+    const text = (message.content ?? "").trim();
+    if (text) {
+      return text;
+    }
+
+    if (message.type === "IMAGE") return "Image";
+    if (message.type === "VIDEO") return "Vidéo";
+    return "Pièce jointe";
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -270,12 +296,26 @@ export function ConversationView({
                   type="button"
                   onClick={() => {
                     setMessageSearchOpen(true);
+                    setPinnedMessagesOpen(false);
                     setHeaderMenuOpen(false);
                   }}
                   className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
                 >
                   <Search size={14} />
                   Rechercher un message
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPinnedMessagesOpen((prev) => !prev);
+                    setMessageSearchOpen(false);
+                    setHeaderMenuOpen(false);
+                  }}
+                  className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition hover:bg-[#F7F3E9]"
+                >
+                  <Pin size={14} />
+                  Messages épinglés
                 </button>
 
                 {isGroupConversation ? (
@@ -334,6 +374,42 @@ export function ConversationView({
           }}
           onSelectMessage={handleSelectSearchResult}
         />
+
+        {pinnedMessagesOpen ? (
+          <div className="mt-3 rounded-2xl border border-gray-200 bg-[#F7F3E9]/70 p-2">
+            {pinnedMessages.length === 0 ? (
+              <p className="px-2 py-3 text-sm text-gray-500">
+                Aucun message épinglé pour le moment.
+              </p>
+            ) : (
+              <div className="max-h-52 space-y-1 overflow-y-auto pr-1">
+                {pinnedMessages.map((message) => (
+                  <button
+                    key={message.id}
+                    type="button"
+                    onClick={() => {
+                      handleSelectSearchResult(message.id);
+                      setPinnedMessagesOpen(false);
+                    }}
+                    className="flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-white"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-gray-800">
+                        {formatPinnedMessagePreview(message)}
+                      </p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.14em] text-gray-400">
+                        {new Date(
+                          message.pinned_at ?? message.created_at,
+                        ).toLocaleString()}
+                      </p>
+                    </div>
+                    <Pin size={13} className="mt-1 shrink-0 text-[#436D75]" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
       </header>
 
       {isGroupConversation && openGroupPanel ? (
@@ -398,12 +474,20 @@ export function ConversationView({
                   onEditMessage={onEditMessage}
                   onDeleteForMe={onDeleteMessageForMe}
                   onDeleteForEveryone={onDeleteMessageForEveryone}
+                  onTogglePin={onToggleMessagePin}
                 />
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {latestPinnedMessage?.pinned_by_user ? (
+        <div className="border-t border-gray-100 px-4 py-2 text-xs font-semibold text-[#436D75]">
+          {latestPinnedMessage.pinned_by_user.nom}{" "}
+          {latestPinnedMessage.pinned_by_user.prenom} a épinglé un message
+        </div>
+      ) : null}
 
       <footer className="border-t border-gray-100 p-4">
         <div className="mb-3 flex flex-wrap items-center gap-2">

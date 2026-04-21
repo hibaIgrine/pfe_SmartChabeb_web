@@ -4,6 +4,7 @@ import {
   Download,
   MoreVertical,
   Pencil,
+  Pin,
   Printer,
   Trash2,
   X,
@@ -17,6 +18,7 @@ type MessageBubbleProps = {
   onEditMessage: (messageId: string, content: string) => void;
   onDeleteForMe: (messageId: string) => void;
   onDeleteForEveryone: (messageId: string) => void;
+  onTogglePin: (messageId: string, isPinned: boolean) => void;
 };
 
 type AttachmentPreview = {
@@ -163,6 +165,7 @@ export function MessageBubble({
   onEditMessage,
   onDeleteForMe,
   onDeleteForEveryone,
+  onTogglePin,
 }: MessageBubbleProps) {
   const [preview, setPreview] = useState<AttachmentPreview | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -170,6 +173,7 @@ export function MessageBubble({
   const [draft, setDraft] = useState(message.content ?? "");
 
   const isDeletedForEveryone = Boolean(message.deleted_for_everyone_at);
+  const isPinned = Boolean(message.pinned_at);
   const canEdit = isMine && !isDeletedForEveryone && message.type === "TEXT";
 
   const handleStartEdit = () => {
@@ -197,6 +201,11 @@ export function MessageBubble({
   const handleDeleteForEveryone = () => {
     setMenuOpen(false);
     onDeleteForEveryone(message.id);
+  };
+
+  const handleTogglePin = () => {
+    setMenuOpen(false);
+    onTogglePin(message.id, !isPinned);
   };
 
   const openPreview = (value: string, fileName: string) => {
@@ -304,11 +313,23 @@ export function MessageBubble({
 
                 {menuOpen ? (
                   <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+                    {!isDeletedForEveryone ? (
+                      <button
+                        type="button"
+                        onClick={handleTogglePin}
+                        disabled={submitting}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-gray-700 transition hover:bg-[#F7F3E9] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Pin size={13} />
+                        {isPinned ? "Désépingler" : "Épingler"}
+                      </button>
+                    ) : null}
+
                     {canEdit ? (
                       <button
                         type="button"
                         onClick={handleStartEdit}
-                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-gray-700 transition hover:bg-[#F7F3E9]"
+                        className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold text-gray-700 transition hover:bg-[#F7F3E9]"
                       >
                         <Pencil size={13} />
                         Modifier
