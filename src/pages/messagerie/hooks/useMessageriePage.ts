@@ -29,6 +29,7 @@ import {
   leaveConversationSocketRoom,
   subscribeTypingUpdates,
 } from "../../../api/messagerie.socket";
+import { getConversationSortTime } from "../conversationFilters";
 import type {
   MessengerConversation,
   MessengerConversationSummary,
@@ -44,6 +45,13 @@ async function fileToDataUrl(file: File) {
     reader.onerror = () => reject(new Error("Impossible de lire le fichier"));
     reader.readAsDataURL(file);
   });
+}
+
+function sortConversationsByRecency(items: MessengerConversationSummary[]) {
+  return [...items].sort(
+    (left, right) =>
+      getConversationSortTime(right) - getConversationSortTime(left),
+  );
 }
 
 export function useMessageriePage() {
@@ -142,8 +150,9 @@ export function useMessageriePage() {
   ) => {
     if (!hasHydratedConversationsRef.current) {
       hasHydratedConversationsRef.current = true;
-      previousConversationsRef.current = nextConversations;
-      setConversations(nextConversations);
+      const sorted = sortConversationsByRecency(nextConversations);
+      previousConversationsRef.current = sorted;
+      setConversations(sorted);
       return;
     }
 
@@ -175,8 +184,9 @@ export function useMessageriePage() {
       window.dispatchEvent(new Event("messagerie-updated"));
     }
 
-    previousConversationsRef.current = nextConversations;
-    setConversations(nextConversations);
+    const sorted = sortConversationsByRecency(nextConversations);
+    previousConversationsRef.current = sorted;
+    setConversations(sorted);
   };
 
   const filteredUsers = useMemo(() => {
@@ -244,24 +254,27 @@ export function useMessageriePage() {
       setError(null);
       const conversation = await fetchConversation(conversationId);
       setActiveConversation(conversation);
-      await markConversationAsRead(conversationId);
+      const readState = await markConversationAsRead(conversationId);
       const messages = await fetchConversationMessages(conversationId);
       setActiveMessages(messages);
       window.dispatchEvent(new Event("messagerie-updated"));
       setConversations((prev) =>
-        prev.map((item) =>
-          item.id === conversationId
-            ? {
-                ...item,
-                title: conversation.title,
-                type: conversation.type,
-                participant_count: conversation.participant_count,
-                current_user_role: conversation.current_user_role,
-                counterpart: conversation.counterpart,
-                last_message: messages[messages.length - 1] ?? null,
-                last_message_at: conversation.last_message_at,
-              }
-            : item,
+        sortConversationsByRecency(
+          prev.map((item) =>
+            item.id === conversationId
+              ? {
+                  ...item,
+                  title: conversation.title,
+                  type: conversation.type,
+                  participant_count: conversation.participant_count,
+                  current_user_role: conversation.current_user_role,
+                  current_user_last_read_at: readState.lastReadAt,
+                  counterpart: conversation.counterpart,
+                  last_message: messages[messages.length - 1] ?? null,
+                  last_message_at: conversation.last_message_at,
+                }
+              : item,
+          ),
         ),
       );
     } catch (err: any) {
@@ -647,14 +660,16 @@ export function useMessageriePage() {
       );
       setActiveMessages((prev) => [...prev, created]);
       setConversations((prev) =>
-        prev.map((item) =>
-          item.id === activeConversation.id
-            ? {
-                ...item,
-                last_message: created,
-                last_message_at: created.created_at,
-              }
-            : item,
+        sortConversationsByRecency(
+          prev.map((item) =>
+            item.id === activeConversation.id
+              ? {
+                  ...item,
+                  last_message: created,
+                  last_message_at: created.created_at,
+                }
+              : item,
+          ),
         ),
       );
       setComposerText("");
@@ -770,13 +785,15 @@ export function useMessageriePage() {
       );
 
       setConversations((prev) =>
-        prev.map((item) =>
-          item.id === conversationId
-            ? {
-                ...item,
-                current_user_archived_at: result.archived_at,
-              }
-            : item,
+        sortConversationsByRecency(
+          prev.map((item) =>
+            item.id === conversationId
+              ? {
+                  ...item,
+                  current_user_archived_at: result.archived_at,
+                }
+              : item,
+          ),
         ),
       );
 
@@ -811,15 +828,17 @@ export function useMessageriePage() {
       const result = await updateConversationMute(conversationId, payload);
 
       setConversations((prev) =>
-        prev.map((item) =>
-          item.id === conversationId
-            ? {
-                ...item,
-                current_user_muted_at: result.muted_at,
-                current_user_muted_until: result.muted_until,
-                current_user_is_muted: result.is_muted,
-              }
-            : item,
+        sortConversationsByRecency(
+          prev.map((item) =>
+            item.id === conversationId
+              ? {
+                  ...item,
+                  current_user_muted_at: result.muted_at,
+                  current_user_muted_until: result.muted_until,
+                  current_user_is_muted: result.is_muted,
+                }
+              : item,
+          ),
         ),
       );
 

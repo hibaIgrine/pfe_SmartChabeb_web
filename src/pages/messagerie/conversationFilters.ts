@@ -6,6 +6,16 @@ export type ConversationListFilterMode =
   | "GROUP"
   | "ARCHIVED";
 
+export function getConversationSortTime(
+  conversation: MessengerConversationSummary,
+) {
+  return new Date(
+    conversation.last_message_at ??
+      conversation.updated_at ??
+      conversation.created_at,
+  ).getTime();
+}
+
 export function isConversationUnread(
   conversation: MessengerConversationSummary,
   meId?: string | null,
@@ -31,23 +41,28 @@ export function filterConversations(
   mode: ConversationListFilterMode,
   meId?: string | null,
 ) {
-  return conversations.filter((conversation) => {
-    const isArchived = Boolean(conversation.current_user_archived_at);
-    const isGroup = conversation.type === "group";
-    const unread = isConversationUnread(conversation, meId);
+  return conversations
+    .filter((conversation) => {
+      const isArchived = Boolean(conversation.current_user_archived_at);
+      const isGroup = conversation.type === "group";
+      const unread = isConversationUnread(conversation, meId);
 
-    if (mode === "ARCHIVED") {
-      return isArchived;
-    }
+      if (mode === "ARCHIVED") {
+        return isArchived;
+      }
 
-    if (mode === "UNREAD") {
-      return unread && !isArchived;
-    }
+      if (mode === "UNREAD") {
+        return unread && !isArchived;
+      }
 
-    if (mode === "GROUP") {
-      return isGroup && !isArchived;
-    }
+      if (mode === "GROUP") {
+        return isGroup && !isArchived;
+      }
 
-    return !isArchived;
-  });
+      return !isArchived;
+    })
+    .sort(
+      (left, right) =>
+        getConversationSortTime(right) - getConversationSortTime(left),
+    );
 }
