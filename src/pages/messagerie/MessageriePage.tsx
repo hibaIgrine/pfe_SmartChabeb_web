@@ -157,6 +157,7 @@ export default function MessageriePage() {
           onMessageTypeChange={page.setMessageType}
           onAttachmentChange={page.handleAttachmentChange}
           onClearAttachment={page.clearAttachment}
+          onAttachVoiceMessage={page.attachVoiceMessage}
           onSendMessage={page.sendMessage}
           onEditMessage={page.editMessage}
           onDeleteMessageForMe={page.deleteMessageForMe}

@@ -53,6 +53,14 @@ function getAttachmentMeta(message: MessengerMessage, value: string) {
   return { mimeType };
 }
 
+function VoiceAudioCard({ src }: { src: string }) {
+  return (
+    <div className="w-[320px] max-w-full rounded-2xl border border-[#b8caa9] bg-[#D9E8D1]/60 px-3 py-3">
+      <audio src={src} controls className="w-full" preload="metadata" />
+    </div>
+  );
+}
+
 function renderMedia(
   message: MessengerMessage,
   onOpen: (value: string, fileName: string) => void,
@@ -116,6 +124,11 @@ function renderMedia(
 
         const mimeType = getDataUrlMimeType(item);
         const isPdf = mimeType === "application/pdf";
+        const isAudio = mimeType.startsWith("audio/");
+
+        if (isAudio) {
+          return <VoiceAudioCard key={`${message.id}-${index}`} src={item} />;
+        }
 
         return (
           <button
@@ -425,7 +438,16 @@ export function MessageBubble({
 
                 {message.type === "DOCUMENT" ? (
                   <div className="space-y-4">
-                    {preview.mimeType === "application/pdf" ? (
+                    {preview.mimeType.startsWith("audio/") ? (
+                      <div className="rounded-[24px] border border-[#b8caa9] bg-[#D9E8D1]/60 p-6">
+                        <audio
+                          src={preview.value}
+                          controls
+                          autoPlay
+                          className="w-full"
+                        />
+                      </div>
+                    ) : preview.mimeType === "application/pdf" ? (
                       <iframe
                         src={preview.value}
                         title={preview.fileName}

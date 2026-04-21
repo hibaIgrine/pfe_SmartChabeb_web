@@ -546,6 +546,18 @@ export function useMessageriePage() {
     setAttachmentMimeType("");
   };
 
+  const attachVoiceMessage = (payload: {
+    dataUrl: string;
+    mimeType: string;
+    fileName: string;
+  }) => {
+    setMessageType("DOCUMENT");
+    setAttachmentPreview(payload.dataUrl);
+    setAttachmentName(payload.fileName);
+    setAttachmentMimeType(payload.mimeType || "audio/webm");
+    void stopTypingNow();
+  };
+
   const handleComposerTextChange = (value: string) => {
     composerTextRef.current = value;
     setComposerText(value);
@@ -867,6 +879,7 @@ export function useMessageriePage() {
     attachmentMimeType,
     handleAttachmentChange,
     clearAttachment,
+    attachVoiceMessage,
     refreshConversations,
     startPrivateConversation,
     startGroupConversation,

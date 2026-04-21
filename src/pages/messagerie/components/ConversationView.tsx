@@ -16,6 +16,7 @@ import type { ChangeEvent } from "react";
 import { ConversationMessageSearch } from "./ConversationMessageSearch";
 import { GroupManagementPanel } from "./GroupManagementPanel";
 import { MessageBubble } from "./MessageBubble";
+import { VoiceMessageRecorder } from "./VoiceMessageRecorder";
 import { getUserPresenceLabel } from "../utils/presence";
 import type {
   MessengerConversation,
@@ -41,6 +42,11 @@ type ConversationViewProps = {
   onMessageTypeChange: (value: MessengerMessageType) => void;
   onAttachmentChange: (file: File | null) => void;
   onClearAttachment: () => void;
+  onAttachVoiceMessage: (payload: {
+    dataUrl: string;
+    mimeType: string;
+    fileName: string;
+  }) => void;
   onSendMessage: () => void;
   onEditMessage: (messageId: string, content: string) => void;
   onDeleteMessageForMe: (messageId: string) => void;
@@ -68,6 +74,7 @@ export function ConversationView({
   onMessageTypeChange,
   onAttachmentChange,
   onClearAttachment,
+  onAttachVoiceMessage,
   onSendMessage,
   onEditMessage,
   onDeleteMessageForMe,
@@ -433,6 +440,11 @@ export function ConversationView({
             <FileText size={18} />
           </button>
 
+          <VoiceMessageRecorder
+            disabled={submitting}
+            onRecorded={onAttachVoiceMessage}
+          />
+
           {attachmentPreview ? (
             <button
               type="button"
@@ -520,6 +532,14 @@ export function ConversationView({
                       title="Aperçu document PDF"
                       className="h-96 w-full rounded-xl border border-gray-200 bg-white"
                     />
+                  ) : attachmentMimeType.startsWith("audio/") ? (
+                    <div className="rounded-xl border border-[#b8caa9] bg-[#D9E8D1]/60 p-3">
+                      <audio
+                        src={attachmentPreview}
+                        controls
+                        className="w-full"
+                      />
+                    </div>
                   ) : (
                     <div className="flex items-center gap-3 rounded-xl border border-dashed border-gray-200 bg-white px-4 py-4">
                       <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#436D75]/10 text-[#436D75]">
@@ -545,7 +565,7 @@ export function ConversationView({
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             {attachmentName ? (
-              <span className="max-w-[180px] truncate rounded-full bg-[#D9E8D1]/40 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#436D75]">
+              <span className="max-w-[180px] truncate rounded-full bg-gray-100 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#436D75]">
                 {attachmentName}
               </span>
             ) : null}
