@@ -28,6 +28,7 @@ type ConversationViewProps = {
   meId?: string | null;
   conversation: MessengerConversation | null;
   messages: MessengerMessage[];
+  typingUsers: MessengerUser[];
   loading: boolean;
   submitting: boolean;
   composerText: string;
@@ -54,6 +55,7 @@ export function ConversationView({
   meId,
   conversation,
   messages,
+  typingUsers,
   loading,
   submitting,
   composerText,
@@ -165,6 +167,31 @@ export function ConversationView({
       ? `${conversation.counterpart.nom} ${conversation.counterpart.prenom}`
       : "Conversation privée";
 
+  const visibleTypingUsers = typingUsers.filter((user) => user.id !== meId);
+
+  const typingLabel = (() => {
+    if (visibleTypingUsers.length === 0) {
+      return null;
+    }
+
+    if (!isGroupConversation) {
+      return `${visibleTypingUsers[0].nom} ${visibleTypingUsers[0].prenom} est en train d'écrire`;
+    }
+
+    const names = visibleTypingUsers.map(
+      (user) => `${user.nom} ${user.prenom}`,
+    );
+    if (names.length === 1) {
+      return `${names[0]} est en train d'écrire`;
+    }
+
+    if (names.length === 2) {
+      return `${names[0]} et ${names[1]} sont en train d'écrire`;
+    }
+
+    return `${names[0]}, ${names[1]} et ${names.length - 2} autres écrivent`;
+  })();
+
   return (
     <section className="flex h-full flex-col rounded-[28px] border border-white bg-white/85 shadow-xl backdrop-blur-md">
       <header className="border-b border-gray-100 px-5 py-4">
@@ -192,6 +219,32 @@ export function ConversationView({
                 {getUserPresenceLabel(conversation.counterpart)}
               </p>
             )}
+
+            {typingLabel ? (
+              <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-[#436D75]">
+                <span>{typingLabel}</span>
+                <span className="inline-flex items-end">
+                  <span
+                    className="inline-block animate-pulse"
+                    style={{ animationDelay: "0ms" }}
+                  >
+                    .
+                  </span>
+                  <span
+                    className="inline-block animate-pulse"
+                    style={{ animationDelay: "180ms" }}
+                  >
+                    .
+                  </span>
+                  <span
+                    className="inline-block animate-pulse"
+                    style={{ animationDelay: "360ms" }}
+                  >
+                    .
+                  </span>
+                </span>
+              </p>
+            ) : null}
           </div>
 
           <div className="relative">

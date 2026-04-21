@@ -7,6 +7,7 @@ import {
   deleteConversationMessage,
   fetchConversation,
   fetchConversationMessages,
+  fetchConversationTypingStatus,
   fetchCurrentUserProfile,
   fetchMessengerUsers,
   fetchMyConversations,
@@ -18,6 +19,13 @@ import {
   setPresenceOffline,
   updateConversationMessage,
 } from "../../../api/messagerie.api";
+import {
+  emitTypingStatus,
+  ensureMessagerieSocket,
+  joinConversationSocketRoom,
+  leaveConversationSocketRoom,
+  subscribeTypingUpdates,
+} from "../../../api/messagerie.socket";
 import type {
   MessengerConversation,
   MessengerConversationSummary,
@@ -44,6 +52,7 @@ export function useMessageriePage() {
   const [activeMessages, setActiveMessages] = useState<MessengerMessage[]>([]);
   const [users, setUsers] = useState<MessengerUser[]>([]);
   const [currentUser, setCurrentUser] = useState<MessengerUser | null>(null);
+  const [typingUsers, setTypingUsers] = useState<MessengerUser[]>([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -67,6 +76,49 @@ export function useMessageriePage() {
 
   const hasHydratedConversationsRef = useRef(false);
   const previousConversationsRef = useRef<MessengerConversationSummary[]>([]);
+  const activeConversationIdRef = useRef<string | null>(null);
+  const composerTextRef = useRef("");
+  const isTypingActiveRef = useRef(false);
+  const lastTypingSignalAtRef = useRef(0);
+  const typingStopTimeoutRef = useRef<number | null>(null);
+  const typingHeartbeatRef = useRef<number | null>(null);
+
+  const clearTypingStopTimeout = () => {
+    if (typingStopTimeoutRef.current !== null) {
+      window.clearTimeout(typingStopTimeoutRef.current);
+      typingStopTimeoutRef.current = null;
+    }
+  };
+
+  const clearTypingHeartbeat = () => {
+    if (typingHeartbeatRef.current !== null) {
+      window.clearInterval(typingHeartbeatRef.current);
+      typingHeartbeatRef.current = null;
+    }
+  };
+
+  const stopTypingNow = async (conversationId?: string) => {
+    clearTypingStopTimeout();
+    clearTypingHeartbeat();
+
+    const targetConversationId =
+      conversationId ?? activeConversationIdRef.current;
+    if (!targetConversationId || !isTypingActiveRef.current) {
+      return;
+    }
+
+    isTypingActiveRef.current = false;
+
+    emitTypingStatus(targetConversationId, false);
+  };
+
+  const scheduleTypingStop = (conversationId: string) => {
+    clearTypingStopTimeout();
+
+    typingStopTimeoutRef.current = window.setTimeout(() => {
+      void stopTypingNow(conversationId);
+    }, 6000);
+  };
 
   const updateMessageType = (nextType: MessengerMessageType) => {
     setMessageType(nextType);
@@ -74,7 +126,10 @@ export function useMessageriePage() {
       setAttachmentPreview(null);
       setAttachmentName("");
       setAttachmentMimeType("");
+      return;
     }
+
+    void stopTypingNow();
   };
 
   const me = currentUser;
@@ -273,6 +328,114 @@ export function useMessageriePage() {
   }, [activeConversation, conversations]);
 
   useEffect(() => {
+    const previousConversationId = activeConversationIdRef.current;
+    const nextConversationId = activeConversation?.id ?? null;
+
+    if (
+      previousConversationId &&
+      previousConversationId !== nextConversationId
+    ) {
+      void stopTypingNow(previousConversationId);
+      leaveConversationSocketRoom(previousConversationId);
+      isTypingActiveRef.current = false;
+    }
+
+    activeConversationIdRef.current = nextConversationId;
+    setTypingUsers([]);
+
+    if (nextConversationId) {
+      joinConversationSocketRoom(nextConversationId);
+    }
+  }, [activeConversation?.id]);
+
+  useEffect(() => {
+    const socket = ensureMessagerieSocket();
+
+    if (!socket) {
+      return;
+    }
+
+    const rejoinActiveConversation = () => {
+      const conversationId = activeConversationIdRef.current;
+      if (conversationId) {
+        joinConversationSocketRoom(conversationId);
+      }
+    };
+
+    socket.on("connect", rejoinActiveConversation);
+
+    if (activeConversationIdRef.current) {
+      joinConversationSocketRoom(activeConversationIdRef.current);
+    }
+
+    return () => {
+      socket.off("connect", rejoinActiveConversation);
+    };
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeTypingUpdates((payload) => {
+      if (payload.conversationId !== activeConversationIdRef.current) {
+        return;
+      }
+
+      void fetchConversationTypingStatus(payload.conversationId)
+        .then((data) => {
+          setTypingUsers(Array.isArray(data.users) ? data.users : []);
+        })
+        .catch(() => {
+          // Ignore transient websocket sync failures; polling will recover.
+        });
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    const conversationId = activeConversation?.id;
+    if (!conversationId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const syncTypingState = async () => {
+      try {
+        const data = await fetchConversationTypingStatus(conversationId);
+        if (cancelled) return;
+
+        setTypingUsers(Array.isArray(data.users) ? data.users : []);
+      } catch {
+        if (cancelled) return;
+      }
+    };
+
+    void syncTypingState();
+
+    const interval = window.setInterval(() => {
+      void syncTypingState();
+    }, 2500);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [activeConversation?.id]);
+
+  useEffect(() => {
+    return () => {
+      const activeConversationId = activeConversationIdRef.current;
+      if (activeConversationId) {
+        leaveConversationSocketRoom(activeConversationId);
+      }
+
+      void stopTypingNow(activeConversationId ?? undefined);
+    };
+  }, []);
+
+  useEffect(() => {
     const pollConversations = async () => {
       try {
         const data = await fetchMyConversations();
@@ -383,6 +546,56 @@ export function useMessageriePage() {
     setAttachmentMimeType("");
   };
 
+  const handleComposerTextChange = (value: string) => {
+    composerTextRef.current = value;
+    setComposerText(value);
+
+    if (messageType !== "TEXT") {
+      return;
+    }
+
+    const conversationId = activeConversationIdRef.current;
+    if (!conversationId) {
+      return;
+    }
+
+    const hasText = value.trim().length > 0;
+
+    if (!hasText) {
+      void stopTypingNow(conversationId);
+      return;
+    }
+
+    const now = Date.now();
+    const shouldPing =
+      !isTypingActiveRef.current || now - lastTypingSignalAtRef.current > 900;
+
+    if (shouldPing) {
+      isTypingActiveRef.current = true;
+      lastTypingSignalAtRef.current = now;
+
+      emitTypingStatus(conversationId, true);
+    }
+
+    if (typingHeartbeatRef.current === null) {
+      typingHeartbeatRef.current = window.setInterval(() => {
+        const activeId = activeConversationIdRef.current;
+        const currentText = composerTextRef.current.trim();
+
+        if (!activeId || currentText.length === 0) {
+          void stopTypingNow(activeId ?? undefined);
+          return;
+        }
+
+        lastTypingSignalAtRef.current = Date.now();
+        isTypingActiveRef.current = true;
+        emitTypingStatus(activeId, true);
+      }, 1500);
+    }
+
+    scheduleTypingStop(conversationId);
+  };
+
   const sendMessage = async () => {
     if (!activeConversation) {
       setError("Ouvre d'abord une conversation.");
@@ -428,6 +641,7 @@ export function useMessageriePage() {
       setComposerText("");
       setAttachmentPreview(null);
       setAttachmentName("");
+      void stopTypingNow(activeConversation.id);
       await markConversationAsRead(activeConversation.id);
       window.dispatchEvent(new Event("messagerie-updated"));
     } catch (err: any) {
@@ -624,6 +838,7 @@ export function useMessageriePage() {
   return {
     me,
     users,
+    typingUsers,
     groupCandidateUsers,
     filteredUsers,
     conversations,
@@ -634,7 +849,7 @@ export function useMessageriePage() {
     submitting,
     error,
     composerText,
-    setComposerText,
+    setComposerText: handleComposerTextChange,
     messageType,
     setMessageType: updateMessageType,
     selectedRecipientId,

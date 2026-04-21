@@ -144,6 +144,7 @@ export default function MessageriePage() {
           meId={page.me?.id}
           conversation={page.activeConversation}
           messages={page.activeMessages}
+          typingUsers={page.typingUsers}
           loading={page.loadingConversation}
           submitting={page.submitting}
           composerText={page.composerText}

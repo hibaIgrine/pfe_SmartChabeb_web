@@ -94,6 +94,12 @@ export type MessengerUnreadCountResponse = {
   count: number;
 };
 
+export type MessengerTypingStatusResponse = {
+  conversationId: string;
+  users: MessengerUser[];
+  updatedAt: string;
+};
+
 export async function fetchMessengerUsers() {
   const response = await api.get<MessengerUser[]>("/users");
   return response.data;
@@ -144,6 +150,28 @@ export async function fetchConversationMessages(conversationId: string) {
   const response = await api.get<MessengerMessage[]>(
     `/messagerie/conversations/${conversationId}/messages`,
   );
+  return response.data;
+}
+
+export async function fetchConversationTypingStatus(conversationId: string) {
+  const response = await api.get<MessengerTypingStatusResponse>(
+    `/messagerie/conversations/${conversationId}/typing`,
+  );
+  return response.data;
+}
+
+export async function sendTypingStatus(
+  conversationId: string,
+  isTyping: boolean,
+) {
+  const response = await api.patch<{
+    conversationId: string;
+    is_typing: boolean;
+    last_typing_at: string | null;
+  }>(`/messagerie/conversations/${conversationId}/typing`, {
+    is_typing: isTyping,
+  });
+
   return response.data;
 }
 
