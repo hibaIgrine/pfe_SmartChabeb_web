@@ -6,6 +6,8 @@ import ResponsableCentrePage from "./pages/centres/ResponsableCentrePage";
 import Dashboard from "./pages/admin/Dashboard";
 import MembresPage from "./pages/admin/MembresPage";
 import AuthPage from "./pages/auth/AuthPage";
+import SignupPage from "./pages/auth/SignupPage";
+import GoogleCompleteProfile from "./pages/auth/GoogleCompleteProfile";
 import NotFound from "./pages/auth/NotFound";
 import CoachMembers from "./pages/coach/CoachMembers";
 import CreateProgram from "./pages/coach/CreateProgram";
@@ -27,6 +29,7 @@ import EventParticipantsPage from "./pages/events/EventParticipantsPage";
 import EventWaitingListPage from "./pages/events/EventWaitingListPage";
 import ProfileGamificationPage from "./pages/profile/ProfileGamificationPage";
 import MyProfilePage from "./pages/profile/MyProfilePage";
+import UserProfilePage from "./pages/profile/UserProfilePage";
 import SocialFeedPage from "./pages/social-media/SocialFeedPage";
 import MessageriePage from "./pages/messagerie/MessageriePage";
 
@@ -49,6 +52,11 @@ function App() {
 
         {/* Page d'authentification (Login + Register) */}
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/signup" element={<SignupPage />} />
+        <Route
+          path="/auth/complete-google"
+          element={<GoogleCompleteProfile />}
+        />
 
         {/* Espace Privé Admin/Coach */}
         <Route
@@ -218,6 +226,14 @@ function App() {
           element={
             <Layout>
               <MyProfilePage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/utilisateurs/:id"
+          element={
+            <Layout>
+              <UserProfilePage />
             </Layout>
           }
         />

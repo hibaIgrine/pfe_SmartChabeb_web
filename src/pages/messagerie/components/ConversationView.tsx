@@ -99,6 +99,7 @@ export function ConversationView({
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
   const documentInputRef = useRef<HTMLInputElement | null>(null);
+  const messageContainerRef = useRef<HTMLDivElement | null>(null);
   const messageNodesRef = useRef<Record<string, HTMLDivElement | null>>({});
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [muteMenuOpen, setMuteMenuOpen] = useState(false);
@@ -121,6 +122,17 @@ export function ConversationView({
     setSelectedMessageId(null);
     setOpenGroupPanel(null);
   }, [conversation?.id]);
+
+  useEffect(() => {
+    if (messageContainerRef.current) {
+      setTimeout(() => {
+        if (messageContainerRef.current) {
+          messageContainerRef.current.scrollTop =
+            messageContainerRef.current.scrollHeight;
+        }
+      }, 0);
+    }
+  }, [messages]);
 
   const handleSelectSearchResult = (messageId: string) => {
     setSelectedMessageId(messageId);

@@ -91,6 +91,42 @@ export type HiddenUserLink = {
   hidden_user: PublicationAuthor;
 };
 
+export type PublicUserProfile = {
+  id: string;
+  nom: string;
+  prenom: string;
+  role?: string | null;
+  bio?: string | null;
+  genre?: string | null;
+  date_naissance?: string | null;
+  photo_profil_url?: string | null;
+  lieu_habite?: string | null;
+  etablissement_etude?: string | null;
+  points?: number;
+  centre?: {
+    id: string;
+    nom: string;
+    gouvernorat?: string | null;
+  } | null;
+  _count?: {
+    followers: number;
+    following: number;
+    posts: number;
+  };
+  isMe: boolean;
+  isFollowing: boolean;
+};
+
+export type FollowedUserLink = {
+  id: string;
+  follower_id: string;
+  followed_id: string;
+  created_at: string;
+  followed: PublicationAuthor & {
+    role?: string | null;
+  };
+};
+
 export async function fetchFeed(limit = 20, offset = 0) {
   const response = await api.get<Publication[]>("/social-media/posts", {
     params: { limit, offset },
@@ -100,6 +136,16 @@ export async function fetchFeed(limit = 20, offset = 0) {
 
 export async function fetchPost(postId: string) {
   const response = await api.get<Publication>(`/social-media/posts/${postId}`);
+  return response.data;
+}
+
+export async function fetchPostsByUser(userId: string, limit = 20, offset = 0) {
+  const response = await api.get<Publication[]>(
+    `/social-media/users/${userId}/posts`,
+    {
+      params: { limit, offset },
+    },
+  );
   return response.data;
 }
 
@@ -243,5 +289,31 @@ export async function fetchHiddenUsers() {
   const response = await api.get<HiddenUserLink[]>(
     "/social-media/users/hidden",
   );
+  return response.data;
+}
+
+export async function fetchPublicUserProfile(userId: string) {
+  const response = await api.get<PublicUserProfile>(
+    `/users/${userId}/public-profile`,
+  );
+  return response.data;
+}
+
+export async function followUser(userId: string) {
+  const response = await api.post<{ success: boolean }>(
+    `/users/${userId}/follow`,
+  );
+  return response.data;
+}
+
+export async function unfollowUser(userId: string) {
+  const response = await api.delete<{ success: boolean }>(
+    `/users/${userId}/follow`,
+  );
+  return response.data;
+}
+
+export async function fetchMyFollowingUsers() {
+  const response = await api.get<FollowedUserLink[]>(`/users/me/following`);
   return response.data;
 }

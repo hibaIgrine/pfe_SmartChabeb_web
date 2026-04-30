@@ -240,6 +240,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
+          {( role === "RESPONSABLE_CLUB") && (
+            <SidebarItem
+              to="/presences"
+              icon={<ClipboardCheck size={18} />}
+              label="Présences"
+              active={location.pathname === "/presences"}
+            />
+          )}
+
           {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
               to="/events-requests"
