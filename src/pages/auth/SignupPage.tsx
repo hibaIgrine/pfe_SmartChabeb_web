@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
-import { ChevronLeft, Mail, Lock, User } from "lucide-react";
+import { ChevronLeft, Mail } from "lucide-react";
 
 export default function SignupPage() {
   const navigate = useNavigate();
