@@ -58,13 +58,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    const isAdherentClubPage =
+      location.pathname === "/clubs" ||
+      /^\/clubs\/[^/]+$/.test(location.pathname);
+
     if (
       role === "ADHERENT" &&
+      !isAdherentClubPage &&
       location.pathname !== "/club-creation-requests" &&
+      location.pathname !== "/mon-profil" &&
       location.pathname !== "/fil-actualite" &&
       location.pathname !== "/messagerie"
     ) {
-      navigate("/club-creation-requests");
+      navigate("/clubs");
     }
   }, [user, role, navigate, location.pathname]);
 
@@ -223,7 +229,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "ADMIN" ||
+          {(role === "ADHERENT" ||
+            role === "ADMIN" ||
             role === "RESPONSABLE_CENTRE" ||
             role === "RESPONSABLE_CLUB") && (
             <SidebarItem

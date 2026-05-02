@@ -13,6 +13,8 @@ import CoachMembers from "./pages/coach/CoachMembers";
 import CreateProgram from "./pages/coach/CreateProgram";
 import MemberDetails from "./pages/coach/MembreDetails";
 import ClubsPage from "./pages/clubs/ClubsPage";
+import AdherentClubsPage from "./pages/clubs/AdherentClubsPage";
+import AdherentClubDetailsPage from "./pages/clubs/AdherentClubDetailsPage";
 import ClubStaffPage from "./pages/clubs/ClubStaffPage";
 import ClubRequestsPage from "./pages/clubs/ClubRequestsPage";
 import ClubCreationRequestsPage from "./pages/clubs/ClubCreationRequestsPage";
@@ -48,6 +50,40 @@ function App() {
       <ResponsableCentrePage />
     ) : (
       <CentresPage />
+    );
+  };
+
+  const getClubsPage = () => {
+    const userStr = localStorage.getItem("user");
+    let user = null;
+
+    try {
+      user = userStr ? JSON.parse(userStr) : null;
+    } catch {
+      localStorage.removeItem("user");
+    }
+
+    return user?.role === "ADHERENT" || user?.role === "ADHERANT" ? (
+      <AdherentClubsPage />
+    ) : (
+      <ClubsPage />
+    );
+  };
+
+  const getClubDetailsPage = () => {
+    const userStr = localStorage.getItem("user");
+    let user = null;
+
+    try {
+      user = userStr ? JSON.parse(userStr) : null;
+    } catch {
+      localStorage.removeItem("user");
+    }
+
+    return user?.role === "ADHERENT" || user?.role === "ADHERANT" ? (
+      <AdherentClubDetailsPage />
+    ) : (
+      <NotFound />
     );
   };
 
@@ -112,7 +148,7 @@ function App() {
           path="/clubs"
           element={
             <Layout>
-              <ClubsPage />
+              {getClubsPage()}
             </Layout>
           }
         />
@@ -123,6 +159,10 @@ function App() {
               <ClubRequestsPage />
             </Layout>
           }
+        />
+        <Route
+          path="/clubs/:clubId"
+          element={<Layout>{getClubDetailsPage()}</Layout>}
         />
         <Route
           path="/club-creation-requests"
