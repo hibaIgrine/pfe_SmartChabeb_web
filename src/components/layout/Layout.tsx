@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   MapPin,
@@ -28,8 +28,13 @@ function getStoredUser() {
   if (!raw) return null;
 
   try {
-    return JSON.parse(raw);
+    const user = JSON.parse(raw);
+    return {
+      ...user,
+      role: user?.role === "ADHERANT" ? "ADHERENT" : user?.role,
+    };
   } catch {
+    localStorage.removeItem("user");
     return null;
   }
 }
@@ -134,7 +139,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     navigate("/");
   };
 
-  if (!user) return null;
+  if (!user) return <Navigate to="/auth" replace />;
 
   return (
     <div className="flex h-screen bg-[#F7F3E9] font-sans overflow-hidden">

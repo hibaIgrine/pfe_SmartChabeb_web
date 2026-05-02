@@ -36,7 +36,14 @@ import MessageriePage from "./pages/messagerie/MessageriePage";
 function App() {
   const getCentrePage = () => {
     const userStr = localStorage.getItem("user");
-    const user = userStr ? JSON.parse(userStr) : null;
+    let user = null;
+
+    try {
+      user = userStr ? JSON.parse(userStr) : null;
+    } catch {
+      localStorage.removeItem("user");
+    }
+
     return user?.role === "RESPONSABLE_CENTRE" ? (
       <ResponsableCentrePage />
     ) : (

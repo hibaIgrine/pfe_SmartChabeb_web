@@ -26,7 +26,21 @@ export default function GoogleCompleteProfile() {
       return;
     }
 
-    const user = JSON.parse(userStr);
+    let user: any = null;
+
+    try {
+      user = JSON.parse(userStr);
+    } catch {
+      localStorage.removeItem("user");
+      navigate("/auth");
+      return;
+    }
+
+    if (user.prenom && user.genre && user.date_naissance && user.id_centre) {
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+
     if (user.nom) {
       const parts = String(user.nom).split(" ");
       setForm((f) => ({
@@ -220,8 +234,8 @@ export default function GoogleCompleteProfile() {
               className={`w-full p-3 border rounded ${errors.genre ? "border-red-500 bg-red-50" : "border-gray-300"}`}
             >
               <option value="">Choisir un genre</option>
-              <option value="H">Homme</option>
-              <option value="F">Femme</option>
+              <option value="HOMME">Homme</option>
+              <option value="FEMME">Femme</option>
             </select>
             {errors.genre && (
               <div className="text-red-600 text-sm">{errors.genre}</div>

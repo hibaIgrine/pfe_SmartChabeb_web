@@ -45,6 +45,28 @@ export default function SignupPage() {
       .catch(() => setGouvernorats([]));
   }, []);
 
+  // If user came from the signup form and we stored pendingSignup, prefill and jump to wizard
+  useEffect(() => {
+    try {
+      const pending = localStorage.getItem("pendingSignup");
+      if (pending) {
+        const parsed = JSON.parse(pending);
+        setForm((f) => ({
+          ...f,
+          email: parsed.email || "",
+          mot_de_passe: parsed.mot_de_passe || "",
+          nom: parsed.nom || "",
+          prenom: parsed.prenom || "",
+        }));
+        // Skip email verification and go directly to wizard step 1
+        setWizardStep(1);
+        setEmailVerificationStep("code");
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
   const fetchCentresByGouv = async (gouv: string) => {
     setCentres([]);
     try {
@@ -114,7 +136,8 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      await api.post("/auth/verify-code", {
+      // Verify using users endpoint so DB flag is updated
+      await api.post("/users/verify", {
         email: form.email,
         code: verificationCode,
       });
@@ -202,7 +225,7 @@ export default function SignupPage() {
           ? new Date(dateStr + "T00:00:00Z")
           : new Date(dateStr);
 
-      const res = await api.post("/users", {
+      await api.post("/users", {
         email: form.email,
         mot_de_passe: form.mot_de_passe,
         nom: form.nom,
@@ -210,12 +233,23 @@ export default function SignupPage() {
         genre: form.genre,
         date_naissance: dateToSubmit,
         id_centre: form.centreId,
-        role: "ADHERANT",
+        role: "ADHERENT",
       });
 
-      // Auto-login
-      localStorage.setItem("token", res.data.access_token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      // Clear pending signup now that user is created
+      try {
+        localStorage.removeItem("pendingSignup");
+      } catch (e) {
+        // ignore
+      }
+
+      // Auto-login via auth endpoint to obtain token
+      const loginRes = await api.post("/auth/login", {
+        email: form.email,
+        mot_de_passe: form.mot_de_passe,
+      });
+      localStorage.setItem("token", loginRes.data.access_token);
+      localStorage.setItem("user", JSON.stringify(loginRes.data.user));
       navigate("/dashboard");
     } catch (err: any) {
       console.error(err);
@@ -481,8 +515,8 @@ export default function SignupPage() {
                     }`}
                   >
                     <option value="">Choisir un genre</option>
-                    <option value="H">Homme</option>
-                    <option value="F">Femme</option>
+                    <option value="HOMME">Homme</option>
+                    <option value="FEMME">Femme</option>
                   </select>
                   {errors.genre && (
                     <div className="text-red-600 text-sm mt-1">

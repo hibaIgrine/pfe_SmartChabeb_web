@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import api from "../../api/axios";
-import { Mail, Lock, ChevronLeft } from "lucide-react";
+import { Mail, Lock, ChevronLeft, Eye, EyeOff } from "lucide-react";
 
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -24,11 +24,25 @@ export default function AuthPage() {
     nom: "",
     prenom: "",
   });
+  const [signupErrors, setSignupErrors] = useState({
+    nom: "",
+    prenom: "",
+    email: "",
+    mot_de_passe: "",
+  });
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   // Forgot password flow state
   const [forgotActive, setForgotActive] = useState(false);
   const [resetToken, setResetToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  // Verification modal for signup
+  const [verifyActive, setVerifyActive] = useState(false);
+  const [verificationToken, setVerificationToken] = useState("");
+  const [verificationEmail, setVerificationEmail] = useState("");
 
   const navigate = useNavigate();
 
@@ -53,6 +67,37 @@ export default function AuthPage() {
       }
     };
   }, []);
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const validateSignupField = (
+    field: keyof typeof signupData,
+    value: string,
+  ) => {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      return "Champ obligatoire";
+    }
+
+    if (field === "email" && !emailPattern.test(trimmed)) {
+      return "Format email invalide";
+    }
+
+    if (field === "mot_de_passe" && value.length < 8) {
+      return "8 caractères minimum";
+    }
+
+    return "";
+  };
+
+  const updateSignupField = (field: keyof typeof signupData, value: string) => {
+    setSignupData((previous) => ({ ...previous, [field]: value }));
+    setSignupErrors((previous) => ({
+      ...previous,
+      [field]: validateSignupField(field, value),
+    }));
+  };
 
   // --- LOGIN HANDLER ---
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -83,11 +128,20 @@ export default function AuthPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    if (signupData.mot_de_passe.length < 8) {
-      showNotice(
-        "Le mot de passe doit contenir au moins 8 caractères.",
-        "error",
-      );
+    const nextErrors = {
+      nom: validateSignupField("nom", signupData.nom),
+      prenom: validateSignupField("prenom", signupData.prenom),
+      email: validateSignupField("email", signupData.email),
+      mot_de_passe: validateSignupField(
+        "mot_de_passe",
+        signupData.mot_de_passe,
+      ),
+    };
+
+    setSignupErrors(nextErrors);
+
+    if (Object.values(nextErrors).some(Boolean)) {
+      showNotice("Veuillez corriger les champs en rouge.", "error");
       setIsLoading(false);
       return;
     }
@@ -104,14 +158,30 @@ export default function AuthPage() {
         return;
       }
 
-      // Send verification code
-      await api.post("/auth/send-verification-code", {
+      // Send verification code and open verification modal
+      const sendRes = await api.post("/auth/send-verification-code", {
         email: signupData.email,
+        nom: signupData.nom,
+        prenom: signupData.prenom,
+        mot_de_passe: signupData.mot_de_passe,
       });
 
-      // Store signup data for wizard
+      // Persist pending signup for the wizard
       localStorage.setItem("pendingSignup", JSON.stringify(signupData));
-      navigate("/auth/signup");
+
+      // Open verification modal pre-filled with the email from the form
+      setVerificationEmail(signupData.email);
+      setVerifyActive(true);
+
+      // In development the backend returns the code and also logs it; we optionally log it client-side too
+      if (sendRes?.data?._code) {
+        if (import.meta.env.DEV) {
+          console.log(
+            "[dev] verification code (server response):",
+            sendRes.data._code,
+          );
+        }
+      }
     } catch (err: any) {
       console.error(err);
       showNotice(
@@ -124,7 +194,10 @@ export default function AuthPage() {
   };
 
   // --- GOOGLE LOGIN HANDLER (local) ---
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const handleGoogleSuccess = async (
+    credentialResponse: any,
+    mode: "signin" | "signup",
+  ) => {
     setIsLoading(true);
     try {
       const res = await api.post("/auth/google-login", {
@@ -133,13 +206,13 @@ export default function AuthPage() {
       const user = res.data.user;
       localStorage.setItem("token", res.data.access_token);
       localStorage.setItem("user", JSON.stringify(user));
-      const needsProfile =
-        res.data.needs_profile ||
-        !user.prenom ||
-        !user.id_centre ||
-        !user.centreId;
-      if (needsProfile) navigate("/auth/complete-google");
-      else navigate("/dashboard");
+
+      if (mode === "signup" && res.data.needs_profile) {
+        navigate("/auth/complete-google");
+        return;
+      }
+
+      navigate("/dashboard");
     } catch (err: any) {
       console.error(err);
       showNotice(err.response?.data?.message || "Erreur Google", "error");
@@ -220,7 +293,46 @@ export default function AuthPage() {
     setResetToken("");
     setNewPassword("");
     setConfirmPassword("");
+    setShowResetPassword(false);
+    setShowConfirmPassword(false);
   };
+
+  const closeVerifyModal = () => {
+    setVerifyActive(false);
+    setVerificationToken("");
+    setVerificationEmail("");
+  };
+
+  const handleVerifySubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!verificationToken || verificationToken.length !== 6) {
+      showNotice("Code invalide (6 chiffres requis)", "error");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      // Verify against users endpoint so the DB gets updated (est_verifie)
+      await api.post("/users/verify", {
+        email: verificationEmail,
+        code: verificationToken,
+      });
+      showNotice("Email vérifié — complétez votre profil.", "success");
+      setVerifyActive(false);
+      // Proceed to the signup wizard where pendingSignup is stored
+      navigate("/auth/signup");
+    } catch (err: any) {
+      console.error(err);
+      const msg = err.response?.data?.message || "Code incorrect";
+      showNotice(msg, "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const inputErrorClass = (hasError: boolean) =>
+    hasError
+      ? "border-rose-500 bg-rose-50 focus-within:border-rose-600"
+      : "border-gray-200 bg-gray-50";
 
   return (
     <div className="h-screen w-full bg-[#F7F3E9] flex items-center justify-center p-4 overflow-hidden font-sans">
@@ -349,56 +461,101 @@ export default function AuthPage() {
                   </p>
                 </div>
                 <form onSubmit={handleSignupSubmit} className="space-y-3">
-                  <div className="flex items-center bg-gray-50 border border-gray-200 rounded-2xl p-3">
-                    <Mail size={20} className="text-gray-400 mr-3" />
-                    <input
-                      required
-                      type="email"
-                      placeholder="Email"
-                      className="flex-1 bg-transparent outline-none"
-                      value={signupData.email}
-                      onChange={(e) =>
-                        setSignupData({ ...signupData, email: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center bg-gray-50 border border-gray-200 rounded-2xl p-3">
-                    <Lock size={20} className="text-gray-400 mr-3" />
-                    <input
-                      required
-                      type="password"
-                      placeholder="Mot de passe"
-                      className="flex-1 bg-transparent outline-none"
-                      value={signupData.mot_de_passe}
-                      onChange={(e) =>
-                        setSignupData({
-                          ...signupData,
-                          mot_de_passe: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <input
-                      required
-                      type="text"
-                      placeholder="Nom"
-                      className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl p-3 outline-none"
-                      value={signupData.nom}
-                      onChange={(e) =>
-                        setSignupData({ ...signupData, nom: e.target.value })
-                      }
-                    />
-                    <input
-                      required
-                      type="text"
-                      placeholder="Prénom"
-                      className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl p-3 outline-none"
-                      value={signupData.prenom}
-                      onChange={(e) =>
-                        setSignupData({ ...signupData, prenom: e.target.value })
-                      }
-                    />
+                    <div className="space-y-1">
+                      <input
+                        required
+                        type="text"
+                        placeholder="Nom"
+                        className={`w-full rounded-2xl border p-3 outline-none transition-colors ${inputErrorClass(Boolean(signupErrors.nom))}`}
+                        value={signupData.nom}
+                        onChange={(e) =>
+                          updateSignupField("nom", e.target.value)
+                        }
+                      />
+                      {signupErrors.nom && (
+                        <p className="text-xs font-semibold text-rose-600">
+                          {signupErrors.nom}
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <input
+                        required
+                        type="text"
+                        placeholder="Prénom"
+                        className={`w-full rounded-2xl border p-3 outline-none transition-colors ${inputErrorClass(Boolean(signupErrors.prenom))}`}
+                        value={signupData.prenom}
+                        onChange={(e) =>
+                          updateSignupField("prenom", e.target.value)
+                        }
+                      />
+                      {signupErrors.prenom && (
+                        <p className="text-xs font-semibold text-rose-600">
+                          {signupErrors.prenom}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div
+                      className={`flex items-center rounded-2xl border p-3 transition-colors ${inputErrorClass(Boolean(signupErrors.email))}`}
+                    >
+                      <Mail size={20} className="text-gray-400 mr-3" />
+                      <input
+                        required
+                        type="email"
+                        placeholder="Email"
+                        className="flex-1 bg-transparent outline-none"
+                        value={signupData.email}
+                        onChange={(e) =>
+                          updateSignupField("email", e.target.value)
+                        }
+                      />
+                    </div>
+                    {signupErrors.email && (
+                      <p className="text-xs font-semibold text-rose-600">
+                        {signupErrors.email}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <div
+                      className={`flex items-center rounded-2xl border p-3 transition-colors ${inputErrorClass(Boolean(signupErrors.mot_de_passe))}`}
+                    >
+                      <Lock size={20} className="text-gray-400 mr-3" />
+                      <input
+                        required
+                        type={showSignupPassword ? "text" : "password"}
+                        placeholder="Mot de passe"
+                        className="flex-1 bg-transparent outline-none"
+                        value={signupData.mot_de_passe}
+                        onChange={(e) =>
+                          updateSignupField("mot_de_passe", e.target.value)
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignupPassword((value) => !value)}
+                        className="ml-3 text-gray-400 hover:text-gray-700"
+                        aria-label={
+                          showSignupPassword
+                            ? "Masquer le mot de passe"
+                            : "Afficher le mot de passe"
+                        }
+                      >
+                        {showSignupPassword ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
+                      </button>
+                    </div>
+                    {signupErrors.mot_de_passe && (
+                      <p className="text-xs font-semibold text-rose-600">
+                        {signupErrors.mot_de_passe}
+                      </p>
+                    )}
                   </div>
                   <button
                     type="submit"
@@ -417,7 +574,9 @@ export default function AuthPage() {
                 </div>
                 <div className="flex justify-center mb-1">
                   <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
+                    onSuccess={(credentialResponse) =>
+                      handleGoogleSuccess(credentialResponse, "signup")
+                    }
                     onError={() => showNotice("Erreur Google", "error")}
                     text="signup_with"
                   />
@@ -453,7 +612,7 @@ export default function AuthPage() {
                     <Lock size={20} className="text-gray-400 mr-3" />
                     <input
                       required
-                      type="password"
+                      type={showLoginPassword ? "text" : "password"}
                       placeholder="Mot de passe"
                       className="flex-1 bg-transparent outline-none"
                       value={loginData.mot_de_passe}
@@ -464,6 +623,22 @@ export default function AuthPage() {
                         })
                       }
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword((value) => !value)}
+                      className="ml-3 text-gray-400 hover:text-gray-700"
+                      aria-label={
+                        showLoginPassword
+                          ? "Masquer le mot de passe"
+                          : "Afficher le mot de passe"
+                      }
+                    >
+                      {showLoginPassword ? (
+                        <EyeOff size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
+                    </button>
                   </div>
                   <div className="text-right text-xs mt-1">
                     <button
@@ -491,7 +666,9 @@ export default function AuthPage() {
                 </div>
                 <div className="flex justify-center mb-1">
                   <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
+                    onSuccess={(credentialResponse) =>
+                      handleGoogleSuccess(credentialResponse, "signin")
+                    }
                     onError={() => showNotice("Erreur Google", "error")}
                     text="signin_with"
                   />
@@ -543,16 +720,34 @@ export default function AuthPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Nouveau mot de passe (8 caractères ou plus)"
-                type="password"
+                type={showResetPassword ? "text" : "password"}
                 className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 outline-none"
               />
+              <div className="flex items-center justify-end -mt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowResetPassword((value) => !value)}
+                  className="text-xs font-bold text-[#436d75] underline"
+                >
+                  {showResetPassword ? "Masquer" : "Afficher"} le mot de passe
+                </button>
+              </div>
               <input
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirmer le mot de passe"
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 outline-none"
               />
+              <div className="flex items-center justify-end -mt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((value) => !value)}
+                  className="text-xs font-bold text-[#436d75] underline"
+                >
+                  {showConfirmPassword ? "Masquer" : "Afficher"} la confirmation
+                </button>
+              </div>
               <div className="flex gap-2 pt-1">
                 <button
                   type="button"
@@ -564,6 +759,65 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={closeForgotModal}
+                  className="flex-1 h-12 border border-gray-200 rounded-2xl font-bold text-gray-700"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {verifyActive && (
+        <div className="fixed inset-0 z-[75] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl border border-gray-100">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h3 className="text-2xl font-black text-[#436d75]">
+                  Vérifier votre email
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Nous avons envoyé un code à votre adresse. Entrez-le ici pour
+                  continuer.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeVerifyModal}
+                className="text-gray-400 hover:text-gray-700 text-sm font-bold"
+              >
+                Fermer
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="rounded-2xl bg-gray-50 border border-gray-200 p-4 text-sm text-gray-600">
+                Le code est envoyé à{" "}
+                <span className="font-bold text-[#436d75]">
+                  {verificationEmail}
+                </span>
+              </div>
+              <input
+                value={verificationToken}
+                onChange={(e) => setVerificationToken(e.target.value)}
+                placeholder="Code de vérification (6 chiffres)"
+                className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 outline-none"
+                inputMode="numeric"
+                maxLength={6}
+              />
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleVerifySubmit}
+                  className="flex-1 h-12 bg-[#436d75] text-white rounded-2xl font-bold"
+                >
+                  {isLoading ? "..." : "Vérifier"}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeVerifyModal}
                   className="flex-1 h-12 border border-gray-200 rounded-2xl font-bold text-gray-700"
                 >
                   Annuler
