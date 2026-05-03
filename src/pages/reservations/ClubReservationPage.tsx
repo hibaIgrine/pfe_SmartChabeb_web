@@ -111,13 +111,12 @@ export default function ClubReservationPage() {
       .sort((a, b) => a.start - b.start);
 
     const suggestions: SuggestedSlot[] = [];
-    const maxSuggestions = 3;
     const step = 30;
 
+    // Afficher toutes les créneaux disponibles tout au long de la journée
     for (
       let candidateStart = Math.max(dayStart, minStart);
-      candidateStart + requestedDuration <= dayEnd &&
-      suggestions.length < maxSuggestions;
+      candidateStart + requestedDuration <= dayEnd;
       candidateStart += step
     ) {
       const candidateEnd = candidateStart + requestedDuration;
@@ -281,6 +280,19 @@ export default function ClubReservationPage() {
     setFeedback(null);
   };
 
+  const calculateTotalCost = (): string => {
+    if (!selectedLocal) return "0.00";
+
+    const pricePerHour = parseFloat(selectedLocal.prix_heure?.toString() || "0");
+    const start = parseTimeToMinutes(heureDebut);
+    const end = parseTimeToMinutes(heureFin);
+    const durationInHours = (end - start) / 60;
+
+    if (durationInHours <= 0) return "0.00";
+
+    return (durationInHours * pricePerHour).toFixed(2);
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -294,13 +306,28 @@ export default function ClubReservationPage() {
 
       {feedback && (
         <div
-          className={`rounded-2xl px-5 py-4 text-sm font-bold ${
+          className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 rounded-2xl px-6 py-4 text-sm font-bold shadow-lg ${
             feedback.type === "success"
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-rose-100 text-rose-700"
+              ? "bg-emerald-500 text-white"
+              : "bg-rose-500 text-white"
           }`}
+          style={{
+            maxWidth: '90%',
+            animation: 'slideDown 0.3s ease-out'
+          }}
         >
-          {feedback.message}
+          <div className="flex items-center gap-3">
+            {feedback.type === "success" ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )}
+            {feedback.message}
+          </div>
         </div>
       )}
 
@@ -388,6 +415,29 @@ export default function ClubReservationPage() {
               </div>
             </div>
           </div>
+
+          {selectedLocal && (
+            <div className="rounded-2xl border border-[#436D75]/20 bg-[#436D75] px-4 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-[#D9E8D1]">
+                    Coût estimé
+                  </p>
+                  <p className="text-xs text-white/80 mt-1">
+                    Paiement au centre
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-black text-[#D9E8D1]">
+                    {calculateTotalCost()} DT
+                  </p>
+                  <p className="text-xs text-white/60 mt-1">
+                    {selectedLocal.prix_heure} DT/h
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-black text-gray-500 uppercase mb-2">

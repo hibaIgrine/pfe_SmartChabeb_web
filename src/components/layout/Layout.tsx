@@ -70,7 +70,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       location.pathname !== "/mon-profil" &&
       location.pathname !== "/fil-actualite" &&
       location.pathname !== "/messagerie" &&
-      location.pathname !== "/my-club-requests"
+      location.pathname !== "/my-club-requests" &&
+      location.pathname !== "/club-reservations"
     ) {
       navigate("/clubs");
     }
@@ -308,7 +309,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {role === "RESPONSABLE_CLUB" && (
+          {(role === "RESPONSABLE_CLUB" || role === "ADHERENT") && (
             <SidebarItem
               to="/club-reservations"
               icon={<CalendarPlus size={18} />}
