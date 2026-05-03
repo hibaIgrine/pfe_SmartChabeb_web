@@ -16,6 +16,7 @@ import ClubsPage from "./pages/clubs/ClubsPage";
 import AdherentClubsPage from "./pages/clubs/AdherentClubsPage";
 import AdherentClubDetailsPage from "./pages/clubs/AdherentClubDetailsPage";
 import MyClubRequestsPage from "./pages/clubs/MyClubRequestsPage";
+import MyAllRequestsPage from "./pages/clubs/MyAllRequestsPage";
 import ClubStaffPage from "./pages/clubs/ClubStaffPage";
 import ClubRequestsPage from "./pages/clubs/ClubRequestsPage";
 import ClubCreationRequestsPage from "./pages/clubs/ClubCreationRequestsPage";
@@ -169,7 +170,7 @@ function App() {
           path="/my-club-requests"
           element={
             <Layout>
-              <MyClubRequestsPage />
+              <MyAllRequestsPage />
             </Layout>
           }
         />
