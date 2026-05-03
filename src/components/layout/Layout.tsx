@@ -71,7 +71,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       location.pathname !== "/fil-actualite" &&
       location.pathname !== "/messagerie" &&
       location.pathname !== "/my-club-requests" &&
-      location.pathname !== "/club-reservations"
+      location.pathname !== "/club-reservations" &&
+      location.pathname !== "/adherent-my-reservations"
     ) {
       navigate("/clubs");
     }
@@ -324,6 +325,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               icon={<ClipboardList size={18} />}
               label="Mes Réservations"
               active={location.pathname === "/club-my-reservations"}
+            />
+          )}
+
+          {role === "ADHERENT" && (
+            <SidebarItem
+              to="/adherent-my-reservations"
+              icon={<ClipboardList size={18} />}
+              label="Mes Réservations"
+              active={location.pathname === "/adherent-my-reservations"}
             />
           )}
 

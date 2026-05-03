@@ -388,12 +388,25 @@ export default function ClubReservationPage() {
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                   size={16}
                 />
-                <input
-                  type="time"
+                <select
                   value={heureDebut}
                   onChange={(e) => setHeureDebut(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 py-3 text-sm"
-                />
+                  className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 py-3 text-sm appearance-none"
+                >
+                  <option value="">--:--</option>
+                  {Array.from({ length: 16 }, (_, i) => {
+                    const hour = 8 + i;
+                    return Array.from({ length: 2 }, (_, j) => {
+                      const minutes = j * 30;
+                      const timeStr = `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                      return (
+                        <option key={timeStr} value={timeStr}>
+                          {timeStr}
+                        </option>
+                      );
+                    });
+                  })}
+                </select>
               </div>
             </div>
 
@@ -406,12 +419,26 @@ export default function ClubReservationPage() {
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                   size={16}
                 />
-                <input
-                  type="time"
+                <select
                   value={heureFin}
                   onChange={(e) => setHeureFin(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 py-3 text-sm"
-                />
+                  className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 py-3 text-sm appearance-none"
+                >
+                  <option value="">--:--</option>
+                  {Array.from({ length: 16 }, (_, i) => {
+                    const hour = 8 + i;
+                    return Array.from({ length: 2 }, (_, j) => {
+                      const minutes = j * 30;
+                      const timeStr = `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                      return (
+                        <option key={timeStr} value={timeStr}>
+                          {timeStr}
+                        </option>
+                      );
+                    });
+                  })}
+                  <option value="23:59">23:59</option>
+                </select>
               </div>
             </div>
           </div>

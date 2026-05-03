@@ -26,6 +26,7 @@ import LocauxPlanningPage from "./pages/locaux/LocauxPlanningPage";
 import ReservationsPage from "./pages/reservations/ReservationPage";
 import ClubReservationPage from "./pages/reservations/ClubReservationPage";
 import ClubMyReservationsPage from "./pages/reservations/ClubMyReservationsPage";
+import AdherentMyReservationsPage from "./pages/reservations/AdherentMyReservationsPage";
 import PresencePage from "./pages/presences/PresencePage";
 import EventsPage from "./pages/events/EventsPage";
 import EventRequestsPage from "./pages/events/EventRequestsPage";
@@ -235,6 +236,14 @@ function App() {
           element={
             <Layout>
               <ClubMyReservationsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/adherent-my-reservations"
+          element={
+            <Layout>
+              <AdherentMyReservationsPage />
             </Layout>
           }
         />
