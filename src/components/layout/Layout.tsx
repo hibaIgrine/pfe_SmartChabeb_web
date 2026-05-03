@@ -17,6 +17,7 @@ import {
   CalendarRange,
   CalendarDays,
   Newspaper,
+  ListTodo,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { FavoritePostsBell } from "./FavoritePostsBell";
@@ -68,7 +69,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       location.pathname !== "/club-creation-requests" &&
       location.pathname !== "/mon-profil" &&
       location.pathname !== "/fil-actualite" &&
-      location.pathname !== "/messagerie"
+      location.pathname !== "/messagerie" &&
+      location.pathname !== "/my-club-requests"
     ) {
       navigate("/clubs");
     }
@@ -226,6 +228,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               icon={<ClipboardList size={18} />}
               label="Demandes Clubs"
               active={location.pathname === "/club-creation-requests"}
+            />
+          )}
+
+          {role === "ADHERENT" && (
+            <SidebarItem
+              to="/my-club-requests"
+              icon={<ListTodo size={18} />}
+              label="Mes Demandes"
+              active={location.pathname === "/my-club-requests"}
             />
           )}
 

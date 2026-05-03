@@ -15,6 +15,7 @@ import MemberDetails from "./pages/coach/MembreDetails";
 import ClubsPage from "./pages/clubs/ClubsPage";
 import AdherentClubsPage from "./pages/clubs/AdherentClubsPage";
 import AdherentClubDetailsPage from "./pages/clubs/AdherentClubDetailsPage";
+import MyClubRequestsPage from "./pages/clubs/MyClubRequestsPage";
 import ClubStaffPage from "./pages/clubs/ClubStaffPage";
 import ClubRequestsPage from "./pages/clubs/ClubRequestsPage";
 import ClubCreationRequestsPage from "./pages/clubs/ClubCreationRequestsPage";
@@ -163,6 +164,14 @@ function App() {
         <Route
           path="/clubs/:clubId"
           element={<Layout>{getClubDetailsPage()}</Layout>}
+        />
+        <Route
+          path="/my-club-requests"
+          element={
+            <Layout>
+              <MyClubRequestsPage />
+            </Layout>
+          }
         />
         <Route
           path="/club-creation-requests"
