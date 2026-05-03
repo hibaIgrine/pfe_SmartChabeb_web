@@ -16,8 +16,6 @@ import {
   UserCircle,
   Users,
   XCircle,
-  Mail,
-  Phone,
 } from "lucide-react";
 import api from "../../api/axios";
 
@@ -104,9 +102,6 @@ export default function AdherentClubDetailsPage() {
     type: "success" | "error";
     message: string;
   } | null>(null);
-
-  // Extraire les objectifs du planning
-  const objectives = useMemo(() => getObjectives(club?.planning), [club?.planning]);
 
   const token = localStorage.getItem("token");
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
@@ -287,8 +282,7 @@ export default function AdherentClubDetailsPage() {
         <div className="grid gap-6 p-6 lg:grid-cols-[1.3fr_0.7fr]">
           <div className="space-y-5">
             <div className="rounded-[28px] bg-[#F7F3E9] p-5">
-              <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-[#436D75]">
-                <Target size={17} />
+              <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#436D75]">
                 Description
               </h2>
               <p className="mt-3 text-sm font-medium leading-7 text-gray-600">
@@ -296,72 +290,58 @@ export default function AdherentClubDetailsPage() {
               </p>
             </div>
 
-            <div className="rounded-[28px] bg-[#F7F3E9] p-5">
-              <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-[#436D75]">
-                <Flag size={17} />
-                Objectifs du club
-              </h2>
-              {objectives.length > 0 ? (
-                <ul className="mt-3 space-y-2">
-                  {objectives.map((objective, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm font-medium text-gray-600">
-                      <CheckCircle2 className="text-[#436D75] mt-0.5 flex-shrink-0" size={16} />
-                      {objective}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-3 text-sm font-semibold text-gray-500">
-                  Aucun objectif défini pour ce club.
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-[24px] border border-gray-100 p-5">
+                <Users className="text-[#E98A7D]" size={22} />
+                <p className="mt-3 text-2xl font-black text-[#436D75]">
+                  {acceptedCount}
                 </p>
-              )}
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">
+                  Membres
+                </p>
+              </div>
+              <div className="rounded-[24px] border border-gray-100 p-5">
+                <Clock3 className="text-[#E98A7D]" size={22} />
+                <p className="mt-3 text-sm font-black text-[#436D75]">
+                  {club.start_status?.is_started ? "Demarre" : "Preparation"}
+                </p>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">
+                  Statut
+                </p>
+              </div>
+              <div className="rounded-[24px] border border-gray-100 p-5">
+                <MapPin className="text-[#E98A7D]" size={22} />
+                <p className="mt-3 text-sm font-black text-[#436D75]">
+                  {club.locale_fixe || "Non precise"}
+                </p>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">
+                  Local
+                </p>
+              </div>
             </div>
 
             <div className="rounded-[28px] border border-gray-100 p-5">
               <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-[#436D75]">
                 <CalendarDays size={17} />
-                Planning & Horaires
+                Planning
               </h2>
               {planningSlots.length > 0 ? (
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {planningSlots.map((slot: any, index: number) => (
                     <div
                       key={`${slot.day}-${index}`}
-                      className="rounded-2xl bg-[#F7F3E9] px-4 py-3 text-sm font-bold text-gray-600 border border-[#436D75]/20"
+                      className="rounded-2xl bg-gray-50 px-4 py-3 text-sm font-bold text-gray-600"
                     >
-                      <span className="text-[#436D75] font-black">{slot.day}</span>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Clock3 size={14} className="text-[#E98A7D]" />
-                        <span>{slot.startTime}-{slot.endTime}</span>
-                      </div>
+                      <span className="text-[#436D75]">{slot.day}</span>{" "}
+                      {slot.startTime}-{slot.endTime}
                     </div>
                   ))}
                 </div>
               ) : (
                 <p className="mt-3 text-sm font-semibold text-gray-500">
-                  {planningText || "Planning non renseigné."}
+                  {planningText || "Planning non renseigne."}
                 </p>
               )}
-            </div>
-
-            <div className="rounded-[28px] border border-gray-100 p-5">
-              <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-[#436D75]">
-                <MapPin size={17} />
-                Salle & Localisation
-              </h2>
-              <div className="mt-3 flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F7F3E9]">
-                  <MapPin className="text-[#E98A7D]" size={20} />
-                </div>
-                <div>
-                  <p className="text-sm font-black text-[#436D75]">
-                    {club.locale_fixe || "Local non précisé"}
-                  </p>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">
-                    Centre {centre?.nom || club.centre?.nom}
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -418,70 +398,24 @@ export default function AdherentClubDetailsPage() {
 
             <div className="rounded-[28px] border border-gray-100 bg-white p-5 shadow-sm">
               <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#436D75]">
-                Responsable & Staff
+                Encadrement
               </h2>
-
-              {club.responsable && (
-                <div className="mb-5">
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-[#436D75] mb-2">
-                    RESPONSABLE PRINCIPAL
-                  </p>
-                  <StaffCard 
-                    user={club.responsable} 
-                    role="Responsable"
-                    showContact={true}
+              <div className="mt-4 space-y-3">
+                {club.responsable && (
+                  <StaffLine label="Responsable" user={club.responsable} />
+                )}
+                {(club.staff ?? []).slice(0, 6).map((item: any) => (
+                  <StaffLine
+                    key={item.id}
+                    label={item.role_dans_club || "Staff"}
+                    user={item.utilisateur}
                   />
-                </div>
-              )}
-
-              {(club.staff ?? []).length > 0 && (
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-[#436D75] mb-2">
-                    ÉQUIPE D'ENCADREMENT
+                ))}
+                {!club.responsable && (club.staff ?? []).length === 0 && (
+                  <p className="text-sm font-semibold text-gray-400">
+                    Aucun encadrant renseigne.
                   </p>
-                  <div className="mt-3 space-y-3">
-                    {(club.staff ?? []).slice(0, 6).map((item: any) => (
-                      <StaffCard
-                        key={item.id}
-                        user={item.utilisateur}
-                        role={item.role_dans_club || "Staff"}
-                        showContact={false}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {!club.responsable && (club.staff ?? []).length === 0 && (
-                <p className="text-sm font-semibold text-gray-400">
-                  Aucun encadrant renseigné.
-                </p>
-              )}
-            </div>
-
-            <div className="rounded-[28px] border border-gray-100 bg-white p-5 shadow-sm">
-              <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#436D75]">
-                Statistiques
-              </h2>
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl bg-[#F7F3E9] p-4 text-center">
-                  <Users className="mx-auto text-[#E98A7D]" size={22} />
-                  <p className="mt-2 text-2xl font-black text-[#436D75]">
-                    {acceptedCount}
-                  </p>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">
-                    Membres
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-[#F7F3E9] p-4 text-center">
-                  <Sparkles className="mx-auto text-[#E98A7D]" size={22} />
-                  <p className="mt-2 text-sm font-black text-[#436D75]">
-                    {club.start_status?.is_started ? "Actif" : "Préparation"}
-                  </p>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">
-                    Statut
-                  </p>
-                </div>
+                )}
               </div>
             </div>
           </aside>
@@ -514,50 +448,6 @@ function StaffLine({ label, user }: { label: string; user: any }) {
         <p className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-400">
           {label}
         </p>
-      </div>
-    </div>
-  );
-}
-
-function StaffCard({ user, role, showContact }: { user: any; role: string; showContact: boolean }) {
-  const imageUrl = getImageUrl(user?.photo_profil_url);
-
-  return (
-    <div className="rounded-2xl bg-[#F7F3E9] p-4 border border-[#436D75]/10">
-      <div className="flex items-start gap-4">
-        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={`${user?.nom ?? ""} ${user?.prenom ?? ""}`}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <UserCircle size={28} className="text-[#436D75]" />
-          )}
-        </div>
-        <div className="flex-1">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-black text-[#436D75]">
-                {user?.prenom} {user?.nom}
-              </p>
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#436D75]/70">
-                {role}
-              </p>
-            </div>
-            {showContact && (
-              <div className="flex gap-2">
-                <button className="flex h-8 w-8 items-center justify-center rounded-full bg-[#436D75]/10 text-[#436D75] hover:bg-[#436D75]/20">
-                  <Mail size={14} />
-                </button>
-                <button className="flex h-8 w-8 items-center justify-center rounded-full bg-[#436D75]/10 text-[#436D75] hover:bg-[#436D75]/20">
-                  <Phone size={14} />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   );
