@@ -1,8 +1,15 @@
-import { X, Map, Building2, CheckCircle } from "lucide-react";
+import {
+  X,
+  Map,
+  Building2,
+  ChevronRight,
+  CheckCircle,
+  Clock3,
+} from "lucide-react";
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { PlanningInput } from "./PlanningInput";
 import api from "../../../api/axios";
 import { getCategoryIcon, ALL_CATEGORIES } from "./AddClubModal";
-import { PlanningInput } from "./PlanningInput";
 
 const validateForm = (data: any, lockedCentreId?: string) => {
   const errors: any = {};
@@ -11,8 +18,10 @@ const validateForm = (data: any, lockedCentreId?: string) => {
   if (!lockedCentreId && !data.id_salle)
     errors.id_salle = "Établissement requis.";
   if (!data.locale) errors.locale = "Veuillez choisir un local.";
-  if (data.capacite === "" || parseInt(data.capacite) < 0)
+  if (data.capacite === "" || parseInt(data.capacite) <= 0)
     errors.capacite = "Invalide.";
+  if (!Array.isArray(data.objectifs) || data.objectifs.length === 0)
+    errors.objectifs = "Ajoutez au moins un objectif.";
 
   if (data.planning) {
     try {
@@ -21,6 +30,7 @@ const validateForm = (data: any, lockedCentreId?: string) => {
           ? JSON.parse(data.planning)
           : data.planning;
       const slots = Array.isArray(parsed?.slots) ? parsed.slots : [];
+
       const hasInvalidRange = slots.some((slot: any) => {
         const start = slot?.startTime;
         const end = slot?.endTime;
@@ -40,14 +50,41 @@ const validateForm = (data: any, lockedCentreId?: string) => {
   return errors;
 };
 
+const FR_DAY_TO_INDEX: Record<string, number> = {
+  Dimanche: 0,
+  Lundi: 1,
+  Mardi: 2,
+  Mercredi: 3,
+  Jeudi: 4,
+  Vendredi: 5,
+  Samedi: 6,
+};
+
+const formatDateOnly = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getNextDateForFrenchDay = (dayLabel: string) => {
+  const targetIndex = FR_DAY_TO_INDEX[dayLabel] ?? 1;
+  const nextDate = new Date();
+  const currentIndex = nextDate.getDay();
+  let daysUntilTarget = (targetIndex - currentIndex + 7) % 7;
+  if (daysUntilTarget === 0) daysUntilTarget = 7;
+  nextDate.setDate(nextDate.getDate() + daysUntilTarget);
+  return nextDate;
+};
+
 export const EditClubModal = ({
   isOpen,
   onClose,
   onSubmit,
-  formData,
-  setFormData,
-  salles,
-  categories,
+  formData = {},
+  setFormData = () => {},
+  salles = [],
+  categories = [],
   lockedCentreId,
   lockedCentreName,
 }: any) => {
@@ -61,6 +98,9 @@ export const EditClubModal = ({
   const [localList, setLocalList] = useState<any[]>([]);
   const [selectedStaff, setSelectedStaff] = useState<any[]>([]);
   const [selectedResponsableId, setSelectedResponsableId] = useState("");
+  const [objectifInput, setObjectifInput] = useState("");
+  const [availabilityMessage, setAvailabilityMessage] = useState("");
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const token = localStorage.getItem("token");
 
   useEffect(() => {
@@ -105,6 +145,8 @@ export const EditClubModal = ({
     } else {
       setStaffList([]);
       setLocalList([]);
+      setSelectedStaff([]);
+      setSelectedResponsableId("");
     }
   }, [formData.id_salle, isOpen, token]);
 
@@ -124,6 +166,7 @@ export const EditClubModal = ({
       ) as string[],
     [salles],
   );
+
   const filteredSalles = useMemo(
     () =>
       !selectedGouvernorat
@@ -137,14 +180,17 @@ export const EditClubModal = ({
       const reader = new FileReader();
       reader.onloadend = () => {
         setLogoPreview(reader.result as string);
-        setFormData((prev: any) => ({ ...prev, logo_url: reader.result }));
+        setFormData((prev: any) => ({
+          ...prev,
+          logo_url: reader.result as string,
+        }));
       };
       reader.readAsDataURL(file);
     },
     [setFormData],
   );
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     const errs = validateForm(formData, lockedCentreId);
     if (Object.keys(errs).length > 0) {
@@ -152,9 +198,28 @@ export const EditClubModal = ({
       return;
     }
 
-    onSubmit(e, {
+    const isAvailable = await checkAvailability();
+    if (!isAvailable) {
+      return;
+    }
+
+    let parsedPlanning: any = {};
+    try {
+      parsedPlanning = formData.planning
+        ? typeof formData.planning === "string"
+          ? JSON.parse(formData.planning)
+          : formData.planning
+        : {};
+    } catch {
+      parsedPlanning = {};
+    }
+
+    const payload = {
       ...formData,
-      id_salle: lockedCentreId || formData.id_salle,
+      planning: {
+        ...parsedPlanning,
+        objectifs: Array.isArray(formData.objectifs) ? formData.objectifs : [],
+      },
       staff: selectedStaff.filter(
         (s) => s.id_utilisateur !== selectedResponsableId,
       ),
@@ -163,15 +228,130 @@ export const EditClubModal = ({
         selectedStaff.find((s) => s.role_dans_club === "COACH")
           ?.id_utilisateur ||
         formData.id_coach,
+    };
+    onSubmit(e, payload);
+  };
+
+  const addObjectif = () => {
+    const value = objectifInput.trim();
+    if (!value) return;
+    const current = Array.isArray(formData.objectifs) ? formData.objectifs : [];
+    if (current.includes(value)) return;
+    setFormData({
+      ...formData,
+      objectifs: [...current, value],
     });
+    setObjectifInput("");
+    setErrors({ ...errors, objectifs: null });
+  };
+
+  const removeObjectif = (objectifToRemove: string) => {
+    const current = Array.isArray(formData.objectifs) ? formData.objectifs : [];
+    setFormData({
+      ...formData,
+      objectifs: current.filter(
+        (objectif: string) => objectif !== objectifToRemove,
+      ),
+    });
+  };
+
+  const checkAvailability = async () => {
+    const localId = formData.id_local;
+    let parsedPlanning: any = {};
+
+    try {
+      parsedPlanning = formData.planning
+        ? typeof formData.planning === "string"
+          ? JSON.parse(formData.planning)
+          : formData.planning
+        : {};
+    } catch {
+      setAvailabilityMessage("Planning invalide.");
+      return false;
+    }
+
+    const slots = Array.isArray(parsedPlanning?.slots)
+      ? parsedPlanning.slots
+      : [];
+
+    if (!localId || slots.length === 0) {
+      setAvailabilityMessage(
+        "Choisissez un local et ajoutez au moins un créneau pour vérifier.",
+      );
+      return false;
+    }
+
+    setCheckingAvailability(true);
+    setAvailabilityMessage("");
+
+    try {
+      for (const slot of slots) {
+        if (!slot?.day || !slot?.startTime || !slot?.endTime) {
+          setAvailabilityMessage("Complétez tous les créneaux du planning.");
+          return false;
+        }
+
+        const date = formatDateOnly(getNextDateForFrenchDay(slot.day));
+        const response = await api.get(
+          `/reservations/check?id_local=${localId}&date=${date}&start=${slot.startTime}&end=${slot.endTime}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+
+        if (!response.data?.available) {
+          setAvailabilityMessage(
+            `Indisponible: ${slot.day} de ${slot.startTime} à ${slot.endTime}.`,
+          );
+          return false;
+        }
+      }
+
+      setAvailabilityMessage("Tous les créneaux sont disponibles.");
+      return true;
+    } catch {
+      setAvailabilityMessage("Vérification de disponibilité indisponible.");
+      return false;
+    } finally {
+      setCheckingAvailability(false);
+    }
   };
 
   const handleClose = () => {
     setErrors({});
+    setLogoPreview("");
+    setSelectedGouvernorat("");
+    setSelectedStaff([]);
+    setSelectedResponsableId("");
+    setObjectifInput("");
+    setAvailabilityMessage("");
+    setIsCustomCategory(false);
     onClose();
   };
 
-  if (!isOpen) return null;
+  const planningPreview = useMemo(() => {
+    try {
+      const parsed = formData.planning
+        ? typeof formData.planning === "string"
+          ? JSON.parse(formData.planning)
+          : formData.planning
+        : {};
+      const slots = Array.isArray(parsed?.slots) ? parsed.slots : [];
+
+      if (slots.length === 0) {
+        return "Ajoutez des créneaux pour afficher la prévisualisation.";
+      }
+
+      return slots
+        .map((slot: any) => {
+          if (!slot?.day || !slot?.startTime || !slot?.endTime) {
+            return "Créneau incomplet";
+          }
+          return `Chaque ${String(slot.day).toLowerCase()} de ${slot.startTime} à ${slot.endTime}`;
+        })
+        .join(" | ");
+    } catch {
+      return "Planning invalide.";
+    }
+  }, [formData.planning]);
 
   const getFullImageUrl = (url?: string) => {
     if (!url || url.startsWith("data:")) return url || "";
@@ -179,10 +359,17 @@ export const EditClubModal = ({
     return `${api.defaults.baseURL || "http://localhost:3000"}${cleanPath}`;
   };
 
+  if (!isOpen) return null;
+
   const inputCls = (err?: string) =>
     `w-full p-4 bg-white rounded-[20px] font-bold text-sm outline-none border-none shadow-sm text-smart-teal transition-all ${
       err ? "ring-2 ring-red-400" : "focus:ring-4 focus:ring-smart-sage/50"
     }`;
+
+  const inputWithErrorCls = (err?: string) =>
+    `w-full p-4 bg-white rounded-[20px] font-bold text-sm outline-none border-none shadow-sm text-smart-teal transition-all ${
+      err ? "ring-2 ring-red-400" : "focus:ring-4 focus:ring-smart-sage/50"
+    } flex items-center gap-2`;
 
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center bg-[#1A1C1E]/65 backdrop-blur-md p-4 overflow-y-auto">
@@ -200,6 +387,7 @@ export const EditClubModal = ({
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-7" noValidate>
+          {/* 📍 SECTION 1 : LOCALISATION (Gouvernorat & Centre) */}
           {lockedCentreId ? (
             <div className="bg-white/40 p-6 rounded-[30px] border border-white space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
@@ -225,163 +413,226 @@ export const EditClubModal = ({
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 z-10"
                     size={16}
                   />
-                  <select
-                    className={`${inputCls()} pl-11`}
-                    value={selectedGouvernorat}
-                    onChange={(e) => {
-                      setSelectedGouvernorat(e.target.value);
-                      setFormData({ ...formData, id_salle: "", locale: "" });
-                    }}
-                  >
-                    <option value="">Région / Gouvernorat...</option>
-                    {gouvernorats.map((gov) => (
-                      <option key={gov} value={gov}>
-                        {gov}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center gap-2">
+                    <select
+                      className={`${inputWithErrorCls()} pl-11 flex-1`}
+                      value={selectedGouvernorat}
+                      onChange={(e) => {
+                        setSelectedGouvernorat(e.target.value);
+                        setFormData({
+                          ...formData,
+                          id_salle: "",
+                          locale: "",
+                          id_local: "",
+                        });
+                      }}
+                    >
+                      <option value="">Région / Gouvernorat...</option>
+                      {gouvernorats.map((gov) => (
+                        <option key={gov} value={gov}>
+                          {gov}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.gouvernorat && (
+                      <p className="text-red-500 text-[10px] font-black ml-2 uppercase">
+                        {errors.gouvernorat}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="relative group">
                   <Building2
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 z-10"
                     size={16}
                   />
-                  <select
-                    required
-                    className={`${inputCls(errors.id_salle)} pl-11`}
-                    value={formData.id_salle || ""}
-                    onChange={(e) => {
-                      setFormData({
-                        ...formData,
-                        id_salle: e.target.value,
-                        locale: "",
-                      });
-                      setSelectedResponsableId("");
-                      setErrors({ ...errors, id_salle: null });
-                    }}
-                  >
-                    <option value="" disabled>
-                      Choisir un établissement... *
-                    </option>
-                    {filteredSalles.map((s: any) => (
-                      <option key={s.id} value={s.id}>
-                        {s.nom}
+                  <div className="flex items-center gap-2">
+                    <select
+                      required
+                      className={`${inputWithErrorCls(errors.id_salle)} pl-11 flex-1`}
+                      value={formData.id_salle || ""}
+                      onChange={(e) => {
+                        setFormData({
+                          ...formData,
+                          id_salle: e.target.value,
+                          locale: "",
+                          id_local: "",
+                        });
+                        setSelectedResponsableId("");
+                        setErrors({ ...errors, id_salle: null });
+                      }}
+                    >
+                      <option value="" disabled>
+                        Choisir un établissement... *
                       </option>
-                    ))}
-                  </select>
+                      {filteredSalles.map((s: any) => (
+                        <option key={s.id} value={s.id}>
+                          {s.nom}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.id_salle && (
+                      <p className="text-red-500 text-[10px] font-black ml-2 uppercase">
+                        {errors.id_salle}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          <div
-            className="flex items-center gap-4 p-4 bg-white rounded-[25px] cursor-pointer border-2 border-dashed border-gray-200"
-            onClick={() => fileRef.current?.click()}
-          >
-            <div className="w-16 h-16 rounded-2xl bg-smart-sage/20 flex items-center justify-center relative overflow-hidden shrink-0 shadow-inner">
-              <span className="text-2xl">
-                {getCategoryIcon(formData.categorie, categories)}
-              </span>
-              {logoPreview && (
-                <img
-                  src={
-                    logoPreview.startsWith("data:")
-                      ? logoPreview
-                      : getFullImageUrl(logoPreview)
-                  }
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-              )}
+          {/* 🖼️ SECTION 2 : LOGO ET INFOS GÉNÉRALES */}
+          <div className="space-y-6">
+            <div
+              className="flex items-center gap-4 p-4 bg-white rounded-[25px] cursor-pointer border-2 border-dashed border-gray-200"
+              onClick={() => fileRef.current?.click()}
+            >
+              <div className="w-16 h-16 rounded-2xl bg-smart-sage/20 flex items-center justify-center relative overflow-hidden shrink-0 shadow-inner">
+                <span className="text-2xl">
+                  {getCategoryIcon(formData.categorie, categories)}
+                </span>
+                {logoPreview && (
+                  <img
+                    src={
+                      logoPreview.startsWith("data:")
+                        ? logoPreview
+                        : getFullImageUrl(logoPreview)
+                    }
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
+              </div>
+              <p className="font-bold text-sm text-smart-teal">
+                Cliquer pour changer le logo
+              </p>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) =>
+                  e.target.files?.[0] && handleLogoUpload(e.target.files[0])
+                }
+              />
             </div>
-            <p className="font-bold text-sm text-smart-teal">
-              Cliquer pour changer le logo
-            </p>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) =>
-                e.target.files?.[0] && handleLogoUpload(e.target.files[0])
-              }
-            />
-          </div>
 
-          <div className="space-y-4">
-            <input
-              required
-              placeholder="Nom officiel du club *"
-              className={inputCls(errors.nom)}
-              value={formData.nom || ""}
-              onChange={(e) => {
-                setFormData({ ...formData, nom: e.target.value });
-                setErrors({ ...errors, nom: null });
-              }}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
                 <input
-                  type="text"
-                  placeholder="Capacité d'accueil"
-                  className={inputCls(errors.capacite)}
-                  value={formData.capacite || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      capacite: e.target.value.replace(/[^0-9]/g, ""),
-                    })
-                  }
+                  required
+                  placeholder="Nom officiel du club *"
+                  className={inputWithErrorCls(errors.nom)}
+                  value={formData.nom || ""}
+                  onChange={(e) => {
+                    setFormData({ ...formData, nom: e.target.value });
+                    setErrors({ ...errors, nom: null });
+                  }}
                 />
-                {errors.capacite && (
-                  <p className="text-red-500 text-[9px] font-black ml-4 uppercase">
-                    {errors.capacite}
+                {errors.nom && (
+                  <p className="text-red-500 text-[10px] font-black ml-2 uppercase">
+                    {errors.nom}
                   </p>
                 )}
               </div>
 
-              <div className="space-y-1">
-                <select
-                  required
-                  disabled={!formData.id_salle}
-                  className={inputCls(errors.locale)}
-                  value={formData.locale || ""}
-                  onChange={(e) => {
-                    setFormData({ ...formData, locale: e.target.value });
-                    setErrors({ ...errors, locale: null });
-                  }}
-                >
-                  <option value="">
-                    {formData.id_salle
-                      ? "Choisir la salle / le terrain *"
-                      : "En attente du centre..."}
-                  </option>
-                  {localList.map((l: any) => (
-                    <option key={l.id} value={l.nom}>
-                      {l.nom} ({l.type})
-                    </option>
-                  ))}
-                  <option value="Autre">Extérieur / Hors centre</option>
-                </select>
-                {errors.locale && (
-                  <p className="text-red-500 text-[9px] font-black ml-4 uppercase">
-                    {errors.locale}
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Capacité d'accueil"
+                      className={inputWithErrorCls(errors.capacite)}
+                      value={formData.capacite || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          capacite: e.target.value.replace(/[^0-9]/g, ""),
+                        })
+                      }
+                    />
+                    {errors.capacite && (
+                      <p className="text-red-500 text-[10px] font-black ml-2 uppercase">
+                        {errors.capacite}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest ml-1">
+                  Objectifs du club
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex-1">
+                    <input
+                      value={objectifInput}
+                      onChange={(e) => setObjectifInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addObjectif();
+                        }
+                      }}
+                      placeholder="Ajouter un objectif"
+                      className={inputWithErrorCls(errors.objectifs)}
+                    />
+                    {errors.objectifs && (
+                      <p className="text-red-500 text-[10px] font-black ml-2 uppercase">
+                        {errors.objectifs}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addObjectif}
+                    className="px-4 py-3 rounded-2xl bg-smart-teal text-white text-xs font-black uppercase tracking-wide"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+                {Array.isArray(formData.objectifs) &&
+                  formData.objectifs.length > 0 && (
+                    <ul className="space-y-2 rounded-2xl bg-white p-4 border border-gray-100">
+                      {formData.objectifs.map((objectif: string) => (
+                        <li
+                          key={objectif}
+                          className="flex items-center justify-between text-xs font-bold text-smart-teal"
+                        >
+                          <span>• {objectif}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeObjectif(objectif)}
+                            className="text-red-500"
+                          >
+                            Retirer
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <textarea
+                  placeholder="Description de l'activité..."
+                  className={`${inputWithErrorCls()} min-h-[90px] flex-1`}
+                  value={formData.description || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                />
+                {errors.description && (
+                  <p className="text-red-500 text-[10px] font-black ml-2 uppercase">
+                    {errors.description}
                   </p>
                 )}
               </div>
             </div>
-
-            <textarea
-              placeholder="Description de l'activité..."
-              className={`${inputCls()} min-h-[90px]`}
-              value={formData.description || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-            />
           </div>
 
-          {/* Catégories */}
+          {/* 🏷️ SECTION 3 : CATÉGORIES */}
           <div className="space-y-3">
             <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest ml-1">
               Catégorie
@@ -414,46 +665,65 @@ export const EditClubModal = ({
               </button>
             </div>
             {isCustomCategory && (
-              <input
-                className={inputCls()}
-                placeholder="Saisir la catégorie..."
-                value={formData.categorie || ""}
-                onChange={(e) => {
-                  setFormData({ ...formData, categorie: e.target.value });
-                  setErrors({ ...errors, categorie: null });
-                }}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  required
+                  placeholder="Saisissez la catégorie personnalisée..."
+                  className={inputWithErrorCls(errors.categorie)}
+                  value={formData.categorie || ""}
+                  onChange={(e) => {
+                    setFormData({ ...formData, categorie: e.target.value });
+                    setErrors({ ...errors, categorie: null });
+                  }}
+                />
+                {errors.categorie && (
+                  <p className="text-red-500 text-[10px] font-black ml-2 uppercase">
+                    {errors.categorie}
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
+          {/* 🧑‍🤝‍🧑 SECTION 4 : STAFF */}
           <div className="space-y-3">
             <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest ml-1">
               Responsables et Animateurs
             </label>
-            <select
-              disabled={!formData.id_salle || staffList.length === 0}
-              className={inputCls()}
-              value={selectedResponsableId}
-              onChange={(e) => setSelectedResponsableId(e.target.value)}
-            >
-              <option value="">Aucun responsable sélectionné</option>
-              {staffList.map((s: any) => (
-                <option key={`resp-${s.id}`} value={s.id}>
-                  {s.nom} {s.prenom} ({s.role})
-                </option>
-              ))}
-            </select>
-            <p className="text-[9px] text-gray-400 font-bold ml-1 -mt-1 uppercase tracking-wide">
-              Ce membre sera enregistré comme responsable du club.
-            </p>
-
+            <div className="bg-white/70 rounded-2xl border border-white p-3">
+              <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider block mb-2 ml-1">
+                Responsable du club
+              </label>
+              <div className="flex items-center gap-2">
+                <select
+                  disabled={!formData.id_salle || staffList.length === 0}
+                  className={inputWithErrorCls() flex-1"}
+                  value={selectedResponsableId}
+                  onChange={(e) => setSelectedResponsableId(e.target.value)}
+                >
+                  <option value="">Aucun responsable sélectionné</option>
+                  {staffList.map((s: any) => (
+                    <option key={`resp-${s.id}`} value={s.id}>
+                      {s.nom} {s.prenom} ({s.role})
+                    </option>
+                  ))}
+                </select>
+                {errors.id_coach && (
+                  <p className="text-red-500 text-[10px] font-black ml-2 uppercase">
+                    {errors.id_coach}
+                  </p>
+                )}
+              </div>
+              <p className="text-[9px] text-gray-400 font-bold ml-1 mt-2 uppercase tracking-wide">
+                Ce membre sera enregistré comme responsable du club.
+              </p>
+            </div>
             <div className="grid grid-cols-1 gap-2">
               {formData.id_salle && staffList.length === 0 && (
                 <p className="text-[10px] text-red-400 italic ml-2">
                   Aucun staff trouvé dans ce centre.
                 </p>
               )}
-
               {staffList.map((s: any) => {
                 const isSelected = selectedStaff.find(
                   (item) => item.id_utilisateur === s.id,
@@ -491,19 +761,121 @@ export const EditClubModal = ({
             </div>
           </div>
 
-          <PlanningInput
-            value={formData.planning}
-            onChange={(val) => {
-              setFormData({ ...formData, planning: val });
-              setErrors((prev: any) => ({ ...prev, planning: null }));
-            }}
-          />
-          {errors.planning && (
-            <p className="text-red-500 text-[10px] font-black ml-1 uppercase">
-              {errors.planning}
-            </p>
-          )}
+          {/* 📅 SECTION 5 : PLANNING */}
+          <div className="rounded-[28px] border border-gray-100 bg-[#F7F3E9] p-5 space-y-4">
+            <div>
+              <h4 className="text-sm font-black text-[#244047]">
+                Planning hebdomadaire
+              </h4>
+              <p className="text-xs text-gray-500 font-medium mt-1">
+                Configurez les créneaux du club, puis vérifiez la disponibilité
+                du local.
+              </p>
+            </div>
 
+            <div className="rounded-[24px] bg-white p-4 border border-[#D9E8D1] flex items-start gap-3">
+              <Clock3 size={18} className="text-[#436D75] mt-0.5" />
+              <div>
+                <p className="text-sm font-black text-[#244047]">
+                  Prévisualisation
+                </p>
+                <p className="text-xs text-gray-500 font-medium mt-1">
+                  {planningPreview}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <PlanningInput
+                value={formData.planning}
+                onChange={(val) => {
+                  setFormData({ ...formData, planning: val });
+                  setErrors((prev: any) => ({ ...prev, planning: null }));
+                }}
+                className="flex-1"
+              />
+              {errors.planning && (
+                <p className="text-red-500 text-[10px] font-black ml-2 uppercase">
+                  {errors.planning}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* 📍 SECTION 6 : LOCAL */}
+          <div className="rounded-[28px] border border-gray-100 bg-white p-5 space-y-4">
+            <div>
+              <h4 className="text-sm font-black text-[#244047]">
+                Local de votre centre
+              </h4>
+              <p className="text-xs text-gray-500 font-medium mt-1">
+                Les locaux affichés ici proviennent uniquement du centre
+                sélectionné.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                Local souhaité
+              </label>
+              <div className="flex items-center gap-2">
+                <select
+                  required
+                  disabled={!formData.id_salle}
+                  className="w-full rounded-2xl border bg-[#F8FAFC] px-4 py-3 text-sm font-semibold outline-none border-gray-200 flex-1"
+                  value={formData.id_local || ""}
+                  onChange={(e) => {
+                    const selected = localList.find(
+                      (l: any) => l.id === e.target.value,
+                    );
+                    setFormData({
+                      ...formData,
+                      id_local: e.target.value,
+                      locale: selected?.nom || "",
+                    });
+                    setErrors({ ...errors, locale: null });
+                  }}
+                >
+                  <option value="">
+                    {formData.id_salle
+                      ? "Choisir la salle / le terrain *"
+                      : "En attente du centre..."}
+                  </option>
+                  {localList.map((l: any) => (
+                    <option key={l.id} value={l.id}>
+                      {l.nom} ({l.type})
+                    </option>
+                  ))}
+                </select>
+                {errors.locale && (
+                  <p className="text-red-500 text-[10px] font-black ml-2 uppercase">
+                    {errors.locale}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => void checkAvailability()}
+                disabled={checkingAvailability}
+                className="inline-flex items-center gap-2 rounded-2xl bg-[#436D75] px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-white shadow-sm disabled:opacity-60"
+              >
+                <ChevronRight size={14} />
+                {checkingAvailability
+                  ? "Vérification..."
+                  : "Vérifier la disponibilité"}
+              </button>
+              {availabilityMessage && (
+                <span className="text-xs font-bold text-gray-600">
+                  {availabilityMessage}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* 🚀 SUBMIT */}
           <button
             type="submit"
             className="w-full bg-smart-teal text-white py-5 rounded-[30px] font-black text-lg shadow-xl shadow-smart-teal/20 hover:bg-black transition-all flex items-center justify-center gap-3"

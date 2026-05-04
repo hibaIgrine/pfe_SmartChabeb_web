@@ -32,6 +32,7 @@ import EventsPage from "./pages/events/EventsPage";
 import EventRequestsPage from "./pages/events/EventRequestsPage";
 import EventParticipantsPage from "./pages/events/EventParticipantsPage";
 import EventWaitingListPage from "./pages/events/EventWaitingListPage";
+import AdherentEventsPage from "./pages/events/AdherentEventsPage";
 import ProfileGamificationPage from "./pages/profile/ProfileGamificationPage";
 import MyProfilePage from "./pages/profile/MyProfilePage";
 import UserProfilePage from "./pages/profile/UserProfilePage";
@@ -257,6 +258,14 @@ function App() {
         />
         <Route
           path="/events"
+          element={
+            <Layout>
+              <AdherentEventsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/events-management"
           element={
             <Layout>
               <EventsPage />

@@ -72,7 +72,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       location.pathname !== "/messagerie" &&
       location.pathname !== "/my-club-requests" &&
       location.pathname !== "/club-reservations" &&
-      location.pathname !== "/adherent-my-reservations"
+      location.pathname !== "/adherent-my-reservations" &&
+      location.pathname !== "/events"
     ) {
       navigate("/clubs");
     }
@@ -254,14 +255,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "ADMIN" ||
-            role === "RESPONSABLE_CENTRE" ||
-            role === "RESPONSABLE_CLUB") && (
+          {role === "ADHERENT" && (
             <SidebarItem
               to="/events"
               icon={<CalendarDays size={18} />}
               label="Événements"
               active={location.pathname === "/events"}
+            />
+          )}
+
+          {(role === "ADMIN" ||
+            role === "RESPONSABLE_CENTRE" ||
+            role === "RESPONSABLE_CLUB") && (
+            <SidebarItem
+              to="/events-management"
+              icon={<CalendarDays size={18} />}
+              label="Gestion Événements"
+              active={location.pathname === "/events-management"}
             />
           )}
 
