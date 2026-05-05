@@ -62,6 +62,7 @@ export default function ClubReservationPage() {
   const [objet, setObjet] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [paymentNow, setPaymentNow] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     message: string;
@@ -222,23 +223,54 @@ export default function ClubReservationPage() {
 
     try {
       setIsSubmitting(true);
-      await api.post("/reservations", {
+      const reservationData = {
         id_local: selectedLocalId,
         date_reservation: dateReservation,
         heure_debut: `${heureDebut}:00`,
         heure_fin: `${heureFin}:00`,
         objet: objet.trim(),
-      });
+      };
 
-      setObjet("");
-      setFeedback({
-        type: "success",
-        message: "Reservation envoyee avec succes.",
-      });
-      await Promise.all([
-        loadData(),
-        loadOccupiedSlots(selectedLocalId, dateReservation),
-      ]);
+      if (paymentNow) {
+        // Utiliser l'endpoint create-with-payment
+        const returnUrl =
+          window.location.origin + "/reservations/my-reservations";
+        const response = await api.post("/reservations/create-with-payment", {
+          ...reservationData,
+          returnUrl,
+        });
+
+        // Rediriger vers Konnect
+        if (response.data?.checkoutUrl) {
+          window.location.href = response.data.checkoutUrl;
+        } else {
+          setFeedback({
+            type: "success",
+            message:
+              "Reservation créée. Paiement non disponible pour le moment.",
+          });
+          await Promise.all([
+            loadData(),
+            loadOccupiedSlots(selectedLocalId, dateReservation),
+          ]);
+          setObjet("");
+          setPaymentNow(false);
+        }
+      } else {
+        // Utiliser l'endpoint normal
+        await api.post("/reservations", reservationData);
+
+        setObjet("");
+        setFeedback({
+          type: "success",
+          message: "Reservation envoyee avec succes.",
+        });
+        await Promise.all([
+          loadData(),
+          loadOccupiedSlots(selectedLocalId, dateReservation),
+        ]);
+        setPaymentNow(false);
+      }
     } catch (error: any) {
       const status = error?.response?.status;
       const apiMessage = error?.response?.data?.message;
@@ -283,7 +315,9 @@ export default function ClubReservationPage() {
   const calculateTotalCost = (): string => {
     if (!selectedLocal) return "0.00";
 
-    const pricePerHour = parseFloat(selectedLocal.prix_heure?.toString() || "0");
+    const pricePerHour = parseFloat(
+      selectedLocal.prix_heure?.toString() || "0",
+    );
     const start = parseTimeToMinutes(heureDebut);
     const end = parseTimeToMinutes(heureFin);
     const durationInHours = (end - start) / 60;
@@ -312,18 +346,38 @@ export default function ClubReservationPage() {
               : "bg-rose-500 text-white"
           }`}
           style={{
-            maxWidth: '90%',
-            animation: 'slideDown 0.3s ease-out'
+            maxWidth: "90%",
+            animation: "slideDown 0.3s ease-out",
           }}
         >
           <div className="flex items-center gap-3">
             {feedback.type === "success" ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             )}
             {feedback.message}
@@ -398,7 +452,7 @@ export default function ClubReservationPage() {
                     const hour = 8 + i;
                     return Array.from({ length: 2 }, (_, j) => {
                       const minutes = j * 30;
-                      const timeStr = `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                      const timeStr = `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
                       return (
                         <option key={timeStr} value={timeStr}>
                           {timeStr}
@@ -429,7 +483,7 @@ export default function ClubReservationPage() {
                     const hour = 8 + i;
                     return Array.from({ length: 2 }, (_, j) => {
                       const minutes = j * 30;
-                      const timeStr = `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                      const timeStr = `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
                       return (
                         <option key={timeStr} value={timeStr}>
                           {timeStr}
@@ -477,6 +531,27 @@ export default function ClubReservationPage() {
               placeholder="Ex: repetition theatre, atelier media..."
               className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm"
             />
+          </div>
+
+          <div className="flex items-center gap-3 rounded-2xl border border-[#D9E8D1] bg-white px-4 py-3">
+            <input
+              type="checkbox"
+              id="paymentNow"
+              checked={paymentNow}
+              onChange={(e) => setPaymentNow(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 accent-[#436D75]"
+            />
+            <label
+              htmlFor="paymentNow"
+              className="text-xs font-black text-gray-700 cursor-pointer flex-1"
+            >
+              💳 Payer maintenant avec Konnect
+            </label>
+            {paymentNow && (
+              <span className="text-[10px] font-bold text-[#436D75] bg-[#D9E8D1] px-2 py-1 rounded">
+                {calculateTotalCost()} DT
+              </span>
+            )}
           </div>
 
           <button

@@ -45,6 +45,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(() => getStoredUser());
   const [dbProfile, setDbProfile] = useState<any>(null);
+  const [managedClubs, setManagedClubs] = useState<any[]>([]);
+  const [managedClubsLoading, setManagedClubsLoading] = useState(false);
   const role = user?.role;
   const displayUser = dbProfile ?? user;
   const hasProfileImage =
@@ -138,6 +140,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       );
     };
   }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setManagedClubs([]);
+      return;
+    }
+
+    const loadManagedClubs = async () => {
+      if (role !== "RESPONSABLE_CLUB" && role !== "RESPONSABLE_CENTRE") return;
+      setManagedClubsLoading(true);
+      try {
+        const res = await api.get("/presences/my-clubs", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setManagedClubs(Array.isArray(res.data) ? res.data : []);
+      } catch {
+        setManagedClubs([]);
+      } finally {
+        setManagedClubsLoading(false);
+      }
+    };
+
+    void loadManagedClubs();
+  }, [user?.id, role]);
 
   useEffect(() => {
     setTopBarImageError(false);
@@ -245,14 +272,45 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {(role === "ADHERENT" ||
             role === "ADMIN" ||
-            role === "RESPONSABLE_CENTRE" ||
-            role === "RESPONSABLE_CLUB") && (
+            role === "RESPONSABLE_CENTRE") && (
             <SidebarItem
               to="/clubs"
               icon={<LayoutGrid size={18} />}
               label="Clubs & Activités"
               active={location.pathname === "/clubs"}
             />
+          )}
+
+          {(role === "RESPONSABLE_CLUB" || role === "RESPONSABLE_CENTRE") && (
+            <div className="px-3 mt-2">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">
+                Mes clubs
+              </div>
+              {managedClubsLoading ? (
+                <div className="text-[10px] text-white/60 px-4">
+                  Chargement...
+                </div>
+              ) : managedClubs.length === 0 ? (
+                <div className="text-[10px] text-white/50 px-4">Aucun club</div>
+              ) : (
+                <div className="space-y-1">
+                  {managedClubs.map((c) => (
+                    <Link
+                      key={c.id}
+                      to={`/my-clubs/${c.id}`}
+                      className={`flex items-center gap-2 py-1.5 px-3 rounded-md transition-all text-sm truncate ${
+                        location.pathname.startsWith(`/clubs/${c.id}`)
+                          ? "bg-white text-[#436D75]"
+                          : "text-white/80 hover:bg-white/5"
+                      }`}
+                    >
+                      <Building2 size={14} />
+                      <span className="font-bold truncate">{c.nom}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {role === "ADHERENT" && (

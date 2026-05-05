@@ -8,10 +8,12 @@ import {
   MapPin,
   CheckCircle2,
   Star,
+  Award,
 } from "lucide-react";
 import api from "../../api/axios";
 import type { EventItem, EventDetail } from "./types";
 import { toTimeHHMM } from "./utils";
+import CertificateModal from "./components/CertificateModal";
 
 type EventFilter = "upcoming" | "past";
 
@@ -35,6 +37,13 @@ export default function AdherentEventsPage() {
   const [notification, setNotification] = useState<{
     msg: string;
     type: "success" | "error";
+  } | null>(null);
+  const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
+  const [isCertificateLoading, setIsCertificateLoading] = useState(false);
+  const [certificateData, setCertificateData] = useState<{
+    image: string;
+    filename: string;
+    participantName: string;
   } | null>(null);
 
   const showAlert = (msg: string, type: "success" | "error") => {
@@ -177,6 +186,33 @@ export default function AdherentEventsPage() {
       );
     } finally {
       setIsSubmittingFeedback(false);
+    }
+  };
+
+  const handleGenerateCertificate = async (eventId: string) => {
+    setIsCertificateLoading(true);
+    try {
+      const response = await api.get(`/certificates/event/${eventId}`, {
+        headers,
+      });
+      setCertificateData({
+        image: response.data.image,
+        filename: response.data.filename,
+        participantName: response.data.participantName,
+      });
+      setIsCertificateModalOpen(true);
+      showAlert("Certificat genere avec succes !", "success");
+    } catch (error: any) {
+      const apiMessage = error?.response?.data?.message;
+      const detailedMessage = Array.isArray(apiMessage)
+        ? apiMessage.join(" | ")
+        : apiMessage;
+      showAlert(
+        detailedMessage || "Impossible de generer votre certificat.",
+        "error",
+      );
+    } finally {
+      setIsCertificateLoading(false);
     }
   };
 
@@ -529,6 +565,21 @@ export default function AdherentEventsPage() {
                       Événement passé: consultation uniquement.
                     </div>
 
+                    {selectedParticipation?.checkin && (
+                      <button
+                        disabled={isCertificateLoading}
+                        onClick={() =>
+                          handleGenerateCertificate(selectedEvent.id)
+                        }
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-black hover:from-amber-600 hover:to-orange-600 transition disabled:opacity-60"
+                      >
+                        <Award size={18} />
+                        {isCertificateLoading
+                          ? "Generation..."
+                          : "Telecharger mon certificat"}
+                      </button>
+                    )}
+
                     {Array.isArray(selectedEvent.recentFeedbacks) &&
                       selectedEvent.recentFeedbacks.length > 0 && (
                         <div className="space-y-2">
@@ -634,6 +685,16 @@ export default function AdherentEventsPage() {
           )}
         </div>
       </div>
+
+      <CertificateModal
+        isOpen={isCertificateModalOpen}
+        isLoading={isCertificateLoading}
+        imageBase64={certificateData?.image}
+        filename={certificateData?.filename}
+        participantName={certificateData?.participantName}
+        eventName={selectedEvent?.nom}
+        onClose={() => setIsCertificateModalOpen(false)}
+      />
     </div>
   );
 }

@@ -102,6 +102,14 @@ export const EditClubModal = ({
   const [availabilityMessage, setAvailabilityMessage] = useState("");
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const token = localStorage.getItem("token");
+  const currentUser = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  }, []);
+  const currentRole = currentUser?.role;
   const LOCAL_STORAGE_KEY = "editclub_selected_local";
 
   useEffect(() => {
@@ -725,34 +733,36 @@ export const EditClubModal = ({
             <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest ml-1">
               Responsables et Animateurs
             </label>
-            <div className="bg-white/70 rounded-2xl border border-white p-3">
-              <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider block mb-2 ml-1">
-                Responsable du club
-              </label>
-              <div className="flex items-center gap-2">
-                <select
-                  disabled={!formData.id_salle || staffList.length === 0}
-                  className={inputWithErrorCls()}
-                  value={selectedResponsableId}
-                  onChange={(e) => setSelectedResponsableId(e.target.value)}
-                >
-                  <option value="">Aucun responsable sélectionné</option>
-                  {staffList.map((s: any) => (
-                    <option key={`resp-${s.id}`} value={s.id}>
-                      {s.nom} {s.prenom} ({s.role})
-                    </option>
-                  ))}
-                </select>
-                {errors.id_coach && (
-                  <p className="text-red-500 text-[10px] font-black ml-2 uppercase">
-                    {errors.id_coach}
-                  </p>
-                )}
+            {currentRole !== "RESPONSABLE_CLUB" && (
+              <div className="bg-white/70 rounded-2xl border border-white p-3">
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider block mb-2 ml-1">
+                  Responsable du club
+                </label>
+                <div className="flex items-center gap-2">
+                  <select
+                    disabled={!formData.id_salle || staffList.length === 0}
+                    className={inputWithErrorCls()}
+                    value={selectedResponsableId}
+                    onChange={(e) => setSelectedResponsableId(e.target.value)}
+                  >
+                    <option value="">Aucun responsable sélectionné</option>
+                    {staffList.map((s: any) => (
+                      <option key={`resp-${s.id}`} value={s.id}>
+                        {s.nom} {s.prenom} ({s.role})
+                      </option>
+                    ))}
+                  </select>
+                  {errors.id_coach && (
+                    <p className="text-red-500 text-[10px] font-black ml-2 uppercase">
+                      {errors.id_coach}
+                    </p>
+                  )}
+                </div>
+                <p className="text-[9px] text-gray-400 font-bold ml-1 mt-2 uppercase tracking-wide">
+                  Ce membre sera enregistré comme responsable du club.
+                </p>
               </div>
-              <p className="text-[9px] text-gray-400 font-bold ml-1 mt-2 uppercase tracking-wide">
-                Ce membre sera enregistré comme responsable du club.
-              </p>
-            </div>
+            )}
             <div className="grid grid-cols-1 gap-2">
               {formData.id_salle && staffList.length === 0 && (
                 <p className="text-[10px] text-red-400 italic ml-2">

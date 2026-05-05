@@ -18,6 +18,7 @@ import AdherentClubDetailsPage from "./pages/clubs/AdherentClubDetailsPage";
 import MyClubRequestsPage from "./pages/clubs/MyClubRequestsPage";
 import MyAllRequestsPage from "./pages/clubs/MyAllRequestsPage";
 import ClubStaffPage from "./pages/clubs/ClubStaffPage";
+import ManagedClubDetailsPage from "./pages/clubs/ManagedClubDetailsPage";
 import ClubRequestsPage from "./pages/clubs/ClubRequestsPage";
 import ClubCreationRequestsPage from "./pages/clubs/ClubCreationRequestsPage";
 import RolesPage from "./pages/admin/roles/RolesPage";
@@ -183,6 +184,14 @@ function App() {
           element={
             <Layout>
               <ClubStaffPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/my-clubs/:clubId"
+          element={
+            <Layout>
+              <ManagedClubDetailsPage />
             </Layout>
           }
         />
