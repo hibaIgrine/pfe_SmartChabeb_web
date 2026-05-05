@@ -254,7 +254,7 @@ export default function ClubsPage() {
       logo_url: club.logo_url ?? "",
       planning: club.planning ?? "",
       capacite: club.capacite ?? "",
-      locale: club.locale ?? club.locale_fixe ?? "",
+      locale: club.locale_fixe ?? "",
       objectifs: Array.isArray(club?.planning?.objectifs)
         ? club.planning.objectifs
         : [],
@@ -272,11 +272,14 @@ export default function ClubsPage() {
           ...updatedData,
           id_centre: updatedData.id_salle,
           locale_fixe: updatedData.locale,
+          // S'assurer que le planning est sauvegardé correctement
+          planning: updatedData.planning,
         },
         { headers },
       );
       setEditingClub(null);
-      setEditFormData({ ...EMPTY_FORM });
+      // Ne pas réinitialiser editFormData pour conserver les données
+      // setEditFormData({ ...EMPTY_FORM });
       await loadAllData();
       showAlert("Club mis à jour avec succès ! ✅", "success");
     } catch {

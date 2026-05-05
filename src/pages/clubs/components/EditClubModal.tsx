@@ -102,6 +102,7 @@ export const EditClubModal = ({
   const [availabilityMessage, setAvailabilityMessage] = useState("");
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const token = localStorage.getItem("token");
+  const LOCAL_STORAGE_KEY = "editclub_selected_local";
 
   useEffect(() => {
     if (isOpen) {
@@ -140,7 +141,19 @@ export const EditClubModal = ({
 
       api
         .get(`/locaux?id_centre=${formData.id_salle}`, { headers })
-        .then((res) => setLocalList(res.data))
+        .then((res) => {
+          setLocalList(res.data);
+          // Initialiser le local si formData.id_local existe
+          if (formData.id_local && !formData.locale) {
+            const local = res.data.find((l: any) => l.id === formData.id_local);
+            if (local) {
+              setFormData((prev: any) => ({
+                ...prev,
+                locale: local.nom,
+              }));
+            }
+          }
+        })
         .catch(() => setLocalList([]));
     } else {
       setStaffList([]);
@@ -228,6 +241,9 @@ export const EditClubModal = ({
         selectedStaff.find((s) => s.role_dans_club === "COACH")
           ?.id_utilisateur ||
         formData.id_coach,
+      // S'assurer que le local est sauvegardé
+      id_local: formData.id_local,
+      locale: formData.locale,
     };
     onSubmit(e, payload);
   };
@@ -369,7 +385,7 @@ export const EditClubModal = ({
   const inputWithErrorCls = (err?: string) =>
     `w-full p-4 bg-white rounded-[20px] font-bold text-sm outline-none border-none shadow-sm text-smart-teal transition-all ${
       err ? "ring-2 ring-red-400" : "focus:ring-4 focus:ring-smart-sage/50"
-    } flex items-center gap-2`;
+    }`;
 
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center bg-[#1A1C1E]/65 backdrop-blur-md p-4 overflow-y-auto">
@@ -617,7 +633,7 @@ export const EditClubModal = ({
               <div className="flex items-center gap-2">
                 <textarea
                   placeholder="Description de l'activité..."
-                  className={`${inputWithErrorCls()} min-h-[90px] flex-1`}
+                  className={`${inputWithErrorCls(errors.description)} min-h-[90px] flex-1`}
                   value={formData.description || ""}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
@@ -697,7 +713,7 @@ export const EditClubModal = ({
               <div className="flex items-center gap-2">
                 <select
                   disabled={!formData.id_salle || staffList.length === 0}
-                  className={inputWithErrorCls() flex-1"}
+                  className={inputWithErrorCls()}
                   value={selectedResponsableId}
                   onChange={(e) => setSelectedResponsableId(e.target.value)}
                 >
