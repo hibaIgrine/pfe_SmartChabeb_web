@@ -123,6 +123,14 @@ export const EditClubModal = ({
 
       setSelectedResponsableId(formData.id_coach || "");
 
+      // S'assurer que id_salle est défini (c'est le centre du club)
+      if (!formData.id_salle && formData.centre?.id) {
+        setFormData((prev: any) => ({
+          ...prev,
+          id_salle: formData.centre.id,
+        }));
+      }
+
       if (formData.id_salle) {
         const salle = salles.find((s: any) => s.id === formData.id_salle);
         if (salle) setSelectedGouvernorat(salle.gouvernorat);
@@ -143,10 +151,21 @@ export const EditClubModal = ({
         .get(`/locaux?id_centre=${formData.id_salle}`, { headers })
         .then((res) => {
           setLocalList(res.data);
-          // Initialiser le local si formData.id_local existe
-          if (formData.id_local && !formData.locale) {
+          // Chercher le local qui correspond au nom stocké (locale_fixe)
+          if (formData.locale && !formData.id_local) {
+            const matchedLocal = res.data.find(
+              (l: any) => l.nom === formData.locale,
+            );
+            if (matchedLocal) {
+              setFormData((prev: any) => ({
+                ...prev,
+                id_local: matchedLocal.id,
+              }));
+            }
+          } else if (formData.id_local) {
+            // Si id_local existe, s'assurer que le nom est synchronisé
             const local = res.data.find((l: any) => l.id === formData.id_local);
-            if (local) {
+            if (local && !formData.locale) {
               setFormData((prev: any) => ({
                 ...prev,
                 locale: local.nom,
@@ -161,7 +180,7 @@ export const EditClubModal = ({
       setSelectedStaff([]);
       setSelectedResponsableId("");
     }
-  }, [formData.id_salle, isOpen, token]);
+  }, [formData.id_salle, isOpen, token, setFormData]);
 
   useEffect(() => {
     if (isOpen && lockedCentreId && formData.id_salle !== lockedCentreId) {

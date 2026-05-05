@@ -249,7 +249,7 @@ export default function ClubsPage() {
       description: club.description ?? "",
       categorie: club.categorie ?? "",
       id_salle: club.id_salle ?? club.id_centre ?? "",
-      id_local: "",
+      id_local: "", // Sera chargé dans EditClubModal après le chargement des locaux
       id_coach: club.id_coach ?? "",
       logo_url: club.logo_url ?? "",
       planning: club.planning ?? "",
@@ -259,6 +259,7 @@ export default function ClubsPage() {
         ? club.planning.objectifs
         : [],
       staff: club.staff ?? [],
+      centre: club.centre ?? null, // Passer les info du centre
     });
     setEditingClub(club);
   };
