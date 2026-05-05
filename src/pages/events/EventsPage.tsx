@@ -84,7 +84,13 @@ export default function EventsPage() {
   const scopedEvents = useMemo(() => {
     if (!isResponsableCentre || !resolvedCentreId) return events;
     const clubIds = new Set(scopedClubs.map((club) => club.id));
-    return events.filter((event) => clubIds.has(event.club_id));
+    return events.filter((event) => {
+      const relatedIds = [
+        event.club_id,
+        ...(event.collaborating_club_ids || []),
+      ].filter(Boolean) as string[];
+      return relatedIds.some((clubId) => clubIds.has(clubId));
+    });
   }, [events, isResponsableCentre, resolvedCentreId, scopedClubs]);
 
   const scopedDashboardStats = useMemo(() => {
@@ -105,7 +111,8 @@ export default function EventsPage() {
     };
   }, [dashboardStats, isResponsableCentre, scopedClubs, scopedEvents]);
 
-  const selectedClub = scopedClubs.find((c) => c.id === form.club_id);
+  const selectedClubContextId = form.club_id || form.club_ids[0] || "";
+  const selectedClub = scopedClubs.find((c) => c.id === selectedClubContextId);
 
   const gouvernorats = useMemo(
     () =>
@@ -139,7 +146,9 @@ export default function EventsPage() {
   const filteredLocaux = useMemo(() => {
     if (isAdmin) {
       if (!selectedCentreForAdmin) return [];
-      return locaux.filter((local) => local.id_centre === selectedCentreForAdmin);
+      return locaux.filter(
+        (local) => local.id_centre === selectedCentreForAdmin,
+      );
     }
 
     if (isResponsableCentre && resolvedCentreId) {
@@ -147,7 +156,9 @@ export default function EventsPage() {
     }
 
     if (selectedClub?.id_centre) {
-      return locaux.filter((local) => local.id_centre === selectedClub.id_centre);
+      return locaux.filter(
+        (local) => local.id_centre === selectedClub.id_centre,
+      );
     }
 
     return locaux;
@@ -214,17 +225,19 @@ export default function EventsPage() {
   }, [showInactive]);
 
   useEffect(() => {
-    if (!form.club_id || !form.locaux_id) return;
+    if (!form.locaux_id) return;
     const stillValid = filteredLocaux.some((l) => l.id === form.locaux_id);
     if (!stillValid) {
       setForm((prev) => ({ ...prev, locaux_id: "" }));
     }
-  }, [form.club_id, form.locaux_id, filteredLocaux]);
+  }, [form.locaux_id, filteredLocaux]);
 
   useEffect(() => {
     if (!selectedEventId) return;
 
-    const stillVisible = scopedEvents.some((event) => event.id === selectedEventId);
+    const stillVisible = scopedEvents.some(
+      (event) => event.id === selectedEventId,
+    );
     if (!stillVisible) {
       setSelectedEventId(null);
       setSelectedDetail(null);
@@ -232,8 +245,8 @@ export default function EventsPage() {
   }, [selectedEventId, scopedEvents]);
 
   useEffect(() => {
-    if (!isAdmin || !form.club_id) return;
-    const club = clubs.find((c) => c.id === form.club_id);
+    if (!isAdmin || !selectedClubContextId) return;
+    const club = clubs.find((c) => c.id === selectedClubContextId);
     if (!club?.id_centre) return;
 
     const matchedLocal = locaux.find((l) => l.id_centre === club.id_centre);
@@ -243,7 +256,7 @@ export default function EventsPage() {
       setSelectedGouvernorat(inferredGouv);
     }
     setSelectedCentreForAdmin(club.id_centre);
-  }, [isAdmin, form.club_id, clubs, locaux]);
+  }, [isAdmin, selectedClubContextId, clubs, locaux]);
 
   useEffect(() => {
     if (!isAdmin || !selectedCentreForAdmin) return;
@@ -286,12 +299,10 @@ export default function EventsPage() {
       date_event: event.date_event.split("T")[0],
       start_time: toTimeHHMM(event.start_time),
       end_time: toTimeHHMM(event.end_time),
-      club_id: event.club_id,
+      club_id: event.club_id ?? "",
+      club_ids: event.collaborating_club_ids ?? [],
       locaux_id: event.locaux_id,
       capacity: event.capacity ? String(event.capacity) : "",
-      recurrence_type: "NONE",
-      recurrence_count: "",
-      recurrence_until: "",
       timeline,
     });
     setFormAlert(null);
@@ -341,22 +352,25 @@ export default function EventsPage() {
         date_event: form.date_event,
         start_time: form.start_time,
         end_time: form.end_time,
-        club_id: form.club_id,
         locaux_id: form.locaux_id,
-        recurrence_type: form.recurrence_type,
       };
+
+      if (form.club_id) {
+        payload.club_id = form.club_id;
+      }
+
+      const collaboratingClubIds = form.club_ids.filter(
+        (clubId) => clubId !== form.club_id,
+      );
+      if (collaboratingClubIds.length > 0) {
+        payload.club_ids = collaboratingClubIds;
+      }
 
       if (form.capacity.trim() !== "") {
         payload.capacity = Number(form.capacity);
       }
 
-      if (form.recurrence_count.trim() !== "") {
-        payload.recurrence_count = Number(form.recurrence_count);
-      }
-
-      if (form.recurrence_until.trim() !== "") {
-        payload.recurrence_until = form.recurrence_until;
-      }
+      // recurrence removed; single occurrence only
 
       payload.timeline = form.timeline.map((step) => ({
         title: step.title.trim(),
@@ -634,7 +648,10 @@ export default function EventsPage() {
         onCreate={openCreateModal}
       />
 
-      <EventsDashboardStats stats={scopedDashboardStats} isLoading={isLoading} />
+      <EventsDashboardStats
+        stats={scopedDashboardStats}
+        isLoading={isLoading}
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <EventsList

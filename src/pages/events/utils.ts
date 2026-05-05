@@ -27,11 +27,9 @@ export function getEmptyForm(): EventForm {
     start_time: "10:00",
     end_time: "12:00",
     club_id: "",
+    club_ids: [],
     locaux_id: "",
     capacity: "",
-    recurrence_type: "NONE",
-    recurrence_count: "",
-    recurrence_until: "",
     timeline: [],
   };
 }
@@ -48,7 +46,6 @@ export function validateEventForm(form: EventForm, today: string) {
     !form.date_event ||
     !form.start_time ||
     !form.end_time ||
-    !form.club_id ||
     !form.locaux_id ||
     !form.capacity.trim()
   ) {
@@ -77,19 +74,7 @@ export function validateEventForm(form: EventForm, today: string) {
     }
   }
 
-  if (form.recurrence_type !== "NONE") {
-    if (form.recurrence_count && !/^\d+$/.test(form.recurrence_count)) {
-      return "Le nombre d'occurrences doit être un entier positif.";
-    }
-
-    if (form.recurrence_count && Number(form.recurrence_count) < 1) {
-      return "Le nombre d'occurrences doit être supérieur à 0.";
-    }
-
-    if (form.recurrence_until && form.recurrence_until < form.date_event) {
-      return "La date de fin de récurrence doit être >= à la date de l'événement.";
-    }
-  }
+  // recurrence removed — single occurrence events only
 
   if (form.timeline.length > 0) {
     const eventStartMinutes = timeToMinutes(form.start_time);

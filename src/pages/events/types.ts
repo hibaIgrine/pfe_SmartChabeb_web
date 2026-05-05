@@ -34,9 +34,10 @@ export type EventItem = {
   capacity?: number | null;
   timeline?: EventTimelineStep[] | null;
   is_active: boolean;
-  club_id: string;
+  club_id?: string | null;
+  collaborating_club_ids?: string[];
   locaux_id: string;
-  club?: { id: string; nom: string; categorie?: string };
+  club?: { id: string; nom: string; categorie?: string } | null;
   local?: { id: string; nom: string; type?: string };
   _count?: { participants?: number };
   durationMinutes?: number;
@@ -89,11 +90,9 @@ export type EventForm = {
   start_time: string;
   end_time: string;
   club_id: string;
+  club_ids: string[];
   locaux_id: string;
   capacity: string;
-  recurrence_type: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY";
-  recurrence_count: string;
-  recurrence_until: string;
   timeline: EventTimelineStep[];
 };
 
