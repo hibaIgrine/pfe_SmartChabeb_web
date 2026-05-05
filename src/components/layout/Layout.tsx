@@ -275,7 +275,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {( role === "RESPONSABLE_CLUB") && (
+          {role === "RESPONSABLE_CLUB" && (
             <SidebarItem
               to="/presences"
               icon={<ClipboardCheck size={18} />}
@@ -286,28 +286,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
-              to="/events-requests"
-              icon={<ClipboardList size={18} />}
-              label="Demandes Événements"
-              active={location.pathname === "/events-requests"}
-            />
-          )}
-
-          {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
-            <SidebarItem
-              to="/events-participants"
-              icon={<Users size={18} />}
-              label="Liste Participants"
-              active={location.pathname === "/events-participants"}
-            />
-          )}
-
-          {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
-            <SidebarItem
-              to="/events-waiting-list"
-              icon={<ClipboardCheck size={18} />}
-              label="Liste D'attente"
-              active={location.pathname === "/events-waiting-list"}
+              to="/events-manager"
+              icon={<CalendarDays size={18} />}
+              label="Gestion Participants"
+              active={location.pathname === "/events-manager"}
             />
           )}
 
@@ -315,7 +297,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <SidebarItem
               to="/locaux-planning"
               icon={<CalendarRange size={18} />}
-              label="Planning Salles"
+              label="Planification Salles"
               active={location.pathname === "/locaux-planning"}
             />
           )}
