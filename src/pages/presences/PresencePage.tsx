@@ -5,7 +5,6 @@ import autoTable from "jspdf-autotable";
 import {
   AlertCircle,
   BarChart3,
-  CalendarDays,
   CheckCircle2,
   Download,
   FileText,
@@ -76,9 +75,12 @@ export default function PresencePage() {
   const [stats, setStats] = useState<any>(null);
   const [seances, setSeances] = useState<any[]>([]);
   const [selectedSeance, setSelectedSeance] = useState<any>(null);
+  const [isCreateSeanceOpen, setIsCreateSeanceOpen] = useState(false);
+  const [newSeanceTitle, setNewSeanceTitle] = useState("");
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [seanceJustCreated, setSeanceJustCreated] = useState(false);
   const [notification, setNotification] = useState<{
     msg: string;
     type: "success" | "error";
@@ -199,11 +201,16 @@ export default function PresencePage() {
       setStats(null);
       setSeances([]);
       setSelectedSeance(null);
+      setSeanceJustCreated(false);
       return;
     }
 
     void loadClubData(selectedClubId, selectedDate);
   }, [selectedClubId]);
+
+  useEffect(() => {
+    setSeanceJustCreated(false);
+  }, [selectedDate, selectedClubId]);
 
   const markAttendance = async (member: any, statut: "PRESENT" | "ABSENT") => {
     if (!club?.id) return;
@@ -239,17 +246,19 @@ export default function PresencePage() {
 
   const createSeance = async () => {
     if (!club?.id) return;
-    const titre =
-      window.prompt(
-        "Titre de la séance (optionnel)",
-        `Séance ${selectedDate}`,
-      ) || undefined;
+
+    const title = newSeanceTitle.trim();
+    if (!title) return;
+
     try {
       const res = await api.post("/presences/seances", {
         id_club: club.id,
         date_seance: selectedDate,
-        titre,
+        titre: title,
       });
+      setNewSeanceTitle("");
+      setIsCreateSeanceOpen(false);
+      setSeanceJustCreated(true);
       await loadClubData(selectedClubId, selectedDate, res.data?.id, {
         showLoading: false,
         preserveScroll: true,
@@ -564,36 +573,6 @@ export default function PresencePage() {
             </p>
           )}
         </div>
-
-        <div className="bg-white rounded-2xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-3 self-start">
-          <CalendarDays size={16} className="text-smart-teal" />
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={async (e) => {
-              const nextDate = e.target.value;
-              setSelectedDate(nextDate);
-              await loadClubData(selectedClubId, nextDate);
-            }}
-            className="text-sm font-bold text-smart-teal outline-none"
-          />
-          <button
-            onClick={() => exportDailyFile(selectedSeance)}
-            disabled={isExporting || !club || !selectedSeance}
-            className="ml-2 px-3 py-2 rounded-xl bg-smart-teal text-white text-xs font-black hover:bg-[#35565d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            <Download size={14} />
-            {isExporting ? "Export..." : "Exporter"}
-          </button>
-          <button
-            onClick={() => exportDailyPdf(selectedSeance)}
-            disabled={isExportingPdf || !club || !selectedSeance}
-            className="px-3 py-2 rounded-xl bg-[#E98A7D] text-white text-xs font-black hover:bg-[#d5766a] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            <FileText size={14} />
-            {isExportingPdf ? "PDF..." : "Exporter PDF"}
-          </button>
-        </div>
       </div>
 
       {loading ? (
@@ -667,18 +646,84 @@ export default function PresencePage() {
                     )}
                   </div>
                   <div>
-                    <button
-                      onClick={createSeance}
-                      className="px-3 py-1 rounded-xl bg-[#436D75] text-white text-xs font-black"
-                    >
-                      Créer séance
-                    </button>
+                    {!seanceJustCreated && (
+                      <button
+                        onClick={() => {
+                          setNewSeanceTitle(`Séance ${selectedDate}`);
+                          setIsCreateSeanceOpen(true);
+                        }}
+                        className="px-3 py-1 rounded-xl bg-[#436D75] text-white text-xs font-black"
+                      >
+                        Créer séance
+                      </button>
+                    )}
                   </div>
                 </div>
                 {members.length === 0 && (
                   <p className="text-sm text-gray-500 font-medium">
                     Aucun membre actif à afficher.
                   </p>
+                )}
+
+                {isCreateSeanceOpen && (
+                  <div className="fixed inset-0 z-[700] flex items-center justify-center bg-black/45 backdrop-blur-sm p-4">
+                    <div className="w-full max-w-md rounded-[32px] bg-[#F7F3E9] p-6 shadow-2xl border border-white animate-in scale-in duration-300">
+                      <div className="flex items-start justify-between gap-4 mb-4">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                            Nouvelle séance
+                          </p>
+                          <h3 className="text-2xl font-black text-smart-teal mt-1">
+                            Choisir le nom de la séance
+                          </h3>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsCreateSeanceOpen(false)}
+                          className="w-10 h-10 rounded-full bg-white text-gray-500 hover:text-black shadow-sm flex items-center justify-center transition-colors"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="space-y-2 block">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                            Titre
+                          </span>
+                          <input
+                            autoFocus
+                            value={newSeanceTitle}
+                            onChange={(e) => setNewSeanceTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                void createSeance();
+                              }
+                            }}
+                            placeholder={`Séance ${selectedDate}`}
+                            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-smart-teal outline-none focus:ring-4 focus:ring-smart-sage/20"
+                          />
+                        </label>
+
+                        <div className="flex items-center justify-end gap-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setIsCreateSeanceOpen(false)}
+                            className="px-4 py-3 rounded-2xl bg-white text-gray-600 text-xs font-black uppercase tracking-[0.2em] shadow-sm transition-colors hover:bg-gray-50"
+                          >
+                            Annuler
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void createSeance()}
+                            className="px-4 py-3 rounded-2xl bg-[#436D75] text-white text-xs font-black uppercase tracking-[0.2em] shadow-sm hover:bg-[#35565d] transition-colors"
+                          >
+                            Créer
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 {members.map((member) => {

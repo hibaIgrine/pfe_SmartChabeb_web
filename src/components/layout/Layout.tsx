@@ -214,7 +214,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
+          {role === "RESPONSABLE_CENTRE" && (
             <SidebarItem
               to="/locaux"
               icon={<Building2 size={18} />}
@@ -281,7 +281,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "RESPONSABLE_CLUB" || role === "RESPONSABLE_CENTRE") && (
+          {(role === "RESPONSABLE_CLUB" ) && (
             <div className="px-3 mt-2">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">
                 Mes clubs
@@ -404,7 +404,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "ADMIN" || role === "RESPONSABLE_CLUB") && (
+          {(role === "ADMIN" || role === "RESPONSABLE_CENTRE") && (
             <SidebarItem
               to="/roles"
               icon={<ShieldCheck size={18} />}

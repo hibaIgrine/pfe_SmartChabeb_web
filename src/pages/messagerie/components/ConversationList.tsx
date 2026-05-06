@@ -94,7 +94,7 @@ export function ConversationList({
                 ? "Aucune conversation non lue."
                 : filterMode === "GROUP"
                   ? "Aucune conversation de groupe."
-                  : "Aucune conversation pour le moment."}
+                  : "Aucune conversation pour le moment. Sélectionne une personne pour démarrer."}
           </div>
         ) : (
           <div className="space-y-2">

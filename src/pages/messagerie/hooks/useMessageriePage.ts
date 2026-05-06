@@ -338,16 +338,6 @@ export function useMessageriePage() {
   }, []);
 
   useEffect(() => {
-    if (conversations.length > 0 && !activeConversation) {
-      const firstNormalConversation = conversations.find(
-        (item) => !item.current_user_archived_at,
-      );
-
-      void openConversation((firstNormalConversation ?? conversations[0]).id);
-    }
-  }, [activeConversation, conversations]);
-
-  useEffect(() => {
     const previousConversationId = activeConversationIdRef.current;
     const nextConversationId = activeConversation?.id ?? null;
 

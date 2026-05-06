@@ -205,10 +205,11 @@ export function ConversationView({
             Messagerie
           </p>
           <h3 className="text-2xl font-black tracking-tight text-gray-900">
-            Choisis une conversation
+            Démarrer une conversation
           </h3>
           <p className="text-sm text-gray-500">
-            Crée ou ouvre une conversation privée pour commencer à écrire.
+            Sélectionne une personne à gauche ou crée une conversation pour
+            commencer à écrire.
           </p>
         </div>
       </section>

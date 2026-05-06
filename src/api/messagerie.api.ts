@@ -117,7 +117,7 @@ export type MessengerTypingStatusResponse = {
 };
 
 export async function fetchMessengerUsers() {
-  const response = await api.get<MessengerUser[]>("/users");
+  const response = await api.get<MessengerUser[]>("/messagerie/users");
   return response.data;
 }
 
