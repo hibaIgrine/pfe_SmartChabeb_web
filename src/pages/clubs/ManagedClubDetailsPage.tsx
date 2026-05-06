@@ -319,6 +319,12 @@ export default function ManagedClubDetailsPage() {
               >
                 Présences
               </button>
+              <button
+                onClick={() => navigate(`/my-clubs/${club.id}/tasks`)}
+                className="w-full text-left px-3 py-2 rounded-md border border-gray-200"
+              >
+                📋 Gérer les tâches
+              </button>
             </div>
           </div>
         </aside>

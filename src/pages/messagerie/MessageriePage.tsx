@@ -28,8 +28,8 @@ export default function MessageriePage() {
   }, [page, searchParams, setSearchParams]);
 
   return (
-    <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[340px_1fr]">
-      <div className="space-y-5">
+    <div className="mx-auto grid h-full min-h-0 max-w-7xl gap-5 overflow-hidden lg:grid-cols-[340px_1fr]">
+      <section className="flex min-h-0 flex-col overflow-hidden rounded-[28px] border border-white bg-white/85 p-4 shadow-xl backdrop-blur-md">
         <RecipientPanel
           searchValue={page.searchRecipient}
           onSearchChange={page.setSearchRecipient}
@@ -43,9 +43,12 @@ export default function MessageriePage() {
           selectedRecipientId={page.selectedRecipientId}
           selectedGroupRecipientIds={page.selectedGroupRecipientIds}
           onCreateGroupConversation={page.startGroupConversation}
+          embedded
         />
 
-        <div className="relative">
+        <div className="my-3 h-px bg-gray-100" />
+
+        <div className="relative min-h-0 flex-1 overflow-hidden">
           <ConversationList
             conversations={page.conversations}
             activeConversationId={page.activeConversation?.id}
@@ -55,6 +58,7 @@ export default function MessageriePage() {
             onArchiveConversation={page.archiveConversationById}
             onDeleteConversation={page.deleteConversationById}
             onRefresh={page.refreshConversations}
+            embedded
           />
 
           {showSearchUsers ? (
@@ -133,44 +137,46 @@ export default function MessageriePage() {
             </section>
           ) : null}
         </div>
-      </div>
+      </section>
 
-      <div className="space-y-4">
+      <div className="flex min-h-0 flex-col gap-4 overflow-hidden">
         {page.error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {page.error}
           </div>
         ) : null}
 
-        <ConversationView
-          meId={page.me?.id}
-          conversation={page.activeConversation}
-          messages={page.activeMessages}
-          typingUsers={page.typingUsers}
-          loading={page.loadingConversation}
-          submitting={page.submitting}
-          composerText={page.composerText}
-          messageType={page.messageType}
-          attachmentPreview={page.attachmentPreview}
-          attachmentName={page.attachmentName}
-          attachmentMimeType={page.attachmentMimeType}
-          availableUsers={page.groupCandidateUsers}
-          onComposerTextChange={page.setComposerText}
-          onMessageTypeChange={page.setMessageType}
-          onAttachmentChange={page.handleAttachmentChange}
-          onClearAttachment={page.clearAttachment}
-          onAttachVoiceMessage={page.attachVoiceMessage}
-          onSendMessage={page.sendMessage}
-          onEditMessage={page.editMessage}
-          onDeleteMessageForMe={page.deleteMessageForMe}
-          onDeleteMessageForEveryone={page.deleteMessageForEveryone}
-          onToggleMessagePin={page.toggleMessagePin}
-          onMuteConversation={page.muteConversationById}
-          onDeleteConversation={page.deleteConversationById}
-          onRenameGroup={page.renameActiveGroup}
-          onAddGroupMembers={page.addMembersToActiveGroup}
-          onRemoveGroupMember={page.removeMemberFromActiveGroup}
-        />
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <ConversationView
+            meId={page.me?.id}
+            conversation={page.activeConversation}
+            messages={page.activeMessages}
+            typingUsers={page.typingUsers}
+            loading={page.loadingConversation}
+            submitting={page.submitting}
+            composerText={page.composerText}
+            messageType={page.messageType}
+            attachmentPreview={page.attachmentPreview}
+            attachmentName={page.attachmentName}
+            attachmentMimeType={page.attachmentMimeType}
+            availableUsers={page.groupCandidateUsers}
+            onComposerTextChange={page.setComposerText}
+            onMessageTypeChange={page.setMessageType}
+            onAttachmentChange={page.handleAttachmentChange}
+            onClearAttachment={page.clearAttachment}
+            onAttachVoiceMessage={page.attachVoiceMessage}
+            onSendMessage={page.sendMessage}
+            onEditMessage={page.editMessage}
+            onDeleteMessageForMe={page.deleteMessageForMe}
+            onDeleteMessageForEveryone={page.deleteMessageForEveryone}
+            onToggleMessagePin={page.toggleMessagePin}
+            onMuteConversation={page.muteConversationById}
+            onDeleteConversation={page.deleteConversationById}
+            onRenameGroup={page.renameActiveGroup}
+            onAddGroupMembers={page.addMembersToActiveGroup}
+            onRemoveGroupMember={page.removeMemberFromActiveGroup}
+          />
+        </div>
       </div>
     </div>
   );

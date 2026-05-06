@@ -13,6 +13,7 @@ type RecipientPanelProps = {
   selectedRecipientId: string;
   selectedGroupRecipientIds: string[];
   onCreateGroupConversation: () => void;
+  embedded?: boolean;
 };
 
 export function RecipientPanel({
@@ -28,11 +29,18 @@ export function RecipientPanel({
   selectedRecipientId,
   selectedGroupRecipientIds,
   onCreateGroupConversation,
+  embedded = false,
 }: RecipientPanelProps) {
   const isPrivate = mode === "private";
 
   return (
-    <section className="rounded-[28px] border border-white bg-white/85 p-5 shadow-xl backdrop-blur-md">
+    <section
+      className={
+        embedded
+          ? "p-1"
+          : "rounded-[28px] border border-white bg-white/85 p-5 shadow-xl backdrop-blur-md"
+      }
+    >
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#436D75]">

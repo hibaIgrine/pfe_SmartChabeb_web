@@ -23,6 +23,7 @@ type ConversationListProps = {
   onArchiveConversation: (conversationId: string, isArchived: boolean) => void;
   onDeleteConversation: (conversationId: string) => void;
   onRefresh: () => void;
+  embedded?: boolean;
 };
 
 function formatRelativeDate(value?: string | null) {
@@ -45,6 +46,7 @@ export function ConversationList({
   onArchiveConversation,
   onDeleteConversation,
   onRefresh,
+  embedded = false,
 }: ConversationListProps) {
   const [menuConversationId, setMenuConversationId] = useState<string | null>(
     null,
@@ -59,7 +61,13 @@ export function ConversationList({
   );
 
   return (
-    <section className="flex h-full flex-col rounded-[28px] border border-white bg-white/85 shadow-xl backdrop-blur-md">
+    <section
+      className={
+        embedded
+          ? "flex h-full min-h-0 flex-col"
+          : "flex h-full min-h-0 flex-col rounded-[28px] border border-white bg-white/85 shadow-xl backdrop-blur-md"
+      }
+    >
       <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#436D75]">
@@ -81,7 +89,7 @@ export function ConversationList({
 
       <ConversationFilters value={filterMode} onChange={setFilterMode} />
 
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3">
         {loading ? (
           <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm font-medium text-gray-400">
             Chargement des conversations...

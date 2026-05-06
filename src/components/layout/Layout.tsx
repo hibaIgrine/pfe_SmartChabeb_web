@@ -54,6 +54,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     displayUser.photo_profil_url.trim() !== "";
   const [topBarImageError, setTopBarImageError] = useState(false);
   const showTopBarImage = hasProfileImage && !topBarImageError;
+  const isMessageriePage = location.pathname === "/messagerie";
 
   useEffect(() => {
     if (!user) {
@@ -170,6 +171,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setTopBarImageError(false);
   }, [displayUser?.photo_profil_url]);
 
+  useEffect(() => {
+    if (!isMessageriePage) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [isMessageriePage]);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -281,7 +299,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "RESPONSABLE_CLUB" ) && (
+          {role === "RESPONSABLE_CLUB" && (
             <div className="px-3 mt-2">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">
                 Mes clubs
@@ -321,6 +339,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           className="text-[11px] font-black text-white/60 hover:text-white hover:underline"
                         >
                           Staff
+                        </Link>
+                        <span className="text-white/30">•</span>
+                        <Link
+                          to={`/my-clubs/${c.id}/tasks`}
+                          className="text-[11px] font-black text-white/60 hover:text-white hover:underline"
+                        >
+                          Tâches
                         </Link>
                       </div>
                     </div>
@@ -497,9 +522,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <div className="relative z-0 flex-1 bg-white rounded-[40px] shadow-2xl border border-gray-50 overflow-hidden flex flex-col">
+        <div className="relative z-0 flex-1 min-h-0 bg-white rounded-[40px] shadow-2xl border border-gray-50 overflow-hidden flex flex-col">
           <div
-            className="p-8 flex-1 overflow-y-auto custom-scrollbar"
+            className={`p-8 flex-1 min-h-0 ${isMessageriePage ? "overflow-hidden" : "overflow-y-auto custom-scrollbar"}`}
             data-layout-scroll-container="true"
           >
             {children}

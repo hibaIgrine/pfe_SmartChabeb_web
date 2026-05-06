@@ -12,7 +12,7 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { ConversationMessageSearch } from "./ConversationMessageSearch";
 import { ConversationMuteMenu } from "./ConversationMuteMenu";
@@ -113,6 +113,14 @@ export function ConversationView({
     "settings" | "members" | null
   >(null);
 
+  const orderedMessages = useMemo(() => {
+    return [...messages].sort(
+      (left, right) =>
+        new Date(left.created_at).getTime() -
+        new Date(right.created_at).getTime(),
+    );
+  }, [messages]);
+
   useEffect(() => {
     setHeaderMenuOpen(false);
     setMuteMenuOpen(false);
@@ -124,15 +132,24 @@ export function ConversationView({
   }, [conversation?.id]);
 
   useEffect(() => {
-    if (messageContainerRef.current) {
-      setTimeout(() => {
-        if (messageContainerRef.current) {
-          messageContainerRef.current.scrollTop =
-            messageContainerRef.current.scrollHeight;
-        }
-      }, 0);
+    if (!messageContainerRef.current) {
+      return;
     }
-  }, [messages]);
+
+    const target = messageContainerRef.current;
+
+    const scrollToLatest = () => {
+      target.scrollTop = target.scrollHeight;
+    };
+
+    const timerId = window.setTimeout(scrollToLatest, 0);
+    const rafId = window.requestAnimationFrame(scrollToLatest);
+
+    return () => {
+      window.clearTimeout(timerId);
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [conversation?.id, orderedMessages.length]);
 
   const handleSelectSearchResult = (messageId: string) => {
     setSelectedMessageId(messageId);
@@ -146,7 +163,7 @@ export function ConversationView({
     });
   };
 
-  const pinnedMessages = messages
+  const pinnedMessages = orderedMessages
     .filter((message) => Boolean(message.pinned_at))
     .sort(
       (a, b) =>
@@ -519,13 +536,13 @@ export function ConversationView({
           <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-400">
             Chargement du fil de messages...
           </div>
-        ) : messages.length === 0 ? (
+        ) : orderedMessages.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-400">
             Aucun message pour le moment.
           </div>
         ) : (
           <div className="space-y-4">
-            {messages.map((message) => (
+            {orderedMessages.map((message) => (
               <div
                 key={message.id}
                 ref={(node) => {

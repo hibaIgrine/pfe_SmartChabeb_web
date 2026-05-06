@@ -21,6 +21,7 @@ import ClubStaffPage from "./pages/clubs/ClubStaffPage";
 import ManagedClubDetailsPage from "./pages/clubs/ManagedClubDetailsPage";
 import ClubRequestsPage from "./pages/clubs/ClubRequestsPage";
 import ClubCreationRequestsPage from "./pages/clubs/ClubCreationRequestsPage";
+import ClubTasksPage from "./pages/clubs/ClubTasksPage";
 import RolesPage from "./pages/admin/roles/RolesPage";
 import LocauxPage from "./pages/locaux/LocauxPage";
 import LocauxPlanningPage from "./pages/locaux/LocauxPlanningPage";
@@ -192,6 +193,14 @@ function App() {
           element={
             <Layout>
               <ManagedClubDetailsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/my-clubs/:clubId/tasks"
+          element={
+            <Layout>
+              <ClubTasksPage />
             </Layout>
           }
         />

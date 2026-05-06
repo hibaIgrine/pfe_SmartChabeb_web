@@ -545,7 +545,7 @@ export default function ClubReservationPage() {
               htmlFor="paymentNow"
               className="text-xs font-black text-gray-700 cursor-pointer flex-1"
             >
-              💳 Payer maintenant avec Konnect
+              💳 Payer maintenant avec Stripe
             </label>
             {paymentNow && (
               <span className="text-[10px] font-bold text-[#436D75] bg-[#D9E8D1] px-2 py-1 rounded">
