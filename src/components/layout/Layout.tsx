@@ -293,20 +293,37 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               ) : managedClubs.length === 0 ? (
                 <div className="text-[10px] text-white/50 px-4">Aucun club</div>
               ) : (
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {managedClubs.map((c) => (
-                    <Link
-                      key={c.id}
-                      to={`/my-clubs/${c.id}`}
-                      className={`flex items-center gap-2 py-1.5 px-3 rounded-md transition-all text-sm truncate ${
-                        location.pathname.startsWith(`/clubs/${c.id}`)
-                          ? "bg-white text-[#436D75]"
-                          : "text-white/80 hover:bg-white/5"
-                      }`}
-                    >
-                      <Building2 size={14} />
-                      <span className="font-bold truncate">{c.nom}</span>
-                    </Link>
+                    <div key={c.id} className="px-1">
+                      <Link
+                        to={`/my-clubs/${c.id}`}
+                        className={`flex items-center gap-2 py-1.5 px-3 rounded-md transition-all text-sm truncate ${
+                          location.pathname.startsWith(`/clubs/${c.id}`)
+                            ? "bg-white text-[#436D75]"
+                            : "text-white/80 hover:bg-white/5"
+                        }`}
+                      >
+                        <Building2 size={14} />
+                        <span className="font-bold truncate">{c.nom}</span>
+                      </Link>
+
+                      <div className="ml-8 mt-1 flex items-center gap-2">
+                        <Link
+                          to={`/clubs/${c.id}/requests`}
+                          className="text-[11px] font-black text-white/60 hover:text-white hover:underline"
+                        >
+                          Membres
+                        </Link>
+                        <span className="text-white/30">•</span>
+                        <Link
+                          to={`/clubs/${c.id}/staff`}
+                          className="text-[11px] font-black text-white/60 hover:text-white hover:underline"
+                        >
+                          Staff
+                        </Link>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -481,7 +498,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </header>
 
         <div className="relative z-0 flex-1 bg-white rounded-[40px] shadow-2xl border border-gray-50 overflow-hidden flex flex-col">
-          <div className="p-8 flex-1 overflow-y-auto custom-scrollbar">
+          <div
+            className="p-8 flex-1 overflow-y-auto custom-scrollbar"
+            data-layout-scroll-container="true"
+          >
             {children}
           </div>
         </div>

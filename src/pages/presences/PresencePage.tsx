@@ -10,6 +10,7 @@ import {
   Download,
   FileText,
   Users,
+  X,
   XCircle,
 } from "lucide-react";
 
@@ -68,10 +69,13 @@ export default function PresencePage() {
 
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
+  const [managedClubs, setManagedClubs] = useState<any[]>([]);
+  const [selectedClubId, setSelectedClubId] = useState<string>("");
   const [club, setClub] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
-  const [history, setHistory] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [seances, setSeances] = useState<any[]>([]);
+  const [selectedSeance, setSelectedSeance] = useState<any>(null);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -85,29 +89,72 @@ export default function PresencePage() {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  const loadAll = async (dateValue: string) => {
-    setLoading(true);
-    try {
-      const myClubsRes = await api.get("/presences/my-clubs");
-      const myClubs = Array.isArray(myClubsRes.data) ? myClubsRes.data : [];
-      const onlyClub = myClubs[0] || null;
-      setClub(onlyClub);
+  const getScrollContainer = () =>
+    document.querySelector(
+      '[data-layout-scroll-container="true"]',
+    ) as HTMLElement | null;
 
-      if (!onlyClub) {
+  const keepScrollPosition = (scrollTop: number) => {
+    window.requestAnimationFrame(() => {
+      const container = getScrollContainer();
+      if (container) container.scrollTop = scrollTop;
+    });
+  };
+
+  const loadClubData = async (
+    clubId: string,
+    dateValue: string,
+    preferredSeanceId?: string,
+    options?: { showLoading?: boolean; preserveScroll?: boolean },
+  ) => {
+    const shouldShowLoading = options?.showLoading ?? true;
+    const shouldPreserveScroll = options?.preserveScroll ?? false;
+    const scrollTop = shouldPreserveScroll
+      ? getScrollContainer()?.scrollTop || 0
+      : 0;
+
+    if (shouldShowLoading) setLoading(true);
+    try {
+      const currentClub =
+        managedClubs.find((item) => item.id === clubId) || null;
+      setClub(currentClub);
+
+      if (!currentClub) {
         setMembers([]);
-        setHistory([]);
         setStats(null);
+        setSeances([]);
+        setSelectedSeance(null);
         return;
       }
 
-      const [membersRes, historyRes, statsRes] = await Promise.all([
-        api.get(`/presences/${onlyClub.id}/members?date=${dateValue}`),
-        api.get(`/presences/${onlyClub.id}/history?limit=80`),
-        api.get(`/presences/${onlyClub.id}/stats`),
+      const seancesRes = await api.get(
+        `/presences/clubs/${currentClub.id}/seances`,
+      );
+      const fetchedSeances = Array.isArray(seancesRes.data)
+        ? seancesRes.data
+        : [];
+      setSeances(fetchedSeances);
+
+      const nextSeance =
+        fetchedSeances.find((item: any) => item.id === preferredSeanceId) ||
+        fetchedSeances.find(
+          (item: any) =>
+            String(item.date_seance || "").slice(0, 10) === dateValue,
+        ) ||
+        fetchedSeances[0] ||
+        null;
+
+      setSelectedSeance(nextSeance);
+
+      const query = nextSeance?.id
+        ? `?date=${dateValue}&seanceId=${nextSeance.id}`
+        : `?date=${dateValue}`;
+      const [membersRes, statsRes] = await Promise.all([
+        api.get(`/presences/${currentClub.id}/members${query}`),
+        api.get(`/presences/${currentClub.id}/stats`),
       ]);
 
       setMembers(membersRes.data?.membres || []);
-      setHistory(Array.isArray(historyRes.data) ? historyRes.data : []);
       setStats(statsRes.data || null);
     } catch (error: any) {
       console.error("Erreur présence:", error);
@@ -117,7 +164,22 @@ export default function PresencePage() {
         "error",
       );
     } finally {
-      setLoading(false);
+      if (shouldShowLoading) setLoading(false);
+      if (shouldPreserveScroll) keepScrollPosition(scrollTop);
+    }
+  };
+
+  const loadManagedClubs = async () => {
+    try {
+      const myClubsRes = await api.get("/presences/my-clubs");
+      const myClubs = Array.isArray(myClubsRes.data) ? myClubsRes.data : [];
+      setManagedClubs(myClubs);
+      if (myClubs.length === 1) {
+        setSelectedClubId(myClubs[0].id);
+      }
+    } catch (error: any) {
+      console.error("Erreur chargement clubs gérés:", error);
+      setManagedClubs([]);
     }
   };
 
@@ -126,24 +188,43 @@ export default function PresencePage() {
       setLoading(false);
       return;
     }
-    loadAll(selectedDate);
+    void loadManagedClubs();
   }, []);
+
+  useEffect(() => {
+    if (!selectedClubId) {
+      setLoading(false);
+      setClub(null);
+      setMembers([]);
+      setStats(null);
+      setSeances([]);
+      setSelectedSeance(null);
+      return;
+    }
+
+    void loadClubData(selectedClubId, selectedDate);
+  }, [selectedClubId]);
 
   const markAttendance = async (member: any, statut: "PRESENT" | "ABSENT") => {
     if (!club?.id) return;
 
     setBusyUserId(member.id_utilisateur);
     try {
-      await api.post("/presences/mark", {
+      const payload: any = {
         id_club: club.id,
         id_utilisateur: member.id_utilisateur,
         date_presence: selectedDate,
         statut,
         remarque: null,
-      });
+      };
+      if (selectedSeance?.id) payload.id_seance = selectedSeance.id;
 
-      await loadAll(selectedDate);
-      showAlert(`Statut mis à jour: ${statut}`, "success");
+      await api.post("/presences/mark", payload);
+
+      await loadClubData(selectedClubId, selectedDate, selectedSeance?.id, {
+        showLoading: false,
+        preserveScroll: true,
+      });
     } catch (error: any) {
       console.error(error);
       showAlert(
@@ -156,16 +237,69 @@ export default function PresencePage() {
     }
   };
 
-  const exportDailyFile = async () => {
+  const createSeance = async () => {
     if (!club?.id) return;
+    const titre =
+      window.prompt(
+        "Titre de la séance (optionnel)",
+        `Séance ${selectedDate}`,
+      ) || undefined;
+    try {
+      const res = await api.post("/presences/seances", {
+        id_club: club.id,
+        date_seance: selectedDate,
+        titre,
+      });
+      await loadClubData(selectedClubId, selectedDate, res.data?.id, {
+        showLoading: false,
+        preserveScroll: true,
+      });
+      showAlert("Séance créée.", "success");
+    } catch (err: any) {
+      console.error(err);
+      showAlert("Erreur création séance.", "error");
+    }
+  };
+
+  const unmarkAttendance = async (member: any) => {
+    if (!club?.id || !selectedSeance?.id) return;
+
+    setBusyUserId(member.id_utilisateur);
+    try {
+      await api.post("/presences/unmark", {
+        id_club: club.id,
+        id_utilisateur: member.id_utilisateur,
+        id_seance: selectedSeance.id,
+      });
+
+      await loadClubData(selectedClubId, selectedDate, selectedSeance.id, {
+        showLoading: false,
+        preserveScroll: true,
+      });
+    } catch (error: any) {
+      console.error(error);
+      showAlert(
+        error?.response?.data?.message ||
+          "Impossible d'annuler cette présence.",
+        "error",
+      );
+    } finally {
+      setBusyUserId(null);
+    }
+  };
+
+  const exportDailyFile = async (targetSeance?: any) => {
+    if (!club?.id) return;
+
+    const seance = targetSeance ?? selectedSeance;
+    if (!seance?.id) return;
 
     setIsExporting(true);
     try {
       const response = await api.get(
-        `/presences/${club.id}/export?date=${selectedDate}`,
+        `/presences/${club.id}/export?seanceId=${seance.id}`,
       );
-      const fileName =
-        response.data?.fileName || `presence-${selectedDate}.csv`;
+      const fileName = response.data?.fileName || `presence-${seance.id}.csv`;
       const csvContent = response.data?.csv;
 
       if (!csvContent || typeof csvContent !== "string") {
@@ -199,13 +333,16 @@ export default function PresencePage() {
     }
   };
 
-  const exportDailyPdf = async () => {
+  const exportDailyPdf = async (targetSeance?: any) => {
     if (!club?.id) return;
+
+    const seance = targetSeance ?? selectedSeance;
+    if (!seance?.id) return;
 
     setIsExportingPdf(true);
     try {
       const response = await api.get(
-        `/presences/${club.id}/export?date=${selectedDate}`,
+        `/presences/${club.id}/export?seanceId=${seance.id}`,
       );
 
       const records = Array.isArray(response.data?.records)
@@ -402,11 +539,28 @@ export default function PresencePage() {
             Gestion de Présence
           </h1>
           <p className="text-gray-400 text-sm font-medium mt-1">
-            Responsable club: suivi quotidien des membres de votre club.
+            Responsable club: sélectionnez d'abord le club à gérer.
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+              Club à gérer
+            </label>
+            <select
+              value={selectedClubId}
+              onChange={(e) => setSelectedClubId(e.target.value)}
+              className="min-w-[240px] rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-smart-teal outline-none shadow-sm"
+            >
+              <option value="">Choisir un club...</option>
+              {managedClubs.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nom}
+                </option>
+              ))}
+            </select>
+          </div>
           {club && (
             <p className="text-xs font-bold text-smart-teal mt-2 uppercase tracking-wider">
-              Club: {club.nom}
+              Club sélectionné: {club.nom}
             </p>
           )}
         </div>
@@ -419,21 +573,21 @@ export default function PresencePage() {
             onChange={async (e) => {
               const nextDate = e.target.value;
               setSelectedDate(nextDate);
-              await loadAll(nextDate);
+              await loadClubData(selectedClubId, nextDate);
             }}
             className="text-sm font-bold text-smart-teal outline-none"
           />
           <button
-            onClick={exportDailyFile}
-            disabled={isExporting || !club}
+            onClick={() => exportDailyFile(selectedSeance)}
+            disabled={isExporting || !club || !selectedSeance}
             className="ml-2 px-3 py-2 rounded-xl bg-smart-teal text-white text-xs font-black hover:bg-[#35565d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <Download size={14} />
             {isExporting ? "Export..." : "Exporter"}
           </button>
           <button
-            onClick={exportDailyPdf}
-            disabled={isExportingPdf || !club}
+            onClick={() => exportDailyPdf(selectedSeance)}
+            disabled={isExportingPdf || !club || !selectedSeance}
             className="px-3 py-2 rounded-xl bg-[#E98A7D] text-white text-xs font-black hover:bg-[#d5766a] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <FileText size={14} />
@@ -445,6 +599,13 @@ export default function PresencePage() {
       {loading ? (
         <div className="bg-white rounded-3xl border border-gray-100 p-12 text-center font-bold text-gray-500">
           Chargement des présences...
+        </div>
+      ) : !selectedClubId ? (
+        <div className="bg-white rounded-3xl border border-gray-100 p-12 text-center">
+          <p className="font-black text-gray-500">
+            Choisissez un club dans la liste déroulante pour charger les séances
+            et les membres.
+          </p>
         </div>
       ) : !club ? (
         <div className="bg-white rounded-3xl border border-gray-100 p-12 text-center">
@@ -484,6 +645,36 @@ export default function PresencePage() {
               </h2>
 
               <div className="space-y-3">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-gray-500">Séance:</p>
+                    {seances.length === 0 ? (
+                      <span className="text-xs text-gray-400">
+                        Aucune séance
+                      </span>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {seances.map((s) => (
+                          <button
+                            key={s.id}
+                            onClick={() => setSelectedSeance(s)}
+                            className={`px-3 py-1 rounded-full text-xs font-black ${selectedSeance?.id === s.id ? "bg-smart-teal text-white" : "bg-gray-100 text-gray-700"}`}
+                          >
+                            {s.titre || s.date_seance?.slice(0, 10)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <button
+                      onClick={createSeance}
+                      className="px-3 py-1 rounded-xl bg-[#436D75] text-white text-xs font-black"
+                    >
+                      Créer séance
+                    </button>
+                  </div>
+                </div>
                 {members.length === 0 && (
                   <p className="text-sm text-gray-500 font-medium">
                     Aucun membre actif à afficher.
@@ -494,6 +685,7 @@ export default function PresencePage() {
                   const fullName =
                     `${member.prenom || ""} ${member.nom || ""}`.trim();
                   const status = member.statut_jour || "NON_MARQUE";
+                  const isMarked = status !== "NON_MARQUE";
 
                   return (
                     <div
@@ -510,20 +702,40 @@ export default function PresencePage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <button
-                          disabled={busyUserId === member.id_utilisateur}
-                          onClick={() => markAttendance(member, "PRESENT")}
-                          className="px-3 py-2 rounded-xl bg-green-600 text-white text-xs font-black hover:bg-green-700 disabled:opacity-50"
-                        >
-                          Présent
-                        </button>
-                        <button
-                          disabled={busyUserId === member.id_utilisateur}
-                          onClick={() => markAttendance(member, "ABSENT")}
-                          className="px-3 py-2 rounded-xl bg-red-600 text-white text-xs font-black hover:bg-red-700 disabled:opacity-50"
-                        >
-                          Absent
-                        </button>
+                        {isMarked ? (
+                          <>
+                            <span
+                              className={`px-3 py-2 rounded-xl text-xs font-black ${status === "PRESENT" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                            >
+                              {status}
+                            </span>
+                            <button
+                              disabled={busyUserId === member.id_utilisateur}
+                              onClick={() => unmarkAttendance(member)}
+                              className="w-10 h-10 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 disabled:opacity-50 flex items-center justify-center"
+                              title="Annuler le marquage"
+                            >
+                              <X size={16} />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              disabled={busyUserId === member.id_utilisateur}
+                              onClick={() => markAttendance(member, "PRESENT")}
+                              className="px-3 py-2 rounded-xl bg-green-600 text-white text-xs font-black hover:bg-green-700 disabled:opacity-50"
+                            >
+                              Présent
+                            </button>
+                            <button
+                              disabled={busyUserId === member.id_utilisateur}
+                              onClick={() => markAttendance(member, "ABSENT")}
+                              className="px-3 py-2 rounded-xl bg-red-600 text-white text-xs font-black hover:bg-red-700 disabled:opacity-50"
+                            >
+                              Absent
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
@@ -562,52 +774,89 @@ export default function PresencePage() {
           </div>
 
           <div className="bg-white rounded-3xl border border-gray-100 p-6">
-            <h2 className="text-lg font-black text-smart-teal mb-4">
-              Historique récent
-            </h2>
-            <div className="overflow-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-500">
-                    <th className="py-2 pr-4">Date</th>
-                    <th className="py-2 pr-4">Membre</th>
-                    <th className="py-2 pr-4">Statut</th>
-                    <th className="py-2 pr-4">Responsable</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="py-3 text-gray-400 font-medium"
-                      >
-                        Aucun historique.
-                      </td>
-                    </tr>
-                  )}
-                  {history.map((row: any) => (
-                    <tr key={row.id} className="border-t border-gray-100">
-                      <td className="py-2 pr-4 font-semibold text-gray-600">
-                        {String(row.date_presence || "").slice(0, 10)}
-                      </td>
-                      <td className="py-2 pr-4 font-semibold text-smart-teal">
-                        {row?.membre?.prenom} {row?.membre?.nom}
-                      </td>
-                      <td className="py-2 pr-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-black ${row.statut === "PRESENT" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-lg font-black text-smart-teal">
+                  Historique des séances
+                </h2>
+                <p className="text-xs text-gray-500 font-medium mt-1">
+                  Chaque séance peut être ouverte, exportée en CSV ou en PDF.
+                </p>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                {seances.length} séance(s)
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {seances.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500 font-medium">
+                  Aucune séance créée pour ce club.
+                </div>
+              ) : (
+                seances.map((session: any) => {
+                  const isActive = selectedSeance?.id === session.id;
+                  return (
+                    <div
+                      key={session.id}
+                      className={`rounded-2xl border p-4 transition-all ${isActive ? "border-smart-teal bg-[#F7F3E9]" : "border-gray-100 bg-white hover:border-gray-200"}`}
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedSeance(session);
+                            void loadClubData(
+                              selectedClubId,
+                              selectedDate,
+                              session.id,
+                            );
+                          }}
+                          className="text-left"
                         >
-                          {row.statut}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-4 text-gray-600 font-medium">
-                        {row?.responsable?.prenom} {row?.responsable?.nom}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                          <p className="font-black text-smart-teal text-sm">
+                            {session.titre ||
+                              `Séance du ${String(session.date_seance || "").slice(0, 10)}`}
+                          </p>
+                          <p className="text-xs text-gray-500 font-medium mt-1">
+                            Date:{" "}
+                            {String(session.date_seance || "").slice(0, 10)}
+                            {session.heure_debut
+                              ? ` • ${String(session.heure_debut).slice(11, 16)}`
+                              : ""}
+                            {session.heure_fin
+                              ? ` - ${String(session.heure_fin).slice(11, 16)}`
+                              : ""}
+                          </p>
+                        </button>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedSeance(session);
+                              void exportDailyFile(session);
+                            }}
+                            className="px-3 py-2 rounded-xl bg-smart-teal text-white text-xs font-black hover:bg-[#35565d] flex items-center gap-2"
+                          >
+                            <Download size={14} /> Exporter
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedSeance(session);
+                              void exportDailyPdf(session);
+                            }}
+                            className="px-3 py-2 rounded-xl bg-[#E98A7D] text-white text-xs font-black hover:bg-[#d5766a] flex items-center gap-2"
+                          >
+                            <FileText size={14} /> PDF
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </>
