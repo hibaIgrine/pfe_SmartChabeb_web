@@ -533,27 +533,7 @@ export default function ClubReservationPage() {
             />
           </div>
 
-          <div className="flex items-center gap-3 rounded-2xl border border-[#D9E8D1] bg-white px-4 py-3">
-            <input
-              type="checkbox"
-              id="paymentNow"
-              checked={paymentNow}
-              onChange={(e) => setPaymentNow(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 accent-[#436D75]"
-            />
-            <label
-              htmlFor="paymentNow"
-              className="text-xs font-black text-gray-700 cursor-pointer flex-1"
-            >
-              💳 Payer maintenant avec Stripe
-            </label>
-            {paymentNow && (
-              <span className="text-[10px] font-bold text-[#436D75] bg-[#D9E8D1] px-2 py-1 rounded">
-                {calculateTotalCost()} DT
-              </span>
-            )}
-          </div>
-
+          
           <button
             type="submit"
             disabled={isSubmitting || isLoading}
