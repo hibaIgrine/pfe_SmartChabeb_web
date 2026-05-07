@@ -25,7 +25,7 @@ import ClubTasksPage from "./pages/clubs/ClubTasksPage";
 import RolesPage from "./pages/admin/roles/RolesPage";
 import LocauxPage from "./pages/locaux/LocauxPage";
 import LocauxPlanningPage from "./pages/locaux/LocauxPlanningPage";
-import ReservationsPage from "./pages/reservations/ReservationPage";
+import ReservationsPage from "./pages/reservations/CentreManagerReservationsPage";
 import ClubReservationPage from "./pages/reservations/ClubReservationPage";
 import ClubMyReservationsPage from "./pages/reservations/ClubMyReservationsPage";
 import AdherentMyReservationsPage from "./pages/reservations/AdherentMyReservationsPage";
