@@ -61,6 +61,9 @@ export default function CentreManagerReservationsPage() {
     occupancy: [],
   });
 
+  // Cache pour l'occupation
+  const [occupancyCache, setOccupancyCache] = useState<Map<string, any[]>>(new Map());
+
   const loadReservations = async () => {
     try {
       setIsLoading(true);
@@ -103,15 +106,46 @@ export default function CentreManagerReservationsPage() {
     }
   };
 
-  const handleViewOccupancy = (localId: string, localNom: string, date: string) => {
-    setOccupancyModal({
-      isOpen: true,
-      localId,
-      localNom,
-      date,
-      isLoadingOccupancy: 0,
-      occupancy: [],
-    });
+  const handleViewOccupancy = async (localId: string, localNom: string, date: string) => {
+    try {
+      const cacheKey = `${localId}-${date}`;
+      
+      // Ouvrir le modal immédiatement avec les données du cache si disponibles
+      const cachedData = occupancyCache.get(cacheKey);
+      setOccupancyModal({
+        isOpen: true,
+        localId,
+        localNom,
+        date,
+        isLoadingOccupancy: cachedData ? cachedData.length : 1,
+        occupancy: cachedData || [],
+      });
+
+      // Si pas dans le cache, récupérer depuis l'API
+      if (!cachedData) {
+        const res = await api.get(`/reservations/occupied?id_local=${localId}&date=${date}`);
+        const occupiedSlots = res.data || [];
+        
+        // Mettre en cache et mettre à jour le modal
+        setOccupancyCache(prev => new Map(prev).set(cacheKey, occupiedSlots));
+        setOccupancyModal(prev => ({
+          ...prev,
+          isLoadingOccupancy: occupiedSlots.length,
+          occupancy: occupiedSlots,
+        }));
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de l\'occupation:', error);
+      // Afficher une erreur mais garder le modal ouvert
+      setOccupancyModal({
+        isOpen: true,
+        localId,
+        localNom,
+        date,
+        isLoadingOccupancy: 0,
+        occupancy: [],
+      });
+    }
   };
 
   const handleCloseOccupancyModal = () => {

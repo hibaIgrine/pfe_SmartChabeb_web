@@ -13,17 +13,38 @@ export const AvailabilityMiniCalendar = ({ occupiedSlots }: any) => {
           occupiedSlots.map((slot: any, i: number) => (
             <div
               key={i}
-              className="flex items-center justify-between p-3 bg-white rounded-xl border-l-4 border-smart-salmon shadow-sm"
+              className="flex items-center p-3 bg-white rounded-xl border-l-4 border-smart-salmon shadow-sm"
             >
-              <span className="text-xs font-black text-smart-teal">
-                {new Date(slot.heure_debut).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+              <span className="text-xs font-black text-smart-teal whitespace-nowrap">
+                {(() => {
+                  const timeStr = slot.heure_debut;
+                  if (!timeStr) return 'N/A';
+                  // Si c'est un format datetime complet, extraire l'heure
+                  if (timeStr.includes('T') || timeStr.includes('-')) {
+                    const date = new Date(timeStr);
+                    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  }
+                  // Si c'est déjà un format d'heure
+                  return timeStr.substring(0, 5);
+                })()}
               </span>
-              <div className="h-px flex-1 bg-gray-100 mx-3"></div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase">
-                {slot.objet}
+              <span className="text-gray-300 mx-1 whitespace-nowrap">—</span>
+              <span className="text-xs font-black text-smart-teal whitespace-nowrap">
+                {(() => {
+                  const timeStr = slot.heure_fin;
+                  if (!timeStr) return 'N/A';
+                  // Si c'est un format datetime complet, extraire l'heure
+                  if (timeStr.includes('T') || timeStr.includes('-')) {
+                    const date = new Date(timeStr);
+                    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  }
+                  // Si c'est déjà un format d'heure
+                  return timeStr.substring(0, 5);
+                })()}
+              </span>
+              <span className="text-gray-300 mx-1 whitespace-nowrap">—</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase truncate max-w-[100px] whitespace-nowrap">
+                {slot.objet || 'N/A'}
               </span>
             </div>
           ))
