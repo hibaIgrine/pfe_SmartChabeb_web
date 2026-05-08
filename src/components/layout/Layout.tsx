@@ -395,12 +395,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           )}
 
           {(role === "ADHERENT" || role === "RESPONSABLE_CLUB") && (
-            <SidebarItem
-              to="/payment-history"
-              icon={<CreditCard size={18} />}
-              label="Historique Paiements"
-              active={location.pathname === "/payment-history"}
-            />
+            <>
+              <SidebarItem
+                to="/club-reservations"
+                icon={<CalendarPlus size={18} />}
+                label="Réserver un local"
+                active={location.pathname === "/club-reservations"}
+              />
+              <SidebarItem
+                to="/payment-history"
+                icon={<CreditCard size={18} />}
+                label="Historique Paiements"
+                active={location.pathname === "/payment-history"}
+              />
+            </>
           )}
 
           {role === "RESPONSABLE_CLUB" && (
