@@ -11,7 +11,30 @@ export default function PaymentHistoryPage() {
   const [dateFilter, setDateFilter] = useState("");
 
   const handleDownloadReceipt = (payment: PaymentItem) => {
-    generatePaymentReceipt(payment);
+    // Récupérer les informations de l'utilisateur depuis localStorage
+    const userStr = localStorage.getItem('user');
+    let userInfo = undefined;
+    
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        userInfo = {
+          nom: user.nom || '',
+          prenom: user.prenom || '',
+          email: user.email || ''
+        };
+      } catch (error) {
+        console.error('Erreur lors de la lecture des infos utilisateur:', error);
+      }
+    }
+    
+    // Ajouter les infos utilisateur au paiement
+    const paymentWithUser = {
+      ...payment,
+      user: userInfo
+    };
+    
+    generatePaymentReceipt(paymentWithUser);
   };
 
   const loadPayments = async () => {
