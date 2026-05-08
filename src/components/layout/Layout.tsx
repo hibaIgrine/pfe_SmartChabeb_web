@@ -18,6 +18,7 @@ import {
   CalendarDays,
   Newspaper,
   ListTodo,
+  CreditCard,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { FavoritePostsBell } from "./FavoritePostsBell";
@@ -393,21 +394,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
+          {(role === "ADHERENT" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
-              to="/locaux-planning"
-              icon={<CalendarRange size={18} />}
-              label="Planification Salles"
-              active={location.pathname === "/locaux-planning"}
-            />
-          )}
-
-          {(role === "RESPONSABLE_CLUB" || role === "ADHERENT") && (
-            <SidebarItem
-              to="/club-reservations"
-              icon={<CalendarPlus size={18} />}
-              label="Réserver Local"
-              active={location.pathname === "/club-reservations"}
+              to="/payment-history"
+              icon={<CreditCard size={18} />}
+              label="Historique Paiements"
+              active={location.pathname === "/payment-history"}
             />
           )}
 

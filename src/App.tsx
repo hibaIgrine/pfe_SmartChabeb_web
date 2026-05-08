@@ -28,6 +28,8 @@ import LocauxPlanningPage from "./pages/locaux/LocauxPlanningPage";
 import ReservationsPage from "./pages/reservations/CentreManagerReservationsPage";
 import ClubReservationPage from "./pages/reservations/ClubReservationPage";
 import ClubMyReservationsPage from "./pages/reservations/ClubMyReservationsPage";
+import PaymentHistoryPage from "./pages/paiements/PaymentHistoryPage";
+import PaymentSuccessPage from "./pages/paiements/PaymentSuccessPage";
 import AdherentMyReservationsPage from "./pages/reservations/AdherentMyReservationsPage";
 import PresencePage from "./pages/presences/PresencePage";
 import EventsPage from "./pages/events/EventsPage";
@@ -251,6 +253,18 @@ function App() {
               <ClubMyReservationsPage />
             </Layout>
           }
+        />
+        <Route
+          path="/payment-history"
+          element={
+            <Layout>
+              <PaymentHistoryPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/payment-success"
+          element={<PaymentSuccessPage />}
         />
         <Route
           path="/adherent-my-reservations"
