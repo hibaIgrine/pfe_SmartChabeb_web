@@ -1,25 +1,7 @@
 import { useEffect, useState } from "react";
-import { Search, Calendar, Filter, CreditCard, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Search, Calendar, Filter, CreditCard, CheckCircle, XCircle, Clock, Download } from "lucide-react";
 import api from "../../api/axios";
-
-type PaymentItem = {
-  id: string;
-  amount: number;
-  status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
-  payment_method: string;
-  created_at: string;
-  updated_at: string;
-  reservation?: {
-    id: string;
-    objet: string;
-    local: {
-      nom: string;
-    };
-    date_reservation: string;
-  };
-  konnect_session_id?: string;
-  konnect_payment_id?: string;
-};
+import { generatePaymentReceipt, type PaymentItem } from "../../utils/generatePaymentReceipt";
 
 export default function PaymentHistoryPage() {
   const [payments, setPayments] = useState<PaymentItem[]>([]);
@@ -27,6 +9,10 @@ export default function PaymentHistoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
+
+  const handleDownloadReceipt = (payment: PaymentItem) => {
+    generatePaymentReceipt(payment);
+  };
 
   const loadPayments = async () => {
     try {
@@ -227,6 +213,14 @@ export default function PaymentHistoryPage() {
                       minute: '2-digit'
                     })}
                   </div>
+                  <button
+                    onClick={() => handleDownloadReceipt(payment)}
+                    className="mt-2 flex items-center gap-2 px-3 py-2 bg-[#436D75] text-white rounded-lg hover:bg-[#355960] transition-colors text-sm"
+                    title="Télécharger le reçu PDF"
+                  >
+                    <Download size={14} />
+                    Reçu
+                  </button>
                 </div>
               </div>
             </div>
