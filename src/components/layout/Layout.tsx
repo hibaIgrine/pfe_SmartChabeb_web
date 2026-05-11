@@ -14,11 +14,11 @@ import {
   CalendarPlus,
   ClipboardList,
   ClipboardCheck,
-  CalendarRange,
   CalendarDays,
   Newspaper,
   ListTodo,
   CreditCard,
+  Sparkles,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { FavoritePostsBell } from "./FavoritePostsBell";
@@ -377,12 +377,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           )}
 
           {role === "RESPONSABLE_CLUB" && (
-            <SidebarItem
-              to="/presences"
-              icon={<ClipboardCheck size={18} />}
-              label="Présences"
-              active={location.pathname === "/presences"}
-            />
+            <>
+              <SidebarItem
+                to="/presences"
+                icon={<ClipboardCheck size={18} />}
+                label="Présences"
+                active={location.pathname === "/presences"}
+              />
+              <SidebarItem
+                to="/club-recommendations"
+                icon={<Sparkles size={18} />}
+                label="Recommandations IA"
+                active={location.pathname === "/club-recommendations"}
+              />
+            </>
           )}
 
           {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (

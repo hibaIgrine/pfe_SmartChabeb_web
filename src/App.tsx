@@ -22,6 +22,7 @@ import ManagedClubDetailsPage from "./pages/clubs/ManagedClubDetailsPage";
 import ClubRequestsPage from "./pages/clubs/ClubRequestsPage";
 import ClubCreationRequestsPage from "./pages/clubs/ClubCreationRequestsPage";
 import ClubTasksPage from "./pages/clubs/ClubTasksPage";
+import ClubRecommendationPage from "./pages/clubs/ClubRecommendationPage";
 import RolesPage from "./pages/admin/roles/RolesPage";
 import LocauxPage from "./pages/locaux/LocauxPage";
 import LocauxPlanningPage from "./pages/locaux/LocauxPlanningPage";
@@ -207,6 +208,14 @@ function App() {
           }
         />
         <Route
+          path="/club-recommendations"
+          element={
+            <Layout>
+              <ClubRecommendationPage />
+            </Layout>
+          }
+        />
+        <Route
           path="/roles"
           element={
             <Layout>
@@ -262,10 +271,7 @@ function App() {
             </Layout>
           }
         />
-        <Route
-          path="/payment-success"
-          element={<PaymentSuccessPage />}
-        />
+        <Route path="/payment-success" element={<PaymentSuccessPage />} />
         <Route
           path="/adherent-my-reservations"
           element={
