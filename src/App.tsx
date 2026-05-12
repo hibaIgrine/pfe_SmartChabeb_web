@@ -44,6 +44,7 @@ import MyProfilePage from "./pages/profile/MyProfilePage";
 import UserProfilePage from "./pages/profile/UserProfilePage";
 import SocialFeedPage from "./pages/social-media/SocialFeedPage";
 import MessageriePage from "./pages/messagerie/MessageriePage";
+import Chat from "./pages/chatbot/chat";
 
 function App() {
   const getCentrePage = () => {
@@ -373,6 +374,14 @@ function App() {
           element={
             <Layout>
               <MessageriePage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/chatbot"
+          element={
+            <Layout>
+              <Chat />
             </Layout>
           }
         />

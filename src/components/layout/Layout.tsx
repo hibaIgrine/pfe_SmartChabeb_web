@@ -19,6 +19,7 @@ import {
   ListTodo,
   CreditCard,
   Sparkles,
+  Bot,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { FavoritePostsBell } from "./FavoritePostsBell";
@@ -392,6 +393,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               />
             </>
           )}
+
+          <SidebarItem
+            to="/chatbot"
+            icon={<Bot size={18} />}
+            label="Assistant IA"
+            active={location.pathname === "/chatbot"}
+          />
 
           {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
