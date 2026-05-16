@@ -34,6 +34,18 @@ export default function AuthPage() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [googleExistsModal, setGoogleExistsModal] = useState(false);
+  const [googleExistsUser, setGoogleExistsUser] = useState<any | null>(null);
+  const [googlePendingToken, setGooglePendingToken] = useState<string | null>(
+    null,
+  );
+  const [bannedModal, setBannedModal] = useState(false);
+  const [bannedInfo, setBannedInfo] = useState<{
+    title: string;
+    until: string;
+    reason: string;
+    message: string;
+  } | null>(null);
   // Forgot password flow state
   const [forgotActive, setForgotActive] = useState(false);
   const [resetToken, setResetToken] = useState("");
@@ -58,6 +70,33 @@ export default function AuthPage() {
       setNotice(null);
       noticeTimerRef.current = null;
     }, 3500);
+  };
+
+  const parseBanMessage = (message: string) => {
+    const bannedUntilMatch = message.match(/suspendu jusqu'au\s+([^\.]+)\./i);
+    const reasonMatch = message.match(/Motif\s*:\s*(.+)$/i);
+
+    return {
+      until: bannedUntilMatch?.[1]?.trim() || "Non précisée",
+      reason: reasonMatch?.[1]?.trim() || "Non précisé",
+      message,
+    };
+  };
+
+  const handleAuthError = (err: any, fallbackMessage: string) => {
+    const status = err?.response?.status;
+    const message = err?.response?.data?.message || fallbackMessage;
+
+    if (status === 403) {
+      setBannedInfo({
+        title: "Vous êtes bloqué",
+        ...parseBanMessage(message),
+      });
+      setBannedModal(true);
+      return;
+    }
+
+    showNotice(message, "error");
   };
 
   useEffect(() => {
@@ -116,8 +155,7 @@ export default function AuthPage() {
       navigate("/dashboard");
     } catch (err: any) {
       console.error(err);
-      const errorMsg = err.response?.data?.message || "Identifiants incorrects";
-      showNotice(errorMsg, "error");
+      handleAuthError(err, "Identifiants incorrects");
     } finally {
       setIsLoading(false);
     }
@@ -204,18 +242,47 @@ export default function AuthPage() {
         token: credentialResponse.credential,
       });
       const user = res.data.user;
-      localStorage.setItem("token", res.data.access_token);
-      localStorage.setItem("user", JSON.stringify(user));
 
-      if (mode === "signup" && res.data.needs_profile) {
-        navigate("/auth/complete-google");
+      if (mode === "signup") {
+        // Check if the email is already used by a regular signup
+        try {
+          const check = await api.post("/users/check-email", {
+            email: user?.email,
+          });
+          // If email is already taken, show modal instead of redirecting to complete-google
+          if (check.data && check.data.available === false) {
+            setGoogleExistsUser(user || null);
+            setGooglePendingToken(res.data.access_token || null);
+            setGoogleExistsModal(true);
+            return;
+          }
+        } catch (e) {
+          // If check fails, fall back to the previous behavior
+          console.warn("Failed to verify email availability:", e);
+        }
+
+        // If backend asks to complete profile for a new Google signup, store token and go complete profile
+        if (res.data.needs_profile) {
+          localStorage.setItem("token", res.data.access_token);
+          localStorage.setItem("user", JSON.stringify(user));
+          navigate("/auth/complete-google");
+          return;
+        }
+
+        // Otherwise treat as successful signup -> store token and go dashboard
+        localStorage.setItem("token", res.data.access_token);
+        localStorage.setItem("user", JSON.stringify(user));
+        navigate("/dashboard");
         return;
       }
 
+      // Signin flow: store token and go dashboard
+      localStorage.setItem("token", res.data.access_token);
+      localStorage.setItem("user", JSON.stringify(user));
       navigate("/dashboard");
     } catch (err: any) {
       console.error(err);
-      showNotice(err.response?.data?.message || "Erreur Google", "error");
+      handleAuthError(err, "Erreur Google");
     } finally {
       setIsLoading(false);
     }
@@ -369,6 +436,63 @@ export default function AuthPage() {
           </div>
         </div>
       )}
+
+      {bannedModal && bannedInfo && (
+        <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-[24px] bg-white p-6 shadow-2xl border border-rose-100">
+            <div className="mb-4 flex items-start gap-3">
+              <div className="mt-1 h-3 w-3 rounded-full bg-rose-500" />
+              <div>
+                <h3 className="text-2xl font-black text-rose-700">
+                  {bannedInfo.title}
+                </h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  Votre compte est momentanément bloqué. Contactez
+                  l’administrateur ou le responsable qui a renseigné la
+                  sanction.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-rose-500">
+                  Date de fin du blocage
+                </p>
+                <p className="mt-1 text-sm font-semibold text-rose-900">
+                  {bannedInfo.until}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                  Motif
+                </p>
+                <p className="mt-1 text-sm font-semibold text-gray-700">
+                  {bannedInfo.reason}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
+                {bannedInfo.message}
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setBannedModal(false);
+                  setBannedInfo(null);
+                }}
+                className="h-12 rounded-2xl bg-[#436d75] px-5 font-bold text-white"
+              >
+                Compris
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* HOME BUTTON */}
       <button
         onClick={() => navigate("/")}
@@ -445,7 +569,7 @@ export default function AuthPage() {
                 <h2 className="text-3xl font-black text-[#436d75] mb-1">
                   Inscription
                 </h2>
-                <p className="text-sm text-gray-500 mb-3">SmartChabeb • v2.0</p>
+
                 <div className="mb-3 rounded-2xl bg-gray-100 p-4 border border-gray-200 flex flex-col items-center">
                   <p className="text-sm font-semibold leading-6 text-gray-700 text-center">
                     Créez votre compte pour accéder aux activités, aux
@@ -455,6 +579,9 @@ export default function AuthPage() {
                 <form onSubmit={handleSignupSubmit} className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
+                      <label className="block text-sm font-semibold text-gray-700">
+                        Nom
+                      </label>
                       <input
                         required
                         type="text"
@@ -472,6 +599,9 @@ export default function AuthPage() {
                       )}
                     </div>
                     <div className="space-y-1">
+                      <label className="block text-sm font-semibold text-gray-700">
+                        Prénom
+                      </label>
                       <input
                         required
                         type="text"
@@ -490,6 +620,9 @@ export default function AuthPage() {
                     </div>
                   </div>
                   <div className="space-y-1">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Email
+                    </label>
                     <div
                       className={`flex items-center rounded-2xl border p-3 transition-colors ${inputErrorClass(Boolean(signupErrors.email))}`}
                     >
@@ -512,6 +645,9 @@ export default function AuthPage() {
                     )}
                   </div>
                   <div className="space-y-1">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Mot de passe
+                    </label>
                     <div
                       className={`flex items-center rounded-2xl border p-3 transition-colors ${inputErrorClass(Boolean(signupErrors.mot_de_passe))}`}
                     >
@@ -579,7 +715,7 @@ export default function AuthPage() {
                 <h2 className="text-3xl font-black text-[#436d75] mb-1">
                   Connexion
                 </h2>
-                <p className="text-sm text-gray-500 mb-3">SmartChabeb • v2.0</p>
+
                 <div className="mb-3 rounded-2xl bg-gray-100 p-4 border border-gray-200 flex flex-col items-center">
                   <p className="text-sm font-semibold leading-6 text-gray-700 text-center">
                     Welcome back, connectez-vous pour continuer votre parcours
@@ -587,50 +723,60 @@ export default function AuthPage() {
                   </p>
                 </div>
                 <form onSubmit={handleLoginSubmit} className="space-y-3">
-                  <div className="flex items-center bg-gray-50 border border-gray-200 rounded-2xl p-3">
-                    <Mail size={20} className="text-gray-400 mr-3" />
-                    <input
-                      required
-                      type="email"
-                      placeholder="Email"
-                      className="flex-1 bg-transparent outline-none"
-                      value={loginData.email}
-                      onChange={(e) =>
-                        setLoginData({ ...loginData, email: e.target.value })
-                      }
-                    />
+                  <div className="space-y-1">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Email
+                    </label>
+                    <div className="flex items-center bg-gray-50 border border-gray-200 rounded-2xl p-3">
+                      <Mail size={20} className="text-gray-400 mr-3" />
+                      <input
+                        required
+                        type="email"
+                        placeholder="Email"
+                        className="flex-1 bg-transparent outline-none"
+                        value={loginData.email}
+                        onChange={(e) =>
+                          setLoginData({ ...loginData, email: e.target.value })
+                        }
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center bg-gray-50 border border-gray-200 rounded-2xl p-3">
-                    <Lock size={20} className="text-gray-400 mr-3" />
-                    <input
-                      required
-                      type={showLoginPassword ? "text" : "password"}
-                      placeholder="Mot de passe"
-                      className="flex-1 bg-transparent outline-none"
-                      value={loginData.mot_de_passe}
-                      onChange={(e) =>
-                        setLoginData({
-                          ...loginData,
-                          mot_de_passe: e.target.value,
-                        })
-                      }
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowLoginPassword((value) => !value)}
-                      className="ml-3 text-gray-400 hover:text-gray-700"
-                      aria-label={
-                        showLoginPassword
-                          ? "Masquer le mot de passe"
-                          : "Afficher le mot de passe"
-                      }
-                    >
-                      {showLoginPassword ? (
-                        <EyeOff size={18} />
-                      ) : (
-                        <Eye size={18} />
-                      )}
-                    </button>
+                  <div className="space-y-1">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Mot de passe
+                    </label>
+                    <div className="flex items-center bg-gray-50 border border-gray-200 rounded-2xl p-3">
+                      <Lock size={20} className="text-gray-400 mr-3" />
+                      <input
+                        required
+                        type={showLoginPassword ? "text" : "password"}
+                        placeholder="Mot de passe"
+                        className="flex-1 bg-transparent outline-none"
+                        value={loginData.mot_de_passe}
+                        onChange={(e) =>
+                          setLoginData({
+                            ...loginData,
+                            mot_de_passe: e.target.value,
+                          })
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword((value) => !value)}
+                        className="ml-3 text-gray-400 hover:text-gray-700"
+                        aria-label={
+                          showLoginPassword
+                            ? "Masquer le mot de passe"
+                            : "Afficher le mot de passe"
+                        }
+                      >
+                        {showLoginPassword ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   <div className="text-right text-xs mt-1">
                     <button
@@ -700,45 +846,78 @@ export default function AuthPage() {
                   {loginData.email}
                 </span>
               </div>
-              <input
-                value={resetToken}
-                onChange={(e) => setResetToken(e.target.value)}
-                placeholder="Code (6 chiffres)"
-                className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 outline-none"
-                inputMode="numeric"
-                maxLength={6}
-              />
-              <input
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Nouveau mot de passe (8 caractères ou plus)"
-                type={showResetPassword ? "text" : "password"}
-                className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 outline-none"
-              />
-              <div className="flex items-center justify-end -mt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowResetPassword((value) => !value)}
-                  className="text-xs font-bold text-[#436d75] underline"
-                >
-                  {showResetPassword ? "Masquer" : "Afficher"} le mot de passe
-                </button>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Code de vérification
+                </label>
+                <input
+                  value={resetToken}
+                  onChange={(e) => setResetToken(e.target.value)}
+                  placeholder="Code (6 chiffres)"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 outline-none"
+                  inputMode="numeric"
+                  maxLength={6}
+                />
               </div>
-              <input
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirmer le mot de passe"
-                type={showConfirmPassword ? "text" : "password"}
-                className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 outline-none"
-              />
-              <div className="flex items-center justify-end -mt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((value) => !value)}
-                  className="text-xs font-bold text-[#436d75] underline"
-                >
-                  {showConfirmPassword ? "Masquer" : "Afficher"} la confirmation
-                </button>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Nouveau mot de passe
+                </label>
+                <div className="relative">
+                  <input
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="8 caractères ou plus"
+                    type={showResetPassword ? "text" : "password"}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 pr-12 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPassword((value) => !value)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-full text-[#436d75] transition-colors hover:bg-[#436d75]/10"
+                    aria-label={
+                      showResetPassword
+                        ? "Masquer le mot de passe"
+                        : "Afficher le mot de passe"
+                    }
+                  >
+                    {showResetPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Confirmation du mot de passe
+                </label>
+                <div className="relative">
+                  <input
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Retapez le mot de passe"
+                    type={showConfirmPassword ? "text" : "password"}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 pr-12 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((value) => !value)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center rounded-full text-[#436d75] transition-colors hover:bg-[#436d75]/10"
+                    aria-label={
+                      showConfirmPassword
+                        ? "Masquer la confirmation du mot de passe"
+                        : "Afficher la confirmation du mot de passe"
+                    }
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
               </div>
               <div className="flex gap-2 pt-1">
                 <button
@@ -756,6 +935,56 @@ export default function AuthPage() {
                   Annuler
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {googleExistsModal && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-[20px] bg-white p-6 shadow-2xl border border-gray-100">
+            <div className="mb-3">
+              <h3 className="text-lg font-black text-[#436d75]">
+                Compte déjà enregistré
+              </h3>
+              <p className="text-sm text-gray-600 mt-2">
+                Un compte existe déjà pour ce compte Google. Voulez-vous accéder
+                à votre espace personnel ?
+              </p>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  // persist pending token/user then navigate
+                  if (googlePendingToken && googleExistsUser) {
+                    localStorage.setItem("token", googlePendingToken);
+                    localStorage.setItem(
+                      "user",
+                      JSON.stringify(googleExistsUser),
+                    );
+                  }
+                  setGooglePendingToken(null);
+                  setGoogleExistsUser(null);
+                  setGoogleExistsModal(false);
+                  navigate("/dashboard");
+                }}
+                className="flex-1 h-12 bg-[#436d75] text-white rounded-2xl font-bold"
+              >
+                Accéder à mon espace
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // clear pending token/user and close modal
+                  setGooglePendingToken(null);
+                  setGoogleExistsUser(null);
+                  setGoogleExistsModal(false);
+                }}
+                className="flex-1 h-12 border border-gray-200 rounded-2xl font-bold text-gray-700"
+              >
+                Annuler
+              </button>
             </div>
           </div>
         </div>
