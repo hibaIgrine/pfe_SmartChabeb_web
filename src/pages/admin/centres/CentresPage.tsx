@@ -16,6 +16,7 @@ import { AddCentreModal } from "./components/AddCentreModal";
 import { EditCentreModal } from "./components/EditCentreModal";
 import { CentreQuickView } from "./components/CentreQuickView";
 import { DeleteCentreModal } from "./components/DeleteCentreModal"; // 💡 Nouveau
+import { ReactivateCentreModal } from "./components/ReactivateCentreModal";
 import { CentreStats } from "./components/CentresStats";
 
 const GOUVERNORATS_AR = [
@@ -58,6 +59,7 @@ export default function CentresPage() {
   const [editingCentre, setEditingCentre] = useState<any>(null);
   const [viewingCentre, setViewingCentre] = useState<any>(null);
   const [centreToDelete, setCentreToDelete] = useState<any>(null); // 💡 Pour la suppression
+  const [centreToReactivate, setCentreToReactivate] = useState<any>(null);
 
   // État pour les notifications Michelle
   const [notification, setNotification] = useState<{
@@ -107,6 +109,23 @@ export default function CentresPage() {
     }
   };
 
+  const confirmReactivate = async () => {
+    if (!centreToReactivate) return;
+    try {
+      await api.patch(
+        `/centres/${centreToReactivate.id}/activate`,
+        {},
+        { headers },
+      );
+      showToast("Centre réactivé avec succès", "success");
+      setCentreToReactivate(null);
+      loadData();
+    } catch (err) {
+      showToast("Impossible de réactiver ce centre", "error");
+      setCentreToReactivate(null);
+    }
+  };
+
   // --- FILTRAGE ---
   const filteredCentres = useMemo(() => {
     return centres.filter((c: any) => {
@@ -123,18 +142,18 @@ export default function CentresPage() {
   }, [centres, search, selectedGouv, selectedStatus]);
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-1000 max-w-7xl mx-auto pb-20 relative">
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-1000 max-w-7xl mx-auto px-3 sm:px-4 md:px-6 pb-12 md:pb-20 relative">
       {/* 🔔 TOAST NOTIFICATION (Michelle Style) */}
       {notification && (
         <div
-          className={`fixed top-10 right-10 z-[2000] flex items-center space-x-4 p-5 rounded-[30px] shadow-2xl animate-in slide-in-from-right-10 border border-white/20 backdrop-blur-md ${notification.type === "error" ? "bg-[#E98A7D] text-white" : "bg-[#D9E8D1] text-[#436d75]"}`}
+          className={`fixed top-4 right-3 left-3 sm:left-auto sm:top-6 sm:right-6 z-[2000] flex items-center space-x-3 sm:space-x-4 p-4 sm:p-5 rounded-[24px] sm:rounded-[30px] shadow-2xl animate-in slide-in-from-right-10 border border-white/20 backdrop-blur-md ${notification.type === "error" ? "bg-[#E98A7D] text-white" : "bg-[#D9E8D1] text-[#436d75]"}`}
         >
           {notification.type === "error" ? (
             <AlertCircle size={20} />
           ) : (
             <CheckCircle2 size={20} />
           )}
-          <div className="font-black italic text-sm uppercase tracking-widest">
+          <div className="font-black italic text-[11px] sm:text-sm uppercase tracking-[0.2em] sm:tracking-widest">
             {notification.msg}
           </div>
         </div>
@@ -142,20 +161,20 @@ export default function CentresPage() {
 
       {/* 1. HEADER & ACTION */}
       {/* 1. HEADER INSTITUTIONNEL (Police et Taille minimisées) */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-4 pb-6 border-b border-gray-100">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 pt-2 md:pt-4 pb-4 md:pb-6 border-b border-gray-100">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="bg-smart-teal w-1.5 h-6 rounded-full"></div>
-            <h1 className="text-3xl font-bold text-smart-teal tracking-tight italic">
+            <h1 className="text-2xl sm:text-3xl font-bold text-smart-teal tracking-tight italic">
               Réseau des Établissements
             </h1>
           </div>
-          <p className="text-gray-400 font-semibold uppercase text-[9px] tracking-[0.3em] ml-4">
+          <p className="text-gray-400 font-semibold uppercase text-[8px] sm:text-[9px] tracking-[0.18em] sm:tracking-[0.3em] ml-4">
             Ministère de la Jeunesse et des Sports • Administration Centrale
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full md:w-auto">
           <button
             onClick={loadData}
             title="Synchroniser"
@@ -165,7 +184,7 @@ export default function CentresPage() {
           </button>
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-smart-teal text-white px-8 py-3.5 rounded-2xl font-bold text-xs shadow-lg hover:bg-black transition-all flex items-center gap-2 active:scale-95 shadow-smart-teal/10 uppercase tracking-wider"
+            className="bg-smart-teal text-white px-5 sm:px-8 py-3.5 rounded-2xl font-bold text-[11px] sm:text-xs shadow-lg hover:bg-black transition-all flex items-center justify-center gap-2 active:scale-95 shadow-smart-teal/10 uppercase tracking-wider flex-1 md:flex-none"
           >
             <Plus size={18} /> <span>Inscrire un centre</span>
           </button>
@@ -187,21 +206,23 @@ export default function CentresPage() {
       />
 
       {/* 4. TABLEAU */}
-      <div className="bg-white rounded-[60px] p-10 shadow-sm border border-gray-50 overflow-hidden">
+      <div className="bg-white rounded-[30px] md:rounded-[60px] p-4 sm:p-6 lg:p-10 shadow-sm border border-gray-50 overflow-hidden">
         {loading ? (
-          <div className="flex justify-center py-20">
+          <div className="flex justify-center py-12 md:py-20">
             <Loader2 className="animate-spin text-smart-teal" size={50} />
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-[980px] text-left border-collapse">
               <thead>
                 <tr className="text-gray-300 text-[10px] uppercase tracking-[0.3em] font-black border-b border-gray-50">
                   <th className="pb-8 pl-4">Nom de l'institution</th>
                   <th className="pb-8">Gouvernorat</th>
                   <th className="pb-8 text-center">Identifiants</th>
                   <th className="pb-8">Adresse</th>
-                  <th className="pb-8 text-right pr-4">Actions</th>
+                  <th className="pb-8 text-right pr-4 lg:sticky lg:right-0 lg:bg-white lg:z-20 lg:shadow-[-12px_0_24px_-18px_rgba(0,0,0,0.35)]">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50/50">
@@ -212,6 +233,7 @@ export default function CentresPage() {
                     onView={() => setViewingCentre(c)}
                     onEdit={() => setEditingCentre(c)}
                     onDelete={() => setCentreToDelete(c)}
+                    onReactivate={() => setCentreToReactivate(c)}
                   />
                 ))}
               </tbody>
@@ -254,6 +276,13 @@ export default function CentresPage() {
         onClose={() => setCentreToDelete(null)}
         onConfirm={confirmDelete}
         centreName={centreToDelete?.nom}
+      />
+
+      <ReactivateCentreModal
+        isOpen={!!centreToReactivate}
+        onClose={() => setCentreToReactivate(null)}
+        onConfirm={confirmReactivate}
+        centreName={centreToReactivate?.nom}
       />
     </div>
   );

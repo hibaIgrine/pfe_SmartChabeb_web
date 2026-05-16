@@ -1,6 +1,12 @@
-import { Eye, Edit, Power } from "lucide-react";
+import { Eye, Edit, Power, RefreshCw } from "lucide-react";
 
-export const CentreCard = ({ centre, onView, onEdit, onDelete }: any) => {
+export const CentreCard = ({
+  centre,
+  onView,
+  onEdit,
+  onDelete,
+  onReactivate,
+}: any) => {
   return (
     <tr className="group hover:bg-[#FDFCF9] transition-all duration-300">
       <td className="py-6 pl-4">
@@ -32,31 +38,39 @@ export const CentreCard = ({ centre, onView, onEdit, onDelete }: any) => {
       <td className="py-6 text-gray-400 text-[11px] font-medium max-w-[200px] truncate italic">
         {centre.adresse}
       </td>
-      <td className="py-6 pr-4">
-        <div className="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+      <td className="py-4 sm:py-6 pr-3 sm:pr-4 lg:sticky lg:right-0 lg:bg-[#FDFCF9] lg:group-hover:bg-[#FDFCF9] lg:z-10 lg:shadow-[-12px_0_24px_-18px_rgba(0,0,0,0.18)]">
+        <div className="flex flex-wrap justify-end gap-1.5 sm:gap-2 max-w-[320px] ml-auto">
           <button
             onClick={() => onView(centre)}
-            className="p-2.5 bg-smart-sage/20 text-smart-teal rounded-xl hover:bg-smart-teal hover:text-white transition-all"
+            className="px-2.5 sm:px-3 py-2 sm:py-2.5 bg-smart-sage/20 text-smart-teal rounded-xl hover:bg-smart-teal hover:text-white transition-all inline-flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-black uppercase tracking-wide whitespace-nowrap"
           >
             <Eye size={16} />
+            <span>Voir</span>
           </button>
           <button
             onClick={() => onEdit(centre)}
-            className="p-2.5 bg-gray-50 text-gray-400 rounded-xl hover:bg-smart-teal hover:text-white transition-all"
+            className="px-2.5 sm:px-3 py-2 sm:py-2.5 bg-gray-50 text-gray-500 rounded-xl hover:bg-smart-teal hover:text-white transition-all inline-flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-black uppercase tracking-wide whitespace-nowrap"
           >
             <Edit size={16} />
+            <span>Éditer</span>
           </button>
           {centre.est_actif !== false ? (
             <button
               onClick={() => onDelete(centre.id)}
-              className="p-2.5 bg-[#FFF4EB] text-[#D97706] rounded-xl hover:bg-orange-500 hover:text-white transition-all"
+              className="px-2.5 sm:px-3 py-2 sm:py-2.5 bg-[#FFF4EB] text-[#D97706] rounded-xl hover:bg-orange-500 hover:text-white transition-all inline-flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-black uppercase tracking-wide whitespace-nowrap"
             >
               <Power size={16} />
+              <span>Désactiver</span>
             </button>
           ) : (
-            <span className="px-3 py-2 rounded-xl bg-gray-100 text-gray-500 text-[10px] uppercase tracking-[0.2em] font-black">
-              désactivé
-            </span>
+            <button
+              onClick={() => onReactivate(centre)}
+              type="button"
+              className="px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] uppercase tracking-wide font-black hover:bg-emerald-600 hover:text-white transition-all inline-flex items-center gap-1.5 sm:gap-2 whitespace-nowrap"
+            >
+              <RefreshCw size={16} />
+              <span>Réactiver</span>
+            </button>
           )}
         </div>
       </td>
