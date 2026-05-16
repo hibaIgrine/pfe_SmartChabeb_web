@@ -385,18 +385,14 @@ export default function AuthPage() {
         >
           {/* LEFT COLUMN */}
           <div
-            className={`w-1/2 h-full flex flex-col items-center justify-center p-12 relative overflow-hidden transition-all duration-500`}
+            className={`w-1/2 h-full flex flex-col items-center justify-center p-12 relative overflow-hidden transition-all duration-500 bg-gradient-to-br from-[#436d75] via-[#3b6168] to-[#2f4a50]`}
           >
             {/* Image + button on left for both login and signup */}
             {!isSignUp ? (
               <>
-                <div className="absolute inset-0 w-full h-full">
-                  <img
-                    src="https://images.unsplash.com/photo-1552674605-5defe6aa44bb?q=80&w=1000"
-                    className="w-full h-full object-cover"
-                    alt="Jeunes culturels"
-                  />
-                  <div className="absolute inset-0 bg-black/30"></div>
+                <div className="absolute inset-0">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(217,232,209,0.18),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent_30%)]" />
+                  <div className="absolute inset-0 bg-black/10" />
                 </div>
 
                 <div className="relative z-10 text-center text-white">
@@ -417,13 +413,9 @@ export default function AuthPage() {
               </>
             ) : (
               <>
-                <div className="absolute inset-0 w-full h-full">
-                  <img
-                    src="https://images.unsplash.com/photo-1517457373614-b7152f800fd1?q=80&w=1000"
-                    className="w-full h-full object-cover"
-                    alt="Jeunes SmartChabeb"
-                  />
-                  <div className="absolute inset-0 bg-black/30"></div>
+                <div className="absolute inset-0">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(217,232,209,0.18),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent_30%)]" />
+                  <div className="absolute inset-0 bg-black/10" />
                 </div>
                 <div className="relative z-10 text-center text-white">
                   <h2 className="text-5xl font-black italic tracking-tighter mb-4">

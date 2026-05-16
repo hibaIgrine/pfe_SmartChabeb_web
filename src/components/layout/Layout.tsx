@@ -75,6 +75,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       location.pathname !== "/mon-profil" &&
       location.pathname !== "/fil-actualite" &&
       location.pathname !== "/messagerie" &&
+      location.pathname !== "/chatbot" &&
       location.pathname !== "/my-club-requests" &&
       location.pathname !== "/club-reservations" &&
       location.pathname !== "/adherent-my-reservations" &&
