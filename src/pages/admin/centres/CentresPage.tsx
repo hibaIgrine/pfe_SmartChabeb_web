@@ -141,8 +141,26 @@ export default function CentresPage() {
     });
   }, [centres, search, selectedGouv, selectedStatus]);
 
+  const stats = useMemo(() => {
+    const activeCentres = centres.filter(
+      (c: any) => c.est_actif !== false,
+    ).length;
+    const inactiveCentres = centres.length - activeCentres;
+    const adherents = centres.reduce(
+      (total: number, c: any) => total + (c._count?.utilisateurs || 0),
+      0,
+    );
+
+    return {
+      totalCentres: centres.length,
+      activeCentres,
+      inactiveCentres,
+      adherents,
+    };
+  }, [centres]);
+
   return (
-    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-1000 max-w-7xl mx-auto px-3 sm:px-4 md:px-6 pb-12 md:pb-20 relative">
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-1000 max-w-[92rem] mx-auto px-3 sm:px-4 md:px-6 pb-12 md:pb-20 relative">
       {/* 🔔 TOAST NOTIFICATION (Michelle Style) */}
       {notification && (
         <div
@@ -192,7 +210,7 @@ export default function CentresPage() {
       </div>
 
       {/* 2. STATS */}
-      <CentreStats count={centres.length} />
+      <CentreStats stats={stats} />
 
       {/* 3. FILTRES */}
       <CentreFilters
@@ -206,14 +224,14 @@ export default function CentresPage() {
       />
 
       {/* 4. TABLEAU */}
-      <div className="bg-white rounded-[30px] md:rounded-[60px] p-4 sm:p-6 lg:p-10 shadow-sm border border-gray-50 overflow-hidden">
+      <div className="bg-white rounded-[30px] md:rounded-[60px] p-4 sm:p-6 lg:px-6 lg:py-8 xl:px-8 shadow-sm border border-gray-50 overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-12 md:py-20">
             <Loader2 className="animate-spin text-smart-teal" size={50} />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] text-left border-collapse">
+          <div className="overflow-x-auto pb-1">
+            <table className="w-full min-w-[900px] text-left border-collapse">
               <thead>
                 <tr className="text-gray-300 text-[10px] uppercase tracking-[0.3em] font-black border-b border-gray-50">
                   <th className="pb-8 pl-4">Nom de l'institution</th>
