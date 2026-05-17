@@ -48,7 +48,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(() => getStoredUser());
   const [dbProfile, setDbProfile] = useState<any>(null);
   const [managedClubs, setManagedClubs] = useState<any[]>([]);
+  const [staffClubs, setStaffClubs] = useState<any[]>([]);
   const [managedClubsLoading, setManagedClubsLoading] = useState(false);
+  const [staffClubsLoading, setStaffClubsLoading] = useState(false);
   const role = user?.role;
   const displayUser = dbProfile ?? user;
   const hasProfileImage =
@@ -68,9 +70,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       location.pathname === "/clubs" ||
       /^\/clubs\/[^/]+$/.test(location.pathname);
 
+    const isStaffTasksPage = /^\/my-clubs\/[^/]+\/staff-tasks/.test(
+      location.pathname,
+    );
+
     if (
       role === "ADHERENT" &&
       !isAdherentClubPage &&
+      !isStaffTasksPage &&
       location.pathname !== "/club-creation-requests" &&
       location.pathname !== "/mon-profil" &&
       location.pathname !== "/fil-actualite" &&
@@ -149,6 +156,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem("token");
     if (!token) {
       setManagedClubs([]);
+      setStaffClubs([]);
       return;
     }
 
@@ -169,6 +177,30 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
     void loadManagedClubs();
   }, [user?.id, role]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setStaffClubs([]);
+      return;
+    }
+
+    const loadStaffClubs = async () => {
+      setStaffClubsLoading(true);
+      try {
+        const res = await api.get("/clubs/my-staff-clubs", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setStaffClubs(Array.isArray(res.data) ? res.data : []);
+      } catch {
+        setStaffClubs([]);
+      } finally {
+        setStaffClubsLoading(false);
+      }
+    };
+
+    void loadStaffClubs();
+  }, [user?.id]);
 
   useEffect(() => {
     setTopBarImageError(false);
@@ -353,6 +385,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {staffClubs.length > 0 && (
+            <div className="px-3 mt-4">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">
+                Taches staff
+              </div>
+              {staffClubsLoading ? (
+                <div className="text-[10px] text-white/60 px-4">
+                  Chargement...
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {staffClubs.map((item) => {
+                    const club = item.club;
+                    return (
+                      <div key={item.id} className="px-1">
+                        <Link
+                          to={`/my-clubs/${club.id}/staff-tasks`}
+                          className={`flex items-center gap-2 py-1.5 px-3 rounded-md transition-all text-sm truncate ${
+                            location.pathname.startsWith(
+                              `/my-clubs/${club.id}/staff-tasks`,
+                            )
+                              ? "bg-white text-[#436D75]"
+                              : "text-white/80 hover:bg-white/5"
+                          }`}
+                        >
+                          <ListTodo size={14} />
+                          <span className="font-bold truncate">{club.nom}</span>
+                        </Link>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

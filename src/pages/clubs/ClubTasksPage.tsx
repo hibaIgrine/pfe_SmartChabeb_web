@@ -4,12 +4,15 @@ import api from "../../api/axios";
 import {
   AlertCircle,
   Calendar,
+  CheckCircle2,
   Flag,
   Pencil,
   Plus,
+  ShieldCheck,
   Trash2,
   User,
   Users,
+  XCircle,
   X,
 } from "lucide-react";
 
@@ -80,6 +83,16 @@ const priorityIcons = {
   FAIBLE: <Flag size={14} className="text-emerald-600" />,
 };
 
+const statusColors: Record<string, string> = {
+  EN_ATTENTE: "bg-slate-100 text-slate-700 border-slate-200",
+  EN_COURS: "bg-blue-100 text-blue-700 border-blue-200",
+  TERMINE: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  VALIDEE: "bg-violet-100 text-violet-700 border-violet-200",
+  REFUSE: "bg-rose-100 text-rose-700 border-rose-200",
+  ANNULE: "bg-orange-100 text-orange-700 border-orange-200",
+  A_FAIRE: "bg-slate-100 text-slate-700 border-slate-200",
+};
+
 const taskTypes = [
   "Organisation",
   "Logistique",
@@ -116,6 +129,21 @@ export default function ClubTasksPage() {
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  })();
+  const userRole =
+    currentUser?.role === "ADHERANT" ? "ADHERENT" : currentUser?.role;
+  const canManageTasks = [
+    "RESPONSABLE_CLUB",
+    "RESPONSABLE_CENTRE",
+    "ADMIN",
+  ].includes(userRole);
+  const canCancelTask = ["RESPONSABLE_CENTRE", "ADMIN"].includes(userRole);
 
   useEffect(() => {
     if (!clubId) {
@@ -257,6 +285,28 @@ export default function ClubTasksPage() {
     }
   };
 
+  const changeTaskStatus = async (taskId: string, statut: string) => {
+    if (!clubId) {
+      return;
+    }
+
+    try {
+      setError(null);
+      await api.patch(
+        `/clubs/${clubId}/tasks/${taskId}/status`,
+        { statut },
+        { headers },
+      );
+      await loadTasks();
+      setSuccess("Statut de la tache mis a jour");
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "Erreur lors de la mise a jour du statut",
+      );
+    }
+  };
+
   const totalAssignments = useMemo(
     () =>
       tasks.reduce((acc, task) => acc + (task.affectations?.length || 0), 0),
@@ -271,6 +321,44 @@ export default function ClubTasksPage() {
     });
 
   const isOverdue = (dateLimite: string) => new Date(dateLimite) < new Date();
+
+  const normalizeStatus = (status: string) => {
+    if (!status) {
+      return "EN_ATTENTE";
+    }
+
+    const normalized = status.toUpperCase();
+    if (normalized === "A_FAIRE") {
+      return "EN_ATTENTE";
+    }
+
+    return normalized;
+  };
+
+  const statusLabel = (status: string) => {
+    const normalized = normalizeStatus(status);
+
+    if (normalized === "EN_ATTENTE") return "En attente";
+    if (normalized === "EN_COURS") return "En cours";
+    if (normalized === "TERMINE") return "Terminee";
+    if (normalized === "VALIDEE") return "Validee";
+    if (normalized === "REFUSE") return "Refusee";
+    if (normalized === "ANNULE") return "Annulee";
+
+    return "En attente";
+  };
+
+  const statusIcon = (status: string) => {
+    const normalized = normalizeStatus(status);
+
+    if (normalized === "EN_ATTENTE") return <AlertCircle size={14} />;
+    if (normalized === "EN_COURS") return <Users size={14} />;
+    if (normalized === "TERMINE") return <CheckCircle2 size={14} />;
+    if (normalized === "VALIDEE") return <ShieldCheck size={14} />;
+    if (normalized === "REFUSE") return <XCircle size={14} />;
+
+    return <AlertCircle size={14} />;
+  };
 
   if (loading) {
     return (
@@ -373,6 +461,12 @@ export default function ClubTasksPage() {
                       <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700">
                         {task.type_tache}
                       </span>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${statusColors[normalizeStatus(task.statut)]}`}
+                      >
+                        {statusIcon(normalizeStatus(task.statut))}
+                        {statusLabel(normalizeStatus(task.statut))}
+                      </span>
                     </div>
 
                     {task.description && (
@@ -429,15 +523,55 @@ export default function ClubTasksPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 lg:ml-4">
-                    <button
-                      onClick={() => setEditingTask(task)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-                      title="Modifier"
-                    >
-                      <Pencil size={15} />
-                      Modifier
-                    </button>
+                  <div className="flex flex-wrap items-center gap-2 lg:ml-4">
+                    {normalizeStatus(task.statut) === "TERMINE" && (
+                      <>
+                        <button
+                          onClick={() =>
+                            void changeTaskStatus(task.id, "VALIDEE")
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+                          title="Valider"
+                        >
+                          <CheckCircle2 size={15} />
+                          Valider
+                        </button>
+                        <button
+                          onClick={() =>
+                            void changeTaskStatus(task.id, "REFUSE")
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+                          title="Refuser"
+                        >
+                          <XCircle size={15} />
+                          Refuser
+                        </button>
+                      </>
+                    )}
+                    {(normalizeStatus(task.statut) === "EN_ATTENTE" ||
+                      normalizeStatus(task.statut) === "EN_COURS") &&
+                      canCancelTask && (
+                        <button
+                          onClick={() =>
+                            void changeTaskStatus(task.id, "ANNULE")
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg border border-orange-200 px-3 py-2 text-sm font-medium text-orange-700 transition hover:bg-orange-50"
+                          title="Annuler"
+                        >
+                          <XCircle size={15} />
+                          Annuler
+                        </button>
+                      )}
+                    {canManageTasks && (
+                      <button
+                        onClick={() => setEditingTask(task)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                        title="Modifier"
+                      >
+                        <Pencil size={15} />
+                        Modifier
+                      </button>
+                    )}
                     <button
                       onClick={() => setDeletingTask(task)}
                       className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
