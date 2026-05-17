@@ -341,14 +341,6 @@ export default function ClubTasksPage() {
     }
   };
 
-  const totalAssignments = useMemo(
-    () =>
-      tasks.reduce((acc, task) => acc + (task.affectations?.length || 0), 0),
-    [tasks],
-  );
-
-  const isOverdue = (dateLimite: string) => new Date(dateLimite) < new Date();
-
   const normalizeStatus = (status: string) => {
     if (!status) {
       return "EN_ATTENTE";
@@ -361,6 +353,78 @@ export default function ClubTasksPage() {
 
     return normalized;
   };
+
+  const totalAssignments = useMemo(
+    () =>
+      tasks.reduce((acc, task) => acc + (task.affectations?.length || 0), 0),
+    [tasks],
+  );
+
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [filterType, setFilterType] = useState<
+    "all" | "overdue" | "upcoming" | "date"
+  >("all");
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(
+    null,
+  );
+
+  const overdueTasks = useMemo(() => {
+    const now = new Date();
+    return tasks.filter((t) => {
+      const dt = new Date(t.date_limite);
+      const st = normalizeStatus(t.statut);
+      return (
+        dt < now && !["TERMINE", "VALIDEE", "REFUSE", "ANNULE"].includes(st)
+      );
+    });
+  }, [tasks]);
+
+  const upcomingTasks = useMemo(() => {
+    const now = Date.now();
+    const next = now + 7 * 24 * 60 * 60 * 1000; // next 7 days
+    return tasks.filter((t) => {
+      const dt = new Date(t.date_limite).getTime();
+      return dt > now && dt <= next;
+    });
+  }, [tasks]);
+
+  const tasksForDate = (dateISO: string) =>
+    tasks.filter((t) => toInputDate(t.date_limite) === dateISO);
+
+  const displayedTasks = useMemo(() => {
+    if (filterType === "overdue") return overdueTasks;
+    if (filterType === "upcoming") return upcomingTasks;
+    if (filterType === "date" && selectedDateFilter)
+      return tasksForDate(selectedDateFilter);
+    return tasks;
+  }, [filterType, selectedDateFilter, overdueTasks, upcomingTasks, tasks]);
+
+  function startOfMonth(date: Date) {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  }
+
+  function monthGrid(monthDate: Date) {
+    const start = startOfMonth(monthDate);
+    const startDay = start.getDay();
+    const daysInMonth = new Date(
+      monthDate.getFullYear(),
+      monthDate.getMonth() + 1,
+      0,
+    ).getDate();
+    const cells: Array<Date | null> = [];
+    // pad beginning
+    for (let i = 0; i < startDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++)
+      cells.push(new Date(monthDate.getFullYear(), monthDate.getMonth(), d));
+    // pad to full weeks (6*7)
+    while (cells.length < 42) cells.push(null);
+    const weeks: Array<Array<Date | null>> = [];
+    for (let i = 0; i < 6; i++) weeks.push(cells.slice(i * 7, i * 7 + 7));
+    return weeks;
+  }
+
+  const isOverdue = (dateLimite: string) => new Date(dateLimite) < new Date();
 
   const statusLabel = (status: string) => {
     const normalized = normalizeStatus(status);
@@ -438,6 +502,173 @@ export default function ClubTasksPage() {
           </div>
         </section>
 
+        <div className="mt-6">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setFilterType("all");
+                setViewMode("list");
+              }}
+              className={`rounded-full px-3 py-1 text-sm font-semibold ${filterType === "all" ? "bg-[#2E5A66] text-white" : "bg-white text-[#2E5A66] border border-slate-200"}`}
+            >
+              Toutes
+            </button>
+            <button
+              onClick={() => {
+                setFilterType("date");
+                setViewMode("calendar");
+                setSelectedDateFilter(null);
+              }}
+              className={`rounded-full px-3 py-1 text-sm font-semibold ${filterType === "date" ? "bg-[#2E5A66] text-white" : "bg-white text-[#2E5A66] border border-slate-200"}`}
+            >
+              Par date
+            </button>
+            <button
+              onClick={() => {
+                setFilterType("overdue");
+                setViewMode("list");
+                setSelectedDateFilter(null);
+              }}
+              className={`rounded-full px-3 py-1 text-sm font-semibold ${filterType === "overdue" ? "bg-red-600 text-white" : "bg-white text-red-600 border border-red-200"}`}
+            >
+              En retard
+            </button>
+            <button
+              onClick={() => {
+                setFilterType("upcoming");
+                setViewMode("list");
+                setSelectedDateFilter(null);
+              }}
+              className={`rounded-full px-3 py-1 text-sm font-semibold ${filterType === "upcoming" ? "bg-sky-600 text-white" : "bg-white text-sky-600 border border-sky-200"}`}
+            >
+              Echéances proches
+            </button>
+          </div>
+
+          {viewMode === "calendar" && (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      setCalendarMonth(
+                        new Date(
+                          calendarMonth.getFullYear(),
+                          calendarMonth.getMonth() - 1,
+                          1,
+                        ),
+                      )
+                    }
+                    className="rounded-lg px-2 py-1 text-sm text-slate-600 hover:bg-slate-50"
+                  >
+                    ‹
+                  </button>
+                  <div className="text-sm font-semibold">
+                    {calendarMonth.toLocaleString("fr-FR", {
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </div>
+                  <button
+                    onClick={() =>
+                      setCalendarMonth(
+                        new Date(
+                          calendarMonth.getFullYear(),
+                          calendarMonth.getMonth() + 1,
+                          1,
+                        ),
+                      )
+                    }
+                    className="rounded-lg px-2 py-1 text-sm text-slate-600 hover:bg-slate-50"
+                  >
+                    ›
+                  </button>
+                </div>
+                <div className="text-sm text-slate-500">
+                  Sélectionnez un jour pour voir les tâches
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-7 gap-2 text-center text-xs">
+                {["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"].map((d) => (
+                  <div key={d} className="text-slate-400">
+                    {d}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-2 grid grid-cols-7 gap-2">
+                {monthGrid(calendarMonth).map((week, wi) => (
+                  <div key={wi} className="contents">
+                    {week.map((day, di) => {
+                      if (!day) return <div key={di} className="h-14" />;
+                      const iso = day.toISOString().split("T")[0];
+                      const dayTasks = tasksForDate(iso);
+                      const isSelected = selectedDateFilter === iso;
+                      return (
+                        <button
+                          key={di}
+                          onClick={() => {
+                            setSelectedDateFilter(iso);
+                            setFilterType("date");
+                          }}
+                          className={`h-14 rounded-lg p-2 text-sm transition ${isSelected ? "bg-[#2E5A66] text-white" : "bg-white text-slate-700 border border-slate-100 hover:bg-slate-50"}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{day.getDate()}</span>
+                            {dayTasks.length > 0 ? (
+                              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#2E5A66] text-[11px] font-bold text-white">
+                                {dayTasks.length}
+                              </span>
+                            ) : null}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold text-slate-700">
+                  Tâches pour {selectedDateFilter ?? "le mois"}
+                </h3>
+                <div className="mt-2 space-y-3">
+                  {(selectedDateFilter
+                    ? tasksForDate(selectedDateFilter)
+                    : []
+                  ).map((t) => (
+                    <div
+                      key={t.id}
+                      className="rounded-lg border border-slate-100 bg-white p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-slate-800">
+                            {t.titre}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {formatDateTime(t.date_limite)} • {t.type_tache}
+                          </p>
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {t.affectations?.length || 0} affecté(s)
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {selectedDateFilter &&
+                    tasksForDate(selectedDateFilter).length === 0 && (
+                      <div className="text-sm text-slate-500">
+                        Aucune tâche pour cette date.
+                      </div>
+                    )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {error && (
           <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
@@ -468,7 +699,7 @@ export default function ClubTasksPage() {
               </button>
             </div>
           ) : (
-            tasks.map((task) => (
+            displayedTasks.map((task) => (
               <article
                 key={task.id}
                 className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-6"
