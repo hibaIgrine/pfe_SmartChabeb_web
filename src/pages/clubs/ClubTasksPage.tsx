@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import {
   AlertCircle,
@@ -117,6 +117,7 @@ const defaultTaskForm: TaskFormData = {
 
 export default function ClubTasksPage() {
   const { clubId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [tasks, setTasks] = useState<ClubTask[]>([]);
   const [staff, setStaff] = useState<ClubStaff[]>([]);
@@ -127,6 +128,7 @@ export default function ClubTasksPage() {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<ClubTask | null>(null);
+  const [detailsTask, setDetailsTask] = useState<ClubTask | null>(null);
   const [deletingTask, setDeletingTask] = useState<ClubTask | null>(null);
 
   const token = localStorage.getItem("token");
@@ -155,6 +157,18 @@ export default function ClubTasksPage() {
     void loadTasks();
     void loadStaff();
   }, [clubId]);
+
+  useEffect(() => {
+    const taskId = searchParams.get("taskId");
+    if (!taskId || tasks.length === 0) {
+      return;
+    }
+
+    const task = tasks.find((item) => item.id === taskId);
+    if (task) {
+      setDetailsTask(task);
+    }
+  }, [searchParams, tasks]);
 
   useEffect(() => {
     if (!success) {
@@ -332,24 +346,6 @@ export default function ClubTasksPage() {
       tasks.reduce((acc, task) => acc + (task.affectations?.length || 0), 0),
     [tasks],
   );
-
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString("fr-FR", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const dateStr = date.toLocaleDateString("fr-FR", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    const timeStr = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-    return `${dateStr} à ${timeStr}`;
-  };
 
   const isOverdue = (dateLimite: string) => new Date(dateLimite) < new Date();
 
@@ -604,6 +600,20 @@ export default function ClubTasksPage() {
                       </button>
                     )}
                     <button
+                      onClick={() => {
+                        setDetailsTask(task);
+                        setSearchParams((current) => {
+                          current.set("taskId", task.id);
+                          return current;
+                        });
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg border border-sky-200 px-3 py-2 text-sm font-medium text-sky-700 transition hover:bg-sky-50"
+                      title="Details"
+                    >
+                      <Calendar size={15} />
+                      Details
+                    </button>
+                    <button
                       onClick={() => setDeletingTask(task)}
                       className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
                       title="Supprimer"
@@ -654,6 +664,19 @@ export default function ClubTasksPage() {
         />
       )}
 
+      {detailsTask && (
+        <TaskDetailsModal
+          task={detailsTask}
+          onClose={() => {
+            setDetailsTask(null);
+            setSearchParams((current) => {
+              current.delete("taskId");
+              return current;
+            });
+          }}
+        />
+      )}
+
       {deletingTask && (
         <ConfirmDeleteModal
           taskTitle={deletingTask.titre}
@@ -683,6 +706,93 @@ function KpiCard({
         {icon || <Flag size={16} className="text-slate-400" />}
       </div>
       <p className="mt-3 text-2xl font-bold text-slate-800">{value}</p>
+    </div>
+  );
+}
+
+function TaskDetailsModal({
+  task,
+  onClose,
+}: {
+  task: ClubTask;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+      <div className="w-full rounded-t-3xl border border-slate-200 bg-white shadow-xl sm:max-h-[92vh] sm:max-w-3xl sm:rounded-3xl">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Details de la tache
+            </p>
+            <h2 className="text-lg font-bold text-[#2E5A66] sm:text-2xl">
+              {task.titre}
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+            aria-label="Fermer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="max-h-[80vh] overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <InfoBlock label="Priorite" value={task.priorite} />
+            <InfoBlock label="Type" value={task.type_tache} />
+            <InfoBlock
+              label="Date limite"
+              value={formatDateTime(task.date_limite)}
+            />
+            <InfoBlock label="Statut" value={task.statut} />
+          </div>
+
+          {task.description && (
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="mb-2 text-sm font-semibold text-slate-700">
+                Description
+              </p>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
+                {task.description}
+              </p>
+            </div>
+          )}
+
+          <div className="mt-5 rounded-2xl border border-slate-200 p-4">
+            <p className="mb-3 text-sm font-semibold text-slate-700">
+              Affectations
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {task.affectations && task.affectations.length > 0 ? (
+                task.affectations.map((affectation) => (
+                  <span
+                    key={affectation.id}
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
+                  >
+                    {affectation.utilisateur.prenom}{" "}
+                    {affectation.utilisateur.nom}
+                  </span>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">Aucun membre affecte.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+      <p className="mt-2 text-sm font-medium text-slate-800">{value}</p>
     </div>
   );
 }
@@ -729,10 +839,6 @@ function TaskModal({
     setGeneralError(null);
   }, [initialData]);
 
-  const leadTimeWarning = getLeadTimeWarning(
-    formData.date_limite,
-    formData.date_limite_time,
-  );
   const timeMin = getTimeMinForDate(formData.date_limite);
 
   const toggleMember = (memberId: string) => {
@@ -1117,6 +1223,17 @@ function toInputTime(dateString: string) {
   // Extract HH:mm directly from ISO string (e.g., "2026-05-17T14:30:00Z")
   const match = dateString.match(/T(\d{2}):(\d{2})/);
   return match ? `${match[1]}:${match[2]}` : "";
+}
+
+function formatDateTime(dateString: string) {
+  const date = new Date(dateString);
+  const dateStr = date.toLocaleDateString("fr-FR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const timeStr = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  return `${dateStr} à ${timeStr}`;
 }
 
 function buildLocalDateTime(date: string, time: string) {

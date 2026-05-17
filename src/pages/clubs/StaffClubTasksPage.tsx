@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import {
   AlertCircle,
@@ -91,6 +91,7 @@ type FilterState = {
 
 export default function StaffClubTasksPage() {
   const { clubId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tasks, setTasks] = useState<StaffTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -127,6 +128,18 @@ export default function StaffClubTasksPage() {
 
     void loadTasks();
   }, [clubId]);
+
+  useEffect(() => {
+    if (!searchParams.get("taskId") || tasks.length === 0) {
+      return;
+    }
+
+    const taskId = searchParams.get("taskId");
+    const task = tasks.find((item) => item.id === taskId);
+    if (task) {
+      setSelectedTask(task);
+    }
+  }, [searchParams, tasks]);
 
   useEffect(() => {
     if (!success) {
@@ -397,7 +410,13 @@ export default function StaffClubTasksPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setSelectedTask(task)}
+                      onClick={() => {
+                        setSelectedTask(task);
+                        setSearchParams((current) => {
+                          current.set("taskId", task.id);
+                          return current;
+                        });
+                      }}
                       className="rounded-xl border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
                       aria-label="Voir les details"
                     >
@@ -423,7 +442,13 @@ export default function StaffClubTasksPage() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => setSelectedTask(task)}
+                      onClick={() => {
+                        setSelectedTask(task);
+                        setSearchParams((current) => {
+                          current.set("taskId", task.id);
+                          return current;
+                        });
+                      }}
                       className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                     >
                       Details
@@ -455,7 +480,13 @@ export default function StaffClubTasksPage() {
           task={detailsTask}
           canValidate={canValidate}
           submitting={submitting}
-          onClose={() => setSelectedTask(null)}
+          onClose={() => {
+            setSelectedTask(null);
+            setSearchParams((current) => {
+              current.delete("taskId");
+              return current;
+            });
+          }}
           onChangeStatus={(nextStatus) =>
             void changeStatus(detailsTask.id, nextStatus)
           }
