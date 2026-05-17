@@ -410,7 +410,7 @@ export default function StaffClubTasksPage() {
                       <Calendar size={15} className="text-slate-400" />
                       <span>
                         Echeance:{" "}
-                        <strong>{formatDate(task.date_limite)}</strong>
+                        <strong>{formatDateTime(task.date_limite)}</strong>
                       </span>
                     </div>
                     {task.description && (
@@ -535,7 +535,7 @@ function TaskDetailsModal({
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <InfoBlock
               label="Echeance"
-              value={formatDate(task.date_limite)}
+              value={formatDateTime(task.date_limite)}
               icon={<Calendar size={16} />}
             />
             <InfoBlock
@@ -564,7 +564,7 @@ function TaskDetailsModal({
               {task.affectations?.map((affectation) => (
                 <span
                   key={affectation.id}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700"
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
                 >
                   {affectation.utilisateur.prenom} {affectation.utilisateur.nom}
                 </span>
@@ -773,6 +773,17 @@ function formatDate(dateString: string) {
     month: "short",
     day: "numeric",
   });
+}
+
+function formatDateTime(dateString: string) {
+  const date = new Date(dateString);
+  const dateStr = date.toLocaleDateString("fr-FR", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  const timeStr = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  return `${dateStr} à ${timeStr}`;
 }
 
 function toInputDate(dateString: string) {
