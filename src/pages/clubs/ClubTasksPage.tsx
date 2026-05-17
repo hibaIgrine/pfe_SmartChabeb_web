@@ -67,6 +67,7 @@ interface TaskFormData {
   description: string;
   priorite: "HAUTE" | "MOYENNE" | "FAIBLE";
   date_limite: string;
+  date_limite_time: string;
   type_tache: string;
   utilisateurs: string[];
 }
@@ -109,6 +110,7 @@ const defaultTaskForm: TaskFormData = {
   description: "",
   priorite: "MOYENNE",
   date_limite: "",
+  date_limite_time: "",
   type_tache: "",
   utilisateurs: [],
 };
@@ -219,10 +221,21 @@ export default function ClubTasksPage() {
     try {
       setError(null);
 
-      const { utilisateurs, ...payload } = taskData;
-      const createResponse = await api.post(`/clubs/${clubId}/tasks`, payload, {
-        headers,
-      });
+      const { utilisateurs, date_limite, date_limite_time, ...payload } =
+        taskData;
+      const createResponse = await api.post(
+        `/clubs/${clubId}/tasks`,
+        {
+          ...payload,
+          date_limite: buildLocalDateTime(
+            date_limite,
+            date_limite_time,
+          ).toISOString(),
+        },
+        {
+          headers,
+        },
+      );
       const createdTaskId = createResponse.data?.id;
 
       if (createdTaskId && utilisateurs.length > 0) {
@@ -237,9 +250,7 @@ export default function ClubTasksPage() {
       setIsCreateModalOpen(false);
       setSuccess("Tache creee avec succes");
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Erreur lors de la creation de la tache",
-      );
+      throw err;
     }
   };
 
@@ -250,17 +261,26 @@ export default function ClubTasksPage() {
 
     try {
       setError(null);
-      await api.patch(`/clubs/${clubId}/tasks/${taskId}`, taskData, {
-        headers,
-      });
+      const { utilisateurs, date_limite, date_limite_time, ...payload } =
+        taskData;
+      await api.patch(
+        `/clubs/${clubId}/tasks/${taskId}`,
+        {
+          ...payload,
+          date_limite: buildLocalDateTime(
+            date_limite,
+            date_limite_time,
+          ).toISOString(),
+        },
+        {
+          headers,
+        },
+      );
       await loadTasks();
       setEditingTask(null);
       setSuccess("Tache modifiee avec succes");
     } catch (err: any) {
-      setError(
-        err.response?.data?.message ||
-          "Erreur lors de la modification de la tache",
-      );
+      throw err;
     }
   };
 
@@ -319,6 +339,17 @@ export default function ClubTasksPage() {
       month: "long",
       day: "numeric",
     });
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const dateStr = date.toLocaleDateString("fr-FR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const timeStr = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    return `${dateStr} à ${timeStr}`;
+  };
 
   const isOverdue = (dateLimite: string) => new Date(dateLimite) < new Date();
 
@@ -485,7 +516,7 @@ export default function ClubTasksPage() {
                               : ""
                           }
                         >
-                          Echeance: {formatDate(task.date_limite)}
+                          Echeance: {formatDateTime(task.date_limite)}
                         </span>
                       </div>
 
@@ -612,6 +643,7 @@ export default function ClubTasksPage() {
             description: editingTask.description || "",
             priorite: editingTask.priorite,
             date_limite: toInputDate(editingTask.date_limite),
+            date_limite_time: toInputTime(editingTask.date_limite),
             type_tache: editingTask.type_tache,
             utilisateurs: (editingTask.affectations || []).map(
               (item) => item.utilisateur.id,
@@ -666,6 +698,14 @@ interface TaskModalProps {
   onSubmit: (data: TaskFormData) => Promise<void>;
 }
 
+type TaskFieldErrors = Partial<{
+  titre: string;
+  date_limite: string;
+  date_limite_time: string;
+  type_tache: string;
+  utilisateurs: string;
+}>;
+
 function TaskModal({
   mode,
   title,
@@ -680,10 +720,20 @@ function TaskModal({
     initialData || defaultTaskForm,
   );
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<TaskFieldErrors>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
   useEffect(() => {
     setFormData(initialData || defaultTaskForm);
+    setFieldErrors({});
+    setGeneralError(null);
   }, [initialData]);
+
+  const leadTimeWarning = getLeadTimeWarning(
+    formData.date_limite,
+    formData.date_limite_time,
+  );
+  const timeMin = getTimeMinForDate(formData.date_limite);
 
   const toggleMember = (memberId: string) => {
     const isSelected = formData.utilisateurs.includes(memberId);
@@ -697,9 +747,46 @@ function TaskModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validationErrors = validateTaskForm(formData);
+
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      return;
+    }
+
+    const validationError = getLeadTimeWarning(
+      formData.date_limite,
+      formData.date_limite_time,
+    );
+
+    if (validationError) {
+      setFieldErrors((current) => ({
+        ...current,
+        date_limite_time: validationError,
+      }));
+      return;
+    }
+
     setLoading(true);
     try {
+      setFieldErrors({});
+      setGeneralError(null);
       await onSubmit(formData);
+    } catch (error: any) {
+      const apiMessage = error?.response?.data?.message;
+      if (apiMessage) {
+        const mapped = mapApiErrorToFieldErrors(apiMessage);
+        if (Object.keys(mapped).length > 0) {
+          setFieldErrors(mapped);
+          setGeneralError(null);
+        } else {
+          setFieldErrors({});
+          setGeneralError(apiMessage);
+        }
+      } else {
+        setFieldErrors({});
+        setGeneralError(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -725,6 +812,16 @@ function TaskModal({
           onSubmit={handleSubmit}
           className="max-h-[80vh] overflow-y-auto px-4 py-4 sm:px-6 sm:py-6"
         >
+          {generalError && (
+            <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {generalError}
+            </div>
+          )}
+          {Object.keys(fieldErrors).length > 0 && (
+            <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              Corrigez les champs signalés ci-dessous.
+            </div>
+          )}
           <div className="space-y-5">
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
@@ -737,9 +834,14 @@ function TaskModal({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, titre: e.target.value }))
                 }
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#2E5A66] focus:ring-2 focus:ring-[#2E5A66]/20"
+                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-[#2E5A66]/20 ${fieldErrors.titre ? "border-rose-400 focus:border-rose-500 focus:ring-rose-200" : "border-slate-300 focus:border-[#2E5A66]"}`}
                 placeholder="Ex: Preparation de la reunion"
               />
+              {fieldErrors.titre && (
+                <p className="mt-2 text-xs text-rose-600">
+                  {fieldErrors.titre}
+                </p>
+              )}
             </div>
 
             <div>
@@ -802,8 +904,42 @@ function TaskModal({
                       ? new Date().toISOString().split("T")[0]
                       : undefined
                   }
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#2E5A66] focus:ring-2 focus:ring-[#2E5A66]/20"
+                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-[#2E5A66]/20 ${fieldErrors.date_limite ? "border-rose-400 focus:border-rose-500 focus:ring-rose-200" : "border-slate-300 focus:border-[#2E5A66]"}`}
                 />
+                {fieldErrors.date_limite && (
+                  <p className="mt-2 text-xs text-rose-600">
+                    {fieldErrors.date_limite}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Heure limite *
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={formData.date_limite_time}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      date_limite_time: e.target.value,
+                    }))
+                  }
+                  min={timeMin}
+                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-[#2E5A66]/20 ${fieldErrors.date_limite_time ? "border-rose-400 focus:border-rose-500 focus:ring-rose-200" : "border-slate-300 focus:border-[#2E5A66]"}`}
+                />
+                {timeMin ? (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Heure minimum autorisée pour aujourd'hui: {timeMin}
+                  </p>
+                ) : null}
+                {fieldErrors.date_limite_time && (
+                  <p className="mt-2 text-xs text-rose-600">
+                    {fieldErrors.date_limite_time}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -820,7 +956,7 @@ function TaskModal({
                     type_tache: e.target.value,
                   }))
                 }
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#2E5A66] focus:ring-2 focus:ring-[#2E5A66]/20"
+                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-[#2E5A66]/20 ${fieldErrors.type_tache ? "border-rose-400 focus:border-rose-500 focus:ring-rose-200" : "border-slate-300 focus:border-[#2E5A66]"}`}
               >
                 <option value="">Selectionner un type</option>
                 {taskTypes.map((type) => (
@@ -829,6 +965,11 @@ function TaskModal({
                   </option>
                 ))}
               </select>
+              {fieldErrors.type_tache && (
+                <p className="mt-2 text-xs text-rose-600">
+                  {fieldErrors.type_tache}
+                </p>
+              )}
             </div>
 
             <div>
@@ -882,6 +1023,11 @@ function TaskModal({
                   })
                 )}
               </div>
+              {fieldErrors.utilisateurs && (
+                <p className="mt-2 text-xs text-rose-600">
+                  {fieldErrors.utilisateurs}
+                </p>
+              )}
             </div>
           </div>
 
@@ -962,4 +1108,117 @@ function toInputDate(dateString: string) {
     return "";
   }
   return date.toISOString().split("T")[0];
+}
+
+function toInputTime(dateString: string) {
+  if (!dateString) {
+    return "";
+  }
+  // Extract HH:mm directly from ISO string (e.g., "2026-05-17T14:30:00Z")
+  const match = dateString.match(/T(\d{2}):(\d{2})/);
+  return match ? `${match[1]}:${match[2]}` : "";
+}
+
+function buildLocalDateTime(date: string, time: string) {
+  if (!date || !time) {
+    return new Date(NaN);
+  }
+
+  return new Date(`${date}T${time}:00`);
+}
+
+function getLeadTimeWarning(date: string, time: string) {
+  if (!date || !time) {
+    return "";
+  }
+
+  const selected = buildLocalDateTime(date, time);
+  if (Number.isNaN(selected.getTime())) {
+    return "";
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+  if (date !== today) {
+    return "";
+  }
+
+  const minimumDateTime = new Date(Date.now() + 60 * 60 * 1000);
+  if (selected.getTime() < minimumDateTime.getTime()) {
+    return "On laisse le temps au staff faire cette tache minimum une heure.";
+  }
+
+  return "";
+}
+
+function getTimeMinForDate(date: string) {
+  if (!date) {
+    return undefined;
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+  if (date !== today) {
+    return undefined;
+  }
+
+  const minimum = new Date(Date.now() + 60 * 60 * 1000);
+  const hours = String(minimum.getHours()).padStart(2, "0");
+  const minutes = String(minimum.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+function validateTaskForm(formData: TaskFormData): TaskFieldErrors {
+  const errors: TaskFieldErrors = {};
+
+  if (!formData.titre.trim()) {
+    errors.titre = "Le titre est obligatoire.";
+  }
+
+  if (!formData.date_limite) {
+    errors.date_limite = "La date limite est obligatoire.";
+  }
+
+  if (!formData.date_limite_time) {
+    errors.date_limite_time = "L'heure limite est obligatoire.";
+  }
+
+  if (!formData.type_tache) {
+    errors.type_tache = "Le type de tache est obligatoire.";
+  }
+
+  return errors;
+}
+
+function mapApiErrorToFieldErrors(message: string): TaskFieldErrors {
+  const lower = (message || "").toLowerCase();
+
+  if (lower.includes("titre")) {
+    return { titre: message };
+  }
+
+  if (lower.includes("heure") || lower.includes("time")) {
+    return { date_limite_time: message };
+  }
+
+  if (lower.includes("date")) {
+    return { date_limite: message };
+  }
+
+  if (lower.includes("type")) {
+    return { type_tache: message };
+  }
+
+  if (lower.includes("staff") || lower.includes("affect")) {
+    return { utilisateurs: message };
+  }
+  // If message seems generic, return empty so it becomes a general error
+  if (
+    lower.includes("erreur") ||
+    lower.includes("creation") ||
+    lower.includes("tache") ||
+    lower.trim().length < 10
+  ) {
+    return {};
+  }
+
+  return { date_limite_time: message };
 }
