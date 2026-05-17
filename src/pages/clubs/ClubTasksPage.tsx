@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
 import api from "../../api/axios";
 import {
-  Plus,
+  AlertCircle,
   Calendar,
   Flag,
-  AlertCircle,
-  Edit,
+  Pencil,
+  Plus,
   Trash2,
   User,
+  Users,
+  X,
 } from "lucide-react";
 
 interface ClubTask {
@@ -47,281 +49,517 @@ interface ClubStaff {
   role_dans_club: string;
 }
 
+interface ClubStaffApiItem {
+  role_dans_club: string;
+  utilisateur: {
+    id: string;
+    nom: string;
+    prenom: string;
+    photo_profil_url?: string;
+  };
+}
+
+interface TaskFormData {
+  titre: string;
+  description: string;
+  priorite: "HAUTE" | "MOYENNE" | "FAIBLE";
+  date_limite: string;
+  type_tache: string;
+  utilisateurs: string[];
+}
+
 const priorityColors = {
   HAUTE: "bg-red-100 text-red-700 border-red-200",
-  MOYENNE: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  FAIBLE: "bg-green-100 text-green-700 border-green-200",
+  MOYENNE: "bg-amber-100 text-amber-700 border-amber-200",
+  FAIBLE: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
 const priorityIcons = {
   HAUTE: <Flag size={14} className="text-red-600" />,
-  MOYENNE: <Flag size={14} className="text-yellow-600" />,
-  FAIBLE: <Flag size={14} className="text-green-600" />,
+  MOYENNE: <Flag size={14} className="text-amber-600" />,
+  FAIBLE: <Flag size={14} className="text-emerald-600" />,
+};
+
+const taskTypes = [
+  "Organisation",
+  "Logistique",
+  "Communication",
+  "Administratif",
+  "Evenementiel",
+  "Financement",
+  "Formation",
+  "Autre",
+];
+
+const defaultTaskForm: TaskFormData = {
+  titre: "",
+  description: "",
+  priorite: "MOYENNE",
+  date_limite: "",
+  type_tache: "",
+  utilisateurs: [],
 };
 
 export default function ClubTasksPage() {
   const { clubId } = useParams();
-  const navigate = useNavigate();
+
   const [tasks, setTasks] = useState<ClubTask[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [staff, setStaff] = useState<ClubStaff[]>([]);
+  const [loading, setLoading] = useState(true);
   const [staffLoading, setStaffLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<ClubTask | null>(null);
+  const [deletingTask, setDeletingTask] = useState<ClubTask | null>(null);
 
   const token = localStorage.getItem("token");
   const headers = { Authorization: `Bearer ${token}` };
 
   useEffect(() => {
-    if (clubId) {
-      loadTasks();
-      loadStaff();
+    if (!clubId) {
+      return;
     }
+
+    void loadTasks();
+    void loadStaff();
   }, [clubId]);
 
-  const loadStaff = async () => {
-    try {
-      setStaffLoading(true);
-      const response = await api.get(`/clubs/${clubId}/tasks/staff`, { headers });
-      setStaff(response.data || []);
-    } catch (err: any) {
-      console.error("Error loading staff:", err);
-    } finally {
-      setStaffLoading(false);
+  useEffect(() => {
+    if (!success) {
+      return;
     }
-  };
+
+    const timer = setTimeout(() => setSuccess(null), 2500);
+    return () => clearTimeout(timer);
+  }, [success]);
 
   const loadTasks = async () => {
+    if (!clubId) {
+      return;
+    }
+
     try {
       setLoading(true);
-      console.log("Loading tasks for club:", clubId);
+      setError(null);
       const response = await api.get(`/clubs/${clubId}/tasks`, { headers });
-      console.log("Tasks response:", response.data);
       setTasks(response.data || []);
     } catch (err: any) {
-      console.error("Error loading tasks:", err);
-      setError(err.response?.data?.message || "Erreur lors du chargement des tâches");
+      setError(
+        err.response?.data?.message || "Erreur lors du chargement des taches",
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateTask = async (taskData: any) => {
+  const loadStaff = async () => {
+    if (!clubId) {
+      return;
+    }
+
     try {
-      await api.post(`/clubs/${clubId}/tasks`, taskData, { headers });
-      await loadTasks();
-      setIsCreateModalOpen(false);
+      setStaffLoading(true);
+      const response = await api.get(`/clubs/${clubId}/tasks/staff`, {
+        headers,
+      });
+      const mappedStaff = (response.data || []).map(
+        (item: ClubStaffApiItem) => ({
+          id: item.utilisateur.id,
+          nom: item.utilisateur.nom,
+          prenom: item.utilisateur.prenom,
+          photo_profil_url: item.utilisateur.photo_profil_url,
+          role_dans_club: item.role_dans_club,
+        }),
+      );
+      setStaff(mappedStaff);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Erreur lors de la création de la tâche");
+      setError(
+        err.response?.data?.message || "Erreur lors du chargement du staff",
+      );
+    } finally {
+      setStaffLoading(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("fr-FR", {
+  const createTask = async (taskData: TaskFormData) => {
+    if (!clubId) {
+      return;
+    }
+
+    try {
+      setError(null);
+
+      const { utilisateurs, ...payload } = taskData;
+      const createResponse = await api.post(`/clubs/${clubId}/tasks`, payload, {
+        headers,
+      });
+      const createdTaskId = createResponse.data?.id;
+
+      if (createdTaskId && utilisateurs.length > 0) {
+        await api.patch(
+          `/clubs/${clubId}/tasks/${createdTaskId}`,
+          { utilisateurs },
+          { headers },
+        );
+      }
+
+      await loadTasks();
+      setIsCreateModalOpen(false);
+      setSuccess("Tache creee avec succes");
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message || "Erreur lors de la creation de la tache",
+      );
+    }
+  };
+
+  const updateTask = async (taskId: string, taskData: TaskFormData) => {
+    if (!clubId) {
+      return;
+    }
+
+    try {
+      setError(null);
+      await api.patch(`/clubs/${clubId}/tasks/${taskId}`, taskData, {
+        headers,
+      });
+      await loadTasks();
+      setEditingTask(null);
+      setSuccess("Tache modifiee avec succes");
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "Erreur lors de la modification de la tache",
+      );
+    }
+  };
+
+  const deleteTask = async () => {
+    if (!clubId || !deletingTask) {
+      return;
+    }
+
+    try {
+      setError(null);
+      await api.delete(`/clubs/${clubId}/tasks/${deletingTask.id}`, {
+        headers,
+      });
+      await loadTasks();
+      setSuccess("Tache supprimee avec succes");
+      setDeletingTask(null);
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "Erreur lors de la suppression de la tache",
+      );
+    }
+  };
+
+  const totalAssignments = useMemo(
+    () =>
+      tasks.reduce((acc, task) => acc + (task.affectations?.length || 0), 0),
+    [tasks],
+  );
+
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("fr-FR", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
-  };
 
-  const isOverdue = (dateLimite: string) => {
-    return new Date(dateLimite) < new Date();
-  };
+  const isOverdue = (dateLimite: string) => new Date(dateLimite) < new Date();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#436D75] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement des tâches...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E5A66] mx-auto" />
+          <p className="mt-4 text-slate-600">Chargement des taches...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-emerald-50/40 px-4 py-5 sm:px-6 sm:py-8">
+      <div className="mx-auto max-w-7xl">
+        <section className="rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm backdrop-blur sm:p-7">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-[#436D75]">Gestion des Tâches</h1>
-              <p className="text-gray-600 mt-2">Organisez et suivez les tâches de votre club</p>
-              <p className="text-sm text-gray-500 mt-1">Club ID: {clubId}</p>
+              <h1 className="text-2xl font-bold tracking-tight text-[#2E5A66] sm:text-3xl">
+                Tableau des taches du club
+              </h1>
+              <p className="mt-2 text-sm text-slate-600 sm:text-base">
+                Creez, modifiez, supprimez et affectez des taches a un ou
+                plusieurs membres du staff.
+              </p>
             </div>
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="flex items-center gap-2 bg-[#436D75] text-white px-6 py-3 rounded-xl hover:bg-[#33545B] transition"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2E5A66] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#244751] sm:w-auto"
             >
-              <Plus size={20} />
-              Nouvelle Tâche
+              <Plus size={18} />
+              Nouvelle tache
             </button>
           </div>
-        </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <KpiCard title="Total taches" value={tasks.length.toString()} />
+            <KpiCard
+              title="Membres affectes"
+              value={totalAssignments.toString()}
+              icon={<Users size={16} className="text-emerald-700" />}
+            />
+            <KpiCard
+              title="Echeances depassees"
+              value={tasks
+                .filter((task) => isOverdue(task.date_limite))
+                .length.toString()}
+              icon={<AlertCircle size={16} className="text-red-600" />}
+            />
+          </div>
+        </section>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6">
+          <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
-        {/* Tasks List */}
-        <div className="grid gap-4">
+        {success && (
+          <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {success}
+          </div>
+        )}
+
+        <section className="mt-6 space-y-4">
           {tasks.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-              <div className="text-gray-400 mb-4">
-                <Flag size={48} className="mx-auto" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-600 mb-2">Aucune tâche</h3>
-              <p className="text-gray-500 mb-6">Commencez par créer votre première tâche</p>
+            <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+              <Flag size={42} className="mx-auto text-slate-300" />
+              <h3 className="mt-4 text-xl font-semibold text-slate-700">
+                Aucune tache pour le moment
+              </h3>
+              <p className="mt-2 text-slate-500">
+                Ajoutez une tache pour demarrer la planification.
+              </p>
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="bg-[#436D75] text-white px-6 py-3 rounded-xl hover:bg-[#33545B] transition"
+                className="mt-6 rounded-xl bg-[#2E5A66] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#244751]"
               >
-                Créer une tâche
+                Creer une tache
               </button>
             </div>
           ) : (
             tasks.map((task) => (
-              <div
+              <article
                 key={task.id}
-                className="bg-white rounded-2xl shadow-sm p-6 hover:shadow-md transition"
+                className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-6"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <h3 className="text-xl font-semibold text-gray-800">{task.titre}</h3>
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-semibold text-slate-800 sm:text-xl">
+                        {task.titre}
+                      </h3>
                       <span
-                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${priorityColors[task.priorite]}`}
+                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${priorityColors[task.priorite]}`}
                       >
                         {priorityIcons[task.priorite]}
                         {task.priorite}
                       </span>
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-200 text-xs font-medium">
+                      <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700">
                         {task.type_tache}
                       </span>
                     </div>
 
                     {task.description && (
-                      <p className="text-gray-600 mb-4 leading-relaxed">{task.description}</p>
+                      <p className="mb-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-600 sm:text-base">
+                        {task.description}
+                      </p>
                     )}
 
-                    <div className="flex items-center gap-6 text-sm text-gray-500">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={16} />
-                        <span className={isOverdue(task.date_limite) ? "text-red-600 font-medium" : ""}>
-                          Échéance: {formatDate(task.date_limite)}
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
+                      <div className="inline-flex items-center gap-2">
+                        <Calendar size={15} />
+                        <span
+                          className={
+                            isOverdue(task.date_limite)
+                              ? "font-medium text-red-600"
+                              : ""
+                          }
+                        >
+                          Echeance: {formatDate(task.date_limite)}
                         </span>
-                        {isOverdue(task.date_limite) && (
-                          <AlertCircle size={16} className="text-red-600" />
-                        )}
                       </div>
-                      
+
                       {task.createur && (
-                        <div className="flex items-center gap-2">
-                          <User size={16} />
+                        <div className="inline-flex items-center gap-2">
+                          <User size={15} />
                           <span>
-                            {task.createur.prenom} {task.createur.nom}
+                            Cree par {task.createur.prenom} {task.createur.nom}
                           </span>
                         </div>
                       )}
                     </div>
 
-                    {/* Affichage des affectations */}
-                    {task.affectations && task.affectations.length > 0 && (
-                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-sm font-medium text-gray-700">Assigné à:</span>
-                        </div>
+                    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                        Affectation staff
+                      </p>
+                      {task.affectations && task.affectations.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {task.affectations.map((affectation) => (
-                            <div
+                            <span
                               key={affectation.id}
-                              className="flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-gray-200 text-sm"
+                              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
                             >
-                              {affectation.utilisateur.photo_profil_url ? (
-                                <img
-                                  src={affectation.utilisateur.photo_profil_url}
-                                  alt={affectation.utilisateur.prenom}
-                                  className="w-6 h-6 rounded-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
-                                  <span className="text-xs font-medium text-gray-600">
-                                    {affectation.utilisateur.prenom[0]}
-                                  </span>
-                                </div>
-                              )}
-                              <span className="text-gray-700">
-                                {affectation.utilisateur.prenom} {affectation.utilisateur.nom}
-                              </span>
-                            </div>
+                              {affectation.utilisateur.prenom}{" "}
+                              {affectation.utilisateur.nom}
+                            </span>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <p className="text-sm text-slate-500">
+                          Aucun membre affecte.
+                        </p>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 ml-4">
+                  <div className="flex items-center gap-2 lg:ml-4">
                     <button
-                      onClick={() => console.log("Edit task:", task.id)}
-                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                      onClick={() => setEditingTask(task)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
                       title="Modifier"
                     >
-                      <Edit size={18} />
+                      <Pencil size={15} />
+                      Modifier
                     </button>
                     <button
-                      onClick={() => console.log("Delete task:", task.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                      onClick={() => setDeletingTask(task)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
                       title="Supprimer"
                     >
-                      <Trash2 size={18} />
-                    </button>
-                    <button
-                      onClick={() => console.log("Manage assignments:", task.id)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                      title="Gérer les affectations"
-                    >
-                      <User size={18} />
+                      <Trash2 size={15} />
+                      Supprimer
                     </button>
                   </div>
                 </div>
-              </div>
+              </article>
             ))
           )}
-        </div>
-
-        {/* Create Task Modal */}
-        {isCreateModalOpen && (
-          <CreateTaskModal
-            onClose={() => setIsCreateModalOpen(false)}
-            onSubmit={handleCreateTask}
-            staff={staff}
-          />
-        )}
+        </section>
       </div>
+
+      {isCreateModalOpen && (
+        <TaskModal
+          mode="create"
+          title="Creer une nouvelle tache"
+          submitLabel="Creer la tache"
+          staff={staff}
+          staffLoading={staffLoading}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSubmit={createTask}
+        />
+      )}
+
+      {editingTask && (
+        <TaskModal
+          mode="edit"
+          title="Modifier la tache"
+          submitLabel="Enregistrer"
+          staff={staff}
+          staffLoading={staffLoading}
+          initialData={{
+            titre: editingTask.titre,
+            description: editingTask.description || "",
+            priorite: editingTask.priorite,
+            date_limite: toInputDate(editingTask.date_limite),
+            type_tache: editingTask.type_tache,
+            utilisateurs: (editingTask.affectations || []).map(
+              (item) => item.utilisateur.id,
+            ),
+          }}
+          onClose={() => setEditingTask(null)}
+          onSubmit={(data) => updateTask(editingTask.id, data)}
+        />
+      )}
+
+      {deletingTask && (
+        <ConfirmDeleteModal
+          taskTitle={deletingTask.titre}
+          onCancel={() => setDeletingTask(null)}
+          onConfirm={deleteTask}
+        />
+      )}
     </div>
   );
 }
 
-// Create Task Modal Component
-interface CreateTaskModalProps {
-  onClose: () => void;
-  onSubmit: (data: any) => void;
-  staff: ClubStaff[];
+function KpiCard({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: string;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          {title}
+        </p>
+        {icon || <Flag size={16} className="text-slate-400" />}
+      </div>
+      <p className="mt-3 text-2xl font-bold text-slate-800">{value}</p>
+    </div>
+  );
 }
 
-function CreateTaskModal({ onClose, onSubmit, staff }: CreateTaskModalProps) {
-  const [formData, setFormData] = useState({
-    titre: "",
-    description: "",
-    priorite: "MOYENNE" as "HAUTE" | "MOYENNE" | "FAIBLE",
-    date_limite: "",
-    type_tache: "",
-    utilisateurs: [] as string[],
-  });
+interface TaskModalProps {
+  mode: "create" | "edit";
+  title: string;
+  submitLabel: string;
+  staff: ClubStaff[];
+  staffLoading: boolean;
+  initialData?: TaskFormData;
+  onClose: () => void;
+  onSubmit: (data: TaskFormData) => Promise<void>;
+}
+
+function TaskModal({
+  mode,
+  title,
+  submitLabel,
+  staff,
+  staffLoading,
+  initialData,
+  onClose,
+  onSubmit,
+}: TaskModalProps) {
+  const [formData, setFormData] = useState<TaskFormData>(
+    initialData || defaultTaskForm,
+  );
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setFormData(initialData || defaultTaskForm);
+  }, [initialData]);
+
+  const toggleMember = (memberId: string) => {
+    const isSelected = formData.utilisateurs.includes(memberId);
+    setFormData((prev) => ({
+      ...prev,
+      utilisateurs: isSelected
+        ? prev.utilisateurs.filter((id) => id !== memberId)
+        : [...prev.utilisateurs, memberId],
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -333,146 +571,261 @@ function CreateTaskModal({ onClose, onSubmit, staff }: CreateTaskModalProps) {
     }
   };
 
-  const taskTypes = [
-    "Organisation",
-    "Logistique", 
-    "Communication",
-    "Administratif",
-    "Événementiel",
-    "Financement",
-    "Formation",
-    "Autre"
-  ];
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-[#436D75]">Créer une nouvelle tâche</h2>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+      <div className="w-full rounded-t-3xl border border-slate-200 bg-white shadow-xl sm:max-h-[92vh] sm:max-w-3xl sm:rounded-3xl">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6">
+          <h2 className="text-lg font-bold text-[#2E5A66] sm:text-2xl">
+            {title}
+          </h2>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+            aria-label="Fermer"
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Titre de la tâche *
-            </label>
-            <input
-              type="text"
-              required
-              maxLength={120}
-              value={formData.titre}
-              onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#436D75] focus:border-transparent"
-              placeholder="Ex: Préparer la réunion mensuelle"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              rows={4}
-              maxLength={1000}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#436D75] focus:border-transparent"
-              placeholder="Décrivez les détails de la tâche..."
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form
+          onSubmit={handleSubmit}
+          className="max-h-[80vh] overflow-y-auto px-4 py-4 sm:px-6 sm:py-6"
+        >
+          <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Priorité *
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Titre de la tache *
+              </label>
+              <input
+                required
+                maxLength={120}
+                value={formData.titre}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, titre: e.target.value }))
+                }
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#2E5A66] focus:ring-2 focus:ring-[#2E5A66]/20"
+                placeholder="Ex: Preparation de la reunion"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Description
+              </label>
+              <textarea
+                rows={4}
+                maxLength={1000}
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#2E5A66] focus:ring-2 focus:ring-[#2E5A66]/20"
+                placeholder="Detaillez les objectifs et attentes de la tache"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Priorite *
+                </label>
+                <select
+                  required
+                  value={formData.priorite}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      priorite: e.target.value as TaskFormData["priorite"],
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#2E5A66] focus:ring-2 focus:ring-[#2E5A66]/20"
+                >
+                  <option value="HAUTE">Haute</option>
+                  <option value="MOYENNE">Moyenne</option>
+                  <option value="FAIBLE">Faible</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Date limite *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.date_limite}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      date_limite: e.target.value,
+                    }))
+                  }
+                  min={
+                    mode === "create"
+                      ? new Date().toISOString().split("T")[0]
+                      : undefined
+                  }
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#2E5A66] focus:ring-2 focus:ring-[#2E5A66]/20"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Type de tache *
               </label>
               <select
                 required
-                value={formData.priorite}
-                onChange={(e) => setFormData({ ...formData, priorite: e.target.value as any })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#436D75] focus:border-transparent"
+                value={formData.type_tache}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    type_tache: e.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#2E5A66] focus:ring-2 focus:ring-[#2E5A66]/20"
               >
-                <option value="HAUTE">🔴 Haute</option>
-                <option value="MOYENNE">🟡 Moyenne</option>
-                <option value="FAIBLE">🟢 Faible</option>
+                <option value="">Selectionner un type</option>
+                {taskTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date limite *
-              </label>
-              <input
-                type="date"
-                required
-                value={formData.date_limite}
-                onChange={(e) => setFormData({ ...formData, date_limite: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#436D75] focus:border-transparent"
-                min={new Date().toISOString().split('T')[0]}
-              />
+              <div className="mb-2 flex items-center justify-between">
+                <label className="block text-sm font-medium text-slate-700">
+                  Affecter a un ou plusieurs membres
+                </label>
+                <span className="text-xs text-slate-500">
+                  {formData.utilisateurs.length} selection
+                  {formData.utilisateurs.length > 1 ? "s" : ""}
+                </span>
+              </div>
+
+              <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-slate-300 p-3">
+                {staffLoading ? (
+                  <p className="text-sm text-slate-500">
+                    Chargement du staff...
+                  </p>
+                ) : staff.length === 0 ? (
+                  <p className="text-sm text-slate-500">
+                    Aucun membre staff disponible.
+                  </p>
+                ) : (
+                  staff.map((member) => {
+                    const selected = formData.utilisateurs.includes(member.id);
+                    return (
+                      <label
+                        key={member.id}
+                        className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 text-sm transition ${
+                          selected
+                            ? "border-[#2E5A66] bg-[#2E5A66]/5"
+                            : "border-slate-200 bg-white hover:bg-slate-50"
+                        }`}
+                      >
+                        <div>
+                          <p className="font-medium text-slate-700">
+                            {member.prenom} {member.nom}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {member.role_dans_club}
+                          </p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => toggleMember(member.id)}
+                          className="h-4 w-4 rounded border-slate-300 text-[#2E5A66] focus:ring-[#2E5A66]"
+                        />
+                      </label>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Type de tâche *
-            </label>
-            <select
-              required
-              value={formData.type_tache}
-              onChange={(e) => setFormData({ ...formData, type_tache: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#436D75] focus:border-transparent"
-            >
-              <option value="">Sélectionner un type</option>
-              {taskTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Affecter à des membres du staff
-            </label>
-            <select
-              multiple
-              value={formData.utilisateurs}
-              onChange={(e) => setFormData({ ...formData, utilisateurs: Array.from(e.target.selectedOptions, option => option.value) as string[] })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#436D75] focus:border-transparent"
-              size={4}
-            >
-              <option value="" disabled>Sélectionner des membres...</option>
-              {staff.map((member: ClubStaff) => (
-                <option key={member.id} value={member.id}>
-                  {member.prenom} {member.nom} - {member.role_dans_club}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Maintenez Ctrl/Cmd pour sélectionner plusieurs membres
-            </p>
-          </div>
-
-          <div className="flex gap-3 pt-4">
+          <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition"
+              className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-6 py-3 bg-[#436D75] text-white rounded-xl hover:bg-[#33545B] transition disabled:opacity-50"
+              className="rounded-xl bg-[#2E5A66] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#244751] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? "Création..." : "Créer la tâche"}
+              {loading ? "Traitement..." : submitLabel}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
+}
+
+function ConfirmDeleteModal({
+  taskTitle,
+  onCancel,
+  onConfirm,
+}: {
+  taskTitle: string;
+  onCancel: () => void;
+  onConfirm: () => Promise<void>;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  const handleConfirm = async () => {
+    setLoading(true);
+    try {
+      await onConfirm();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+        <h3 className="text-lg font-bold text-slate-800">Supprimer la tache</h3>
+        <p className="mt-2 text-sm text-slate-600">
+          Voulez-vous vraiment supprimer la tache "{taskTitle}" ? Cette action
+          est irreversible.
+        </p>
+
+        <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            onClick={onCancel}
+            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={loading}
+            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+          >
+            {loading ? "Suppression..." : "Supprimer"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function toInputDate(dateString: string) {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toISOString().split("T")[0];
 }
