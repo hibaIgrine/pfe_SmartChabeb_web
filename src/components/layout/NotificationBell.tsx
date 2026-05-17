@@ -157,8 +157,21 @@ function getTaskNotificationTone(type: string) {
   return "bg-violet-100 text-violet-700 border-violet-200";
 }
 
-function getTaskNotificationTitle(type: string) {
-  if (type === "TASK_UPDATED") return "Tache modifiee";
+function getTaskNotificationTitle(notification: InAppNotification) {
+  const type = notification.type;
+
+  if (type === "TASK_UPDATED") {
+    try {
+      const data = notification.data as Record<string, unknown> | undefined;
+      const decision = data?.decision as string | undefined;
+      if (decision === "VALIDEE") return "Tache validee";
+      if (decision === "REFUSE") return "Tache refusee";
+    } catch {
+      // ignore and fallthrough
+    }
+    return "Tache modifiee";
+  }
+
   if (type === "TASK_COMPLETED") return "Tache terminee";
   if (type === "TASK_REMINDER") return "Echeance proche";
   return "Nouvelle tache";
@@ -548,7 +561,7 @@ export function NotificationBell() {
                           ) : null}
                           <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#436D75]">
                             {isTaskNotification(item)
-                              ? getTaskNotificationTitle(item.type)
+                              ? getTaskNotificationTitle(item)
                               : item.titre}
                           </p>
                         </div>
