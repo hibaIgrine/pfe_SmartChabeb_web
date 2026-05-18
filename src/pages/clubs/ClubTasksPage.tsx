@@ -948,6 +948,31 @@ function TaskDetailsModal({
   task: ClubTask;
   onClose: () => void;
 }) {
+  const { clubId } = useParams();
+  const [comments, setComments] = useState<Array<any>>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [sendingComment, setSendingComment] = useState(false);
+
+  useEffect(() => {
+    if (!clubId) return;
+    let mounted = true;
+    (async () => {
+      try {
+        setLoadingComments(true);
+        const res = await import("../../api/comments.api").then((m) =>
+          m.getTaskComments(clubId!, task.id),
+        );
+        if (mounted) setComments(res || []);
+      } catch (_) {
+      } finally {
+        if (mounted) setLoadingComments(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [clubId, task.id]);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
       <div className="w-full rounded-t-3xl border border-slate-200 bg-white shadow-xl sm:max-h-[92vh] sm:max-w-3xl sm:rounded-3xl">
@@ -1009,6 +1034,68 @@ function TaskDetailsModal({
               ) : (
                 <p className="text-sm text-slate-500">Aucun membre affecte.</p>
               )}
+            </div>
+          </div>
+          <div className="mt-5 rounded-2xl border border-slate-200 p-4">
+            <p className="mb-3 text-sm font-semibold text-slate-700">
+              Commentaires
+            </p>
+            <div className="max-h-48 space-y-3 overflow-y-auto">
+              {loadingComments ? (
+                <p className="text-sm text-slate-500">Chargement...</p>
+              ) : comments.length === 0 ? (
+                <p className="text-sm text-slate-500">Aucun commentaire.</p>
+              ) : (
+                comments.map((c) => (
+                  <div key={c.id} className="flex gap-3">
+                    <div className="h-8 w-8 rounded-full bg-slate-200" />
+                    <div>
+                      <div className="text-sm font-medium text-slate-700">
+                        {c.utilisateur?.prenom} {c.utilisateur?.nom}
+                        <span className="ml-2 text-xs font-normal text-slate-400">
+                          {new Date(c.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="text-sm text-slate-600 whitespace-pre-wrap">
+                        {c.message}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none"
+                placeholder="Ecrire un commentaire..."
+              />
+              <button
+                disabled={sendingComment || !newComment.trim() || !clubId}
+                onClick={async () => {
+                  if (!clubId) return;
+                  try {
+                    setSendingComment(true);
+                    const created = await import("../../api/comments.api").then(
+                      (m) =>
+                        m.createTaskComment(
+                          clubId!,
+                          task.id,
+                          newComment.trim(),
+                        ),
+                    );
+                    setComments((cur) => [...cur, created]);
+                    setNewComment("");
+                  } catch (err) {
+                  } finally {
+                    setSendingComment(false);
+                  }
+                }}
+                className="rounded-xl bg-[#2E5A66] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Envoyer
+              </button>
             </div>
           </div>
         </div>
