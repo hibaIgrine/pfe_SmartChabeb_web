@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
@@ -56,6 +56,13 @@ interface TaskStatusAction {
   tone: string;
   icon: ReactNode;
 }
+
+type ProofItem = {
+  id: string;
+  url: string;
+  filename?: string | null;
+  type?: string | null;
+};
 
 const priorityColors = {
   HAUTE: "bg-red-100 text-red-700 border-red-200",
@@ -156,11 +163,22 @@ export default function StaffClubTasksPage() {
     }
 
     try {
+      try {
+        // eslint-disable-next-line no-console
+        console.debug("loadTasks: fetching assigned tasks for club", clubId);
+      } catch (e) {}
       setLoading(true);
       setError(null);
       const response = await api.get(`/clubs/${clubId}/tasks/assigned`, {
         headers,
       });
+      try {
+        // eslint-disable-next-line no-console
+        console.debug(
+          "loadTasks: response count",
+          Array.isArray(response.data) ? response.data.length : 0,
+        );
+      } catch (e) {}
       setTasks(Array.isArray(response.data) ? response.data : []);
     } catch (err: any) {
       setError(
@@ -202,19 +220,57 @@ export default function StaffClubTasksPage() {
   const changeStatus = async (
     taskId: string,
     nextStatus: TaskStatusAction["nextStatus"],
-  ) => {
+    proofs?: Array<{ url: string; filename: string; type?: string }>,
+    options?: { closeOnSuccess?: boolean; successMessage?: string },
+  ): Promise<boolean> => {
     if (!clubId) {
-      return;
+      return false;
     }
-
+    if (
+      nextStatus === "TERMINE" &&
+      !canValidate &&
+      (!proofs || proofs.length === 0)
+    ) {
+      setError(
+        "Ajoutez au moins une preuve avant de marquer la tache comme terminee.",
+      );
+      return false;
+    }
+    if (submitting) return false; // prevent concurrent status changes
     try {
       setSubmitting(true);
       setError(null);
-      const response = await api.patch(
-        `/clubs/${clubId}/tasks/${taskId}/status`,
-        { statut: nextStatus },
-        { headers },
+      const baseUrl = (
+        import.meta.env.VITE_API_URL ||
+        api.defaults.baseURL ||
+        "http://localhost:3000"
+      ).replace(/\/$/, "");
+      const authToken = localStorage.getItem("token");
+      const request = await fetch(
+        `${baseUrl}/clubs/${clubId}/tasks/${taskId}/status`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          body: JSON.stringify({ statut: nextStatus, proofs }),
+        },
       );
+
+      const responseData = await request.json().catch(() => ({}));
+      if (!request.ok) {
+        // log for debugging
+        // eslint-disable-next-line no-console
+        console.error("changeStatus failed", {
+          url: request.url,
+          status: request.status,
+          body: responseData,
+        });
+        throw { response: { data: responseData, status: request.status } };
+      }
+
+      const response = { data: responseData };
 
       setTasks((current) =>
         current.map((task) => (task.id === taskId ? response.data : task)),
@@ -224,11 +280,36 @@ export default function StaffClubTasksPage() {
         setSelectedTask(response.data);
       }
 
-      setSuccess("Statut mis a jour avec succes");
+      setError(null);
+      setSuccess(options?.successMessage || "Statut mis a jour avec succes");
+      if (options?.closeOnSuccess) {
+        try {
+          // refresh tasks to reflect the latest state
+          await loadTasks();
+        } catch (e) {
+          // ignore reload errors, still proceed to close modal
+        }
+        setSelectedTask(null);
+        setSearchParams((current) => {
+          current.delete("taskId");
+          return current;
+        });
+      }
+      return true;
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Impossible de changer le statut",
-      );
+      const msg =
+        err.response?.data?.message ||
+        `Impossible de changer le statut (HTTP ${err.response?.status || "unknown"})`;
+      // Suppress backend 'proof required' message on the main page — modal handles this locally
+      if (
+        msg ===
+        "Une preuve (photo ou document) est requise pour marquer la tache comme terminee"
+      ) {
+        // do not set global error banner
+      } else {
+        setError(msg);
+      }
+      return false;
     } finally {
       setSubmitting(false);
     }
@@ -458,10 +539,22 @@ export default function StaffClubTasksPage() {
                         key={action.nextStatus}
                         type="button"
                         disabled={submitting}
-                        onClick={() =>
-                          void changeStatus(task.id, action.nextStatus)
-                        }
-                        className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${action.tone}`}
+                        onClick={() => {
+                          if (action.nextStatus === "TERMINE") {
+                            setSelectedTask(task);
+                            setSearchParams((current) => {
+                              current.set("taskId", task.id);
+                              return current;
+                            });
+                            return;
+                          }
+                          void changeStatus(task.id, action.nextStatus);
+                        }}
+                        className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          action.nextStatus === "TERMINE"
+                            ? "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            : `${action.tone} text-white`
+                        }`}
                       >
                         {action.icon}
                         {action.label}
@@ -487,8 +580,14 @@ export default function StaffClubTasksPage() {
               return current;
             });
           }}
-          onChangeStatus={(nextStatus) =>
-            void changeStatus(detailsTask.id, nextStatus)
+          onChangeStatus={async (nextStatus, proofs) =>
+            changeStatus(detailsTask.id, nextStatus, proofs, {
+              closeOnSuccess: true,
+              successMessage:
+                nextStatus === "TERMINE"
+                  ? "Votre tache est terminee avec succes"
+                  : "Statut mis a jour avec succes",
+            })
           }
         />
       )}
@@ -507,13 +606,31 @@ function TaskDetailsModal({
   canValidate: boolean;
   submitting: boolean;
   onClose: () => void;
-  onChangeStatus: (nextStatus: TaskStatusAction["nextStatus"]) => void;
+  onChangeStatus: (
+    nextStatus: TaskStatusAction["nextStatus"],
+    proofs?: Array<{ url: string; filename: string; type?: string }>,
+  ) => Promise<boolean>;
 }) {
   const { clubId } = useParams();
   const [comments, setComments] = useState<Array<any>>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
+  const [proofFiles, setProofFiles] = useState<
+    Array<{ id: string; file: File }>
+  >([]);
+  const [proofError, setProofError] = useState<string | null>(null);
+  const [viewerProof, setViewerProof] = useState<ProofItem | null>(null);
+  const [viewerBlobUrl, setViewerBlobUrl] = useState<string | null>(null);
+  const proofInputRef = useRef<HTMLInputElement | null>(null);
+
+  const createProofId = (file: File) => {
+    const randomPart =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    return `${file.name}-${file.lastModified}-${file.size}-${randomPart}`;
+  };
 
   useEffect(() => {
     if (!clubId) return;
@@ -534,6 +651,50 @@ function TaskDetailsModal({
       mounted = false;
     };
   }, [clubId, task.id]);
+
+  useEffect(() => {
+    let mounted = true;
+    let objectUrl: string | null = null;
+    const loadBlob = async () => {
+      if (!viewerProof) return;
+      setViewerBlobUrl(null);
+      const isPdf =
+        (viewerProof.type || "").toLowerCase().includes("pdf") ||
+        viewerProof.url.toLowerCase().endsWith(".pdf");
+      if (!isPdf) return;
+      try {
+        const resolved = resolveProofUrl(viewerProof.url);
+        const baseUrl = (
+          import.meta.env.VITE_API_URL ||
+          api.defaults.baseURL ||
+          ""
+        ).replace(/\/$/, "");
+        const fetchUrl = resolved.startsWith("http")
+          ? resolved
+          : baseUrl
+            ? `${baseUrl}${resolved.startsWith("/") ? "" : "/"}${resolved}`
+            : resolved;
+        const resp = await fetch(fetchUrl, {
+          headers: {
+            ...(localStorage.getItem("token")
+              ? { Authorization: `Bearer ${localStorage.getItem("token")}` }
+              : {}),
+          },
+        });
+        if (!resp.ok) throw new Error("fetch_failed");
+        const blob = await resp.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (mounted) setViewerBlobUrl(objectUrl);
+      } catch (e) {
+        if (mounted) setViewerBlobUrl(null);
+      }
+    };
+    void loadBlob();
+    return () => {
+      mounted = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [viewerProof]);
   const status = normalizeStatus(task.statut);
   const currentUserId = (() => {
     try {
@@ -546,6 +707,63 @@ function TaskDetailsModal({
     task.affectations?.some((a) => a.utilisateur?.id === currentUserId),
   );
   const actions = getTaskActions(status, canValidate, isAssigned);
+  const nonTerminateActions = actions.filter(
+    (action) => action.nextStatus !== "TERMINE",
+  );
+  const terminateAction = actions.find(
+    (action) => action.nextStatus === "TERMINE",
+  );
+
+  const handleStatusChange = async (
+    nextStatus: TaskStatusAction["nextStatus"],
+  ) => {
+    if (nextStatus !== "TERMINE" || canValidate) {
+      await onChangeStatus(nextStatus);
+      return;
+    }
+
+    if (proofFiles.length === 0) {
+      setProofError(
+        "Ajoutez au moins une preuve avant de marquer la tache comme terminee.",
+      );
+      return;
+    }
+
+    try {
+      setProofError(null);
+      const uploadModule = await import("../../api/uploads.api");
+      const proofs = [] as Array<{
+        url: string;
+        filename: string;
+        type?: string;
+      }>;
+
+      for (const item of proofFiles) {
+        const uploaded = await uploadModule.uploadTaskProof(item.file);
+        proofs.push({
+          url: uploaded.url,
+          filename: uploaded.filename,
+          type: uploaded.type,
+        });
+      }
+
+      const updated = await onChangeStatus(nextStatus, proofs);
+      if (updated) {
+        setProofFiles([]);
+        setProofError(null);
+        try {
+          onClose();
+        } catch (e) {
+          // ignore
+        }
+      }
+    } catch (error: any) {
+      setProofError(
+        error?.response?.data?.message ||
+          "Impossible d'envoyer les preuves. Reessayez.",
+      );
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-0 sm:items-center sm:p-4">
@@ -628,22 +846,78 @@ function TaskDetailsModal({
             </div>
           </div>
 
+          {Array.isArray((task as any).preuves) &&
+            (task as any).preuves.length > 0 && (
+              <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                <p className="mb-3 text-sm font-semibold text-emerald-800">
+                  {canValidate ? "Preuves soumises" : "Mes preuves"}
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {(task as any).preuves.map((preuve: ProofItem) => {
+                    const isImage = isImageProof(preuve);
+                    return (
+                      <button
+                        key={preuve.id}
+                        type="button"
+                        onClick={() => setViewerProof(preuve)}
+                        className="group flex overflow-hidden rounded-xl border border-emerald-200 bg-white text-left text-sm text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50"
+                      >
+                        <div className="flex h-full w-full min-h-[88px] items-stretch gap-3 p-2">
+                          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                            {isImage ? (
+                              <img
+                                src={resolveProofUrl(preuve.url)}
+                                alt={preuve.filename || "Preuve"}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full flex-col items-center justify-center px-1 text-center text-[11px] text-slate-500">
+                                <span className="font-semibold uppercase tracking-wide text-emerald-700">
+                                  Document
+                                </span>
+                                <span className="mt-1 line-clamp-2 break-words">
+                                  Aperçu interne
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1 py-1 pr-1">
+                            <p className="line-clamp-2 font-medium text-slate-800">
+                              {preuve.filename || preuve.url}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Cliquez pour ouvrir l’aperçu dans la page
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
           <div className="mt-5 rounded-2xl border border-slate-200 p-4">
             <p className="mb-3 text-sm font-semibold text-slate-700">
               Actions disponibles
             </p>
+
+            {/* Render non-TERMINE actions inline */}
             <div className="flex flex-wrap gap-3">
-              {actions.length === 0 ? (
+              {nonTerminateActions.length === 0 ? (
                 <p className="text-sm text-slate-500">
                   Aucune action disponible pour ce statut.
                 </p>
               ) : (
-                actions.map((action) => (
+                nonTerminateActions.map((action) => (
                   <button
                     key={action.nextStatus}
                     type="button"
                     disabled={submitting}
-                    onClick={() => onChangeStatus(action.nextStatus)}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      void handleStatusChange(action.nextStatus);
+                    }}
                     className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${action.tone}`}
                   >
                     {action.icon}
@@ -652,7 +926,111 @@ function TaskDetailsModal({
                 ))
               )}
             </div>
+
+            {/* Proof upload + Terminer area: render TERMINE action below proofs */}
+            <div className="mt-4">
+              <p className="mb-2 text-sm font-semibold text-slate-700">
+                Preuves
+              </p>
+              <div className="flex items-start gap-3">
+                <input
+                  ref={proofInputRef}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    const newOnes = files.map((f) => ({
+                      id: createProofId(f),
+                      file: f,
+                    }));
+                    setProofFiles((current) => [...current, ...newOnes]);
+                    // reset input so same file can be re-added if removed
+                    if (proofInputRef.current) proofInputRef.current.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => proofInputRef.current?.click()}
+                  className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700"
+                >
+                  Ajouter des preuves
+                </button>
+                <div className="flex-1">
+                  {proofError && (
+                    <div className="mb-2 text-sm text-rose-600">
+                      {proofError}
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    {proofFiles.length === 0 ? (
+                      <p className="text-sm text-slate-500">
+                        Aucune preuve ajoutée.
+                      </p>
+                    ) : (
+                      proofFiles.map((p) => (
+                        <div
+                          key={p.id}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                        >
+                          <span className="min-w-0 truncate">
+                            {p.file.name}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setProofFiles((cur) =>
+                                  cur.filter((x) => x.id !== p.id),
+                                )
+                              }
+                              className="text-sm text-rose-600"
+                            >
+                              Retirer
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Render the TERMINE button here */}
+              <div className="mt-4">
+                {terminateAction && (
+                  <button
+                    key={terminateAction.nextStatus}
+                    type="button"
+                    disabled={
+                      submitting || (!canValidate && proofFiles.length === 0)
+                    }
+                    onClick={(event) => {
+                      event.preventDefault();
+                      if (!canValidate && proofFiles.length === 0) {
+                        setProofError(
+                          "Ajoutez au moins une preuve avant de marquer la tache comme terminee.",
+                        );
+                        return;
+                      }
+                      void handleStatusChange(terminateAction.nextStatus);
+                    }}
+                    title={
+                      !canValidate && proofFiles.length === 0
+                        ? "Ajoutez au moins une preuve"
+                        : undefined
+                    }
+                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${terminateAction.tone}`}
+                  >
+                    {terminateAction.icon}
+                    {terminateAction.label}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
+
           <div className="mt-5 rounded-2xl border border-slate-200 p-4">
             <p className="mb-3 text-sm font-semibold text-slate-700">
               Commentaires
@@ -689,6 +1067,7 @@ function TaskDetailsModal({
                 placeholder="Ecrire un commentaire..."
               />
               <button
+                type="button"
                 disabled={sendingComment || !newComment.trim() || !clubId}
                 onClick={async () => {
                   if (!clubId) return;
@@ -717,9 +1096,110 @@ function TaskDetailsModal({
           </div>
         </div>
       </div>
+
+      {viewerProof && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-4xl rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-6">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Aperçu de la preuve
+                </p>
+                <h4 className="truncate text-base font-semibold text-slate-800">
+                  {viewerProof.filename || "Preuve"}
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewerProof(null)}
+                className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"
+                aria-label="Fermer l'aperçu"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="max-h-[75vh] overflow-auto p-4 sm:p-6">
+              {isImageProof(viewerProof) ? (
+                <img
+                  src={resolveProofUrl(viewerProof.url)}
+                  alt={viewerProof.filename || "Preuve"}
+                  className="mx-auto max-h-[70vh] w-auto rounded-2xl border border-slate-200 object-contain"
+                />
+              ) : viewerProof.type?.includes("pdf") ||
+                viewerProof.url.toLowerCase().endsWith(".pdf") ? (
+                viewerBlobUrl ? (
+                  <iframe
+                    src={viewerBlobUrl}
+                    title={viewerProof.filename || "Preuve PDF"}
+                    className="h-[70vh] w-full rounded-2xl border border-slate-200"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <span className="text-sm text-slate-500">
+                      Chargement du PDF…
+                    </span>
+                  </div>
+                )
+              ) : (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-700">
+                  <p className="font-semibold text-slate-800">
+                    Aperçu non disponible
+                  </p>
+                  <p className="mt-2 break-words">
+                    {viewerProof.filename || viewerProof.url}
+                  </p>
+                  <p className="mt-2 text-slate-500">
+                    Ce type de document ne peut pas être affiché directement
+                    dans le navigateur.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+function isImageProof(proof: ProofItem) {
+  const url = (proof.url || "").toLowerCase();
+  const type = (proof.type || "").toLowerCase();
+  return (
+    type.startsWith("image/") ||
+    url.match(/\.(png|jpe?g|gif|webp|bmp|svg)$/) !== null
+  );
+}
+
+function resolveProofUrl(url: string) {
+  // Prefer the API base if available so we don't rely on an IP that might be unreachable from the browser
+  const apiBase = (
+    import.meta.env.VITE_API_URL ||
+    api.defaults.baseURL ||
+    ""
+  ).replace(/\/$/, "");
+  if (!url) return url;
+
+  // If url already starts with http(s) and shares the same origin as apiBase, return as-is
+  try {
+    const parsed = new URL(url);
+    if (apiBase && parsed.origin === new URL(apiBase).origin) return url;
+    // If url contains a filename at the end, prefer to rebuild using apiBase/uploads path
+    const filename = parsed.pathname.split("/").pop();
+    if (apiBase && filename)
+      return `${apiBase}/uploads/task-proofs/${filename}`;
+    return url;
+  } catch {
+    // relative or bare filename — prefix with apiBase if available
+    const filename = url.split("/").pop();
+    if (apiBase && filename)
+      return `${apiBase}/uploads/task-proofs/${filename}`;
+    return url;
+  }
+}
+
+// Fetch PDF blob when needed and expose as object URL
+// PDF blob loader moved inside the modal scope where `viewerProof` is defined
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (

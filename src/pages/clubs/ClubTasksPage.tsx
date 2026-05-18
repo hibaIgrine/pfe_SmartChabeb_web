@@ -42,7 +42,20 @@ interface ClubTask {
       photo_profil_url?: string;
     };
   }>;
+  preuves?: Array<{
+    id: string;
+    url: string;
+    filename?: string | null;
+    type?: string | null;
+  }>;
 }
+
+type ProofItem = {
+  id: string;
+  url: string;
+  filename?: string | null;
+  type?: string | null;
+};
 
 interface ClubStaff {
   id: string;
@@ -953,6 +966,8 @@ function TaskDetailsModal({
   const [loadingComments, setLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
+  const [viewerProof, setViewerProof] = useState<ProofItem | null>(null);
+  const [viewerBlobUrl, setViewerBlobUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!clubId) return;
@@ -973,6 +988,50 @@ function TaskDetailsModal({
       mounted = false;
     };
   }, [clubId, task.id]);
+
+  useEffect(() => {
+    let mounted = true;
+    let objectUrl: string | null = null;
+    const loadBlob = async () => {
+      if (!viewerProof) return;
+      setViewerBlobUrl(null);
+      const isPdf =
+        (viewerProof.type || "").toLowerCase().includes("pdf") ||
+        viewerProof.url.toLowerCase().endsWith(".pdf");
+      if (!isPdf) return;
+      try {
+        const resolved = resolveProofUrl(viewerProof.url);
+        const baseUrl = (
+          import.meta.env.VITE_API_URL ||
+          api.defaults.baseURL ||
+          ""
+        ).replace(/\/$/, "");
+        const fetchUrl = resolved.startsWith("http")
+          ? resolved
+          : baseUrl
+            ? `${baseUrl}${resolved.startsWith("/") ? "" : "/"}${resolved}`
+            : resolved;
+        const resp = await fetch(fetchUrl, {
+          headers: {
+            ...(localStorage.getItem("token")
+              ? { Authorization: `Bearer ${localStorage.getItem("token")}` }
+              : {}),
+          },
+        });
+        if (!resp.ok) throw new Error("fetch_failed");
+        const blob = await resp.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (mounted) setViewerBlobUrl(objectUrl);
+      } catch (e) {
+        if (mounted) setViewerBlobUrl(null);
+      }
+    };
+    void loadBlob();
+    return () => {
+      mounted = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [viewerProof]);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
       <div className="w-full rounded-t-3xl border border-slate-200 bg-white shadow-xl sm:max-h-[92vh] sm:max-w-3xl sm:rounded-3xl">
@@ -1036,6 +1095,59 @@ function TaskDetailsModal({
               )}
             </div>
           </div>
+
+          {task.statut === "TERMINE" &&
+            Array.isArray(task.preuves) &&
+            task.preuves.length > 0 && (
+              <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                <p className="mb-3 text-sm font-semibold text-emerald-800">
+                  Preuves soumises
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {task.preuves.map((preuve) => {
+                    const isImage = isImageProof(preuve);
+                    return (
+                      <button
+                        key={preuve.id}
+                        type="button"
+                        onClick={() => setViewerProof(preuve)}
+                        className="group flex overflow-hidden rounded-xl border border-emerald-200 bg-white text-left text-sm text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50"
+                      >
+                        <div className="flex h-full w-full min-h-[88px] items-stretch gap-3 p-2">
+                          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                            {isImage ? (
+                              <img
+                                src={resolveProofUrl(preuve.url)}
+                                alt={preuve.filename || "Preuve"}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full flex-col items-center justify-center px-1 text-center text-[11px] text-slate-500">
+                                <span className="font-semibold uppercase tracking-wide text-emerald-700">
+                                  Document
+                                </span>
+                                <span className="mt-1 line-clamp-2 break-words">
+                                  Aperçu interne
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1 py-1 pr-1">
+                            <p className="line-clamp-2 font-medium text-slate-800">
+                              {preuve.filename || preuve.url}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Cliquez pour ouvrir l’aperçu dans la page
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
           <div className="mt-5 rounded-2xl border border-slate-200 p-4">
             <p className="mb-3 text-sm font-semibold text-slate-700">
               Commentaires
@@ -1100,9 +1212,104 @@ function TaskDetailsModal({
           </div>
         </div>
       </div>
+
+      {viewerProof && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-4xl rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-6">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Aperçu de la preuve
+                </p>
+                <h4 className="truncate text-base font-semibold text-slate-800">
+                  {viewerProof.filename || "Preuve"}
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewerProof(null)}
+                className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"
+                aria-label="Fermer l'aperçu"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="max-h-[75vh] overflow-auto p-4 sm:p-6">
+              {isImageProof(viewerProof) ? (
+                <img
+                  src={resolveProofUrl(viewerProof.url)}
+                  alt={viewerProof.filename || "Preuve"}
+                  className="mx-auto max-h-[70vh] w-auto rounded-2xl border border-slate-200 object-contain"
+                />
+              ) : viewerProof.type?.includes("pdf") ||
+                viewerProof.url.toLowerCase().endsWith(".pdf") ? (
+                viewerBlobUrl ? (
+                  <iframe
+                    src={viewerBlobUrl}
+                    title={viewerProof.filename || "Preuve PDF"}
+                    className="h-[70vh] w-full rounded-2xl border border-slate-200"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <span className="text-sm text-slate-500">
+                      Chargement du PDF…
+                    </span>
+                  </div>
+                )
+              ) : (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-700">
+                  <p className="font-semibold text-slate-800">
+                    Aperçu non disponible
+                  </p>
+                  <p className="mt-2 break-words">
+                    {viewerProof.filename || viewerProof.url}
+                  </p>
+                  <p className="mt-2 text-slate-500">
+                    Ce type de document ne peut pas être affiché directement
+                    dans le navigateur.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+function isImageProof(proof: ProofItem) {
+  const url = (proof.url || "").toLowerCase();
+  const type = (proof.type || "").toLowerCase();
+  return (
+    type.startsWith("image/") ||
+    url.match(/\.(png|jpe?g|gif|webp|bmp|svg)$/) !== null
+  );
+}
+
+function resolveProofUrl(url: string) {
+  const apiBase = (
+    import.meta.env.VITE_API_URL ||
+    api.defaults.baseURL ||
+    ""
+  ).replace(/\/$/, "");
+  if (!url) return url;
+  try {
+    const parsed = new URL(url);
+    if (apiBase && parsed.origin === new URL(apiBase).origin) return url;
+    const filename = parsed.pathname.split("/").pop();
+    if (apiBase && filename)
+      return `${apiBase}/uploads/task-proofs/${filename}`;
+    return url;
+  } catch {
+    const filename = url.split("/").pop();
+    if (apiBase && filename)
+      return `${apiBase}/uploads/task-proofs/${filename}`;
+    return url;
+  }
+}
+
+// PDF blob helper and URL resolver are defined above and used inside the modal
 
 function InfoBlock({ label, value }: { label: string; value: string }) {
   return (
