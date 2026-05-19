@@ -35,6 +35,10 @@ interface StaffTask {
   type_tache: string;
   statut: string;
   created_at: string;
+  club?: {
+    id: string;
+    nom: string;
+  };
   createur?: StaffTaskUser;
   affectations?: Array<{
     id: string;

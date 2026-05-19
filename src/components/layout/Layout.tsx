@@ -11,10 +11,10 @@ import {
   UserCircle,
   Building2,
   CalendarCheck,
+  CalendarDays,
   CalendarPlus,
   ClipboardList,
   ClipboardCheck,
-  CalendarDays,
   Newspaper,
   ListTodo,
   CreditCard,
@@ -59,6 +59,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [topBarImageError, setTopBarImageError] = useState(false);
   const showTopBarImage = hasProfileImage && !topBarImageError;
   const isMessageriePage = location.pathname === "/messagerie";
+  const isStaffCalendarPage = location.pathname === "/staff-calendar";
 
   useEffect(() => {
     if (!user) {
@@ -78,6 +79,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       role === "ADHERENT" &&
       !isAdherentClubPage &&
       !isStaffTasksPage &&
+      !isStaffCalendarPage &&
       location.pathname !== "/club-creation-requests" &&
       location.pathname !== "/mon-profil" &&
       location.pathname !== "/fil-actualite" &&
@@ -90,7 +92,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     ) {
       navigate("/clubs");
     }
-  }, [user, role, navigate, location.pathname]);
+  }, [user, role, navigate, location.pathname, isStaffCalendarPage]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -423,6 +425,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   })}
                 </div>
               )}
+            </div>
+          )}
+
+          {staffClubs.length > 0 && (
+            <div className="px-3 mt-3">
+              <Link
+                to="/staff-calendar"
+                className={`flex items-center gap-2 py-1.5 px-3 rounded-md transition-all text-sm truncate ${
+                  isStaffCalendarPage
+                    ? "bg-white text-[#436D75]"
+                    : "text-white/80 hover:bg-white/5"
+                }`}
+              >
+                <CalendarDays size={14} />
+                <span className="font-bold truncate">Calendrier personnel</span>
+              </Link>
             </div>
           )}
 
