@@ -533,14 +533,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "ADMIN" || role === "RESPONSABLE_CENTRE") && (
+          {/* {(role === "ADMIN" || role === "RESPONSABLE_CENTRE") && (
             <SidebarItem
               to="/roles"
               icon={<ShieldCheck size={18} />}
               label="Grades & Droits"
               active={location.pathname === "/roles"}
             />
-          )}
+          )}*/}
 
           {role === "ADMIN" && (
             <SidebarItem

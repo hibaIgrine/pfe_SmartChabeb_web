@@ -650,18 +650,38 @@ export function ConversationView({
           />
         </div>
 
-        <div className="grid gap-3">
-          <textarea
-            value={composerText}
-            onChange={(event) => onComposerTextChange(event.target.value)}
-            rows={3}
-            placeholder={
-              messageType === "TEXT"
-                ? "Écrire un message..."
-                : "Le texte est optionnel pour ce type de message"
-            }
-            className="w-full resize-none rounded-2xl border border-gray-200 bg-[#F7F3E9]/60 px-4 py-3 text-sm outline-none transition focus:border-[#436D75]/40 focus:bg-white"
-          />
+        <div className="mt-3">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <input
+                value={composerText}
+                onChange={(event) => onComposerTextChange(event.target.value)}
+                placeholder={
+                  messageType === "TEXT"
+                    ? "Écrire un message..."
+                    : "Le texte est optionnel pour ce type de message"
+                }
+                className="w-full rounded-2xl border border-gray-200 bg-[#F7F3E9]/60 px-4 py-3 pr-4 text-sm outline-none transition focus:border-[#436D75]/40 focus:bg-white"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              {attachmentName ? (
+                <span className="max-w-[160px] truncate rounded-full bg-gray-100 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#436D75]">
+                  {attachmentName}
+                </span>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={onSendMessage}
+                disabled={submitting}
+                className="inline-flex h-10 items-center gap-2 rounded-full bg-[#436D75] px-4 text-[10px] font-black uppercase tracking-[0.14em] text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Send size={14} />
+              </button>
+            </div>
+          </div>
 
           {attachmentPreview ? (
             <div className="rounded-2xl border border-gray-200 bg-white p-3">
@@ -733,25 +753,13 @@ export function ConversationView({
           ) : null}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            {attachmentName ? (
-              <span className="max-w-[180px] truncate rounded-full bg-gray-100 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#436D75]">
-                {attachmentName}
-              </span>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={onSendMessage}
-              disabled={submitting}
-              className="inline-flex h-12 items-center gap-2 rounded-full bg-[#436D75] px-5 text-[10px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Send size={14} />
-              Envoyer
-            </button>
+        {attachmentName ? (
+          <div className="mt-3">
+            <span className="max-w-[180px] truncate rounded-full bg-gray-100 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#436D75]">
+              {attachmentName}
+            </span>
           </div>
-        </div>
+        ) : null}
       </footer>
     </section>
   );
