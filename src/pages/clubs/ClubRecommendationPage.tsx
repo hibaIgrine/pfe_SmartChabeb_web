@@ -1130,7 +1130,7 @@ export default function ClubRecommendationPage() {
                               {row.activite}
                             </span>
                             <span className="font-bold text-[#E98A7D]">
-                              {Math.round(row.probabilite * 100)}%
+                              {row.probabilite}%
                             </span>
                           </div>
                         ))}

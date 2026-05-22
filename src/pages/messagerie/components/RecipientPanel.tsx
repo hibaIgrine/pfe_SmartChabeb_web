@@ -4,13 +4,11 @@ type RecipientPanelProps = {
   searchValue: string;
   onSearchChange: (value: string) => void;
   onSearchActivate: () => void;
-  onCreateConversation: () => void;
   submitting: boolean;
   mode: "private" | "group";
   onModeChange: (mode: "private" | "group") => void;
   groupTitle: string;
   onGroupTitleChange: (value: string) => void;
-  selectedRecipientId: string;
   selectedGroupRecipientIds: string[];
   onCreateGroupConversation: () => void;
   embedded?: boolean;
@@ -20,13 +18,11 @@ export function RecipientPanel({
   searchValue,
   onSearchChange,
   onSearchActivate,
-  onCreateConversation,
   submitting,
   mode,
   onModeChange,
   groupTitle,
   onGroupTitleChange,
-  selectedRecipientId,
   selectedGroupRecipientIds,
   onCreateGroupConversation,
   embedded = false,
@@ -47,7 +43,7 @@ export function RecipientPanel({
             Nouveau message
           </p>
           <h3 className="text-lg font-black tracking-tight text-gray-900">
-            Démarrer une conversation
+            Discussions
           </h3>
         </div>
         <div className="inline-flex rounded-full border border-gray-200 bg-white p-1">
@@ -110,17 +106,7 @@ export function RecipientPanel({
         </p>
       ) : null}
 
-      {isPrivate ? (
-        <button
-          type="button"
-          onClick={onCreateConversation}
-          disabled={submitting || !selectedRecipientId}
-          className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#436D75] px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <PlusCircle size={14} />
-          Ouvrir
-        </button>
-      ) : (
+      {!isPrivate ? (
         <button
           type="button"
           onClick={onCreateGroupConversation}
@@ -134,7 +120,7 @@ export function RecipientPanel({
           <Users size={14} />
           Créer groupe
         </button>
-      )}
+      ) : null}
     </section>
   );
 }

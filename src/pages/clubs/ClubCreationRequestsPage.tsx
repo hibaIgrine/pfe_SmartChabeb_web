@@ -585,24 +585,12 @@ export default function ClubCreationRequestsPage() {
             </h2>
             <p className="mt-2 max-w-3xl text-sm text-gray-600 font-medium">
               {isRequester
-                ? "Le local vient de votre centre, les locaux affichés sont ceux de votre salle, et le planning se répète chaque semaine toute l'année."
+                ? " le planning se répète chaque semaine toute l'année."
                 : "Les demandes sont triées par statut avec les pièces jointes, le planning récurrent et la disponibilité du local souhaité."}
             </p>
           </div>
 
-          {isRequester && (
-            <div className="rounded-2xl bg-white px-4 py-3 shadow-sm border border-gray-100 min-w-[240px]">
-              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-400">
-                Centre rattaché
-              </p>
-              <p className="mt-1 text-sm font-black text-[#244047]">
-                {centerName}
-              </p>
-              <p className="mt-1 text-xs font-semibold text-gray-500">
-                Vous demandez un club dans votre centre actuel.
-              </p>
-            </div>
-          )}
+          
 
           {canReview && (
             <select

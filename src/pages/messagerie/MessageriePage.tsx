@@ -34,13 +34,11 @@ export default function MessageriePage() {
           searchValue={page.searchRecipient}
           onSearchChange={page.setSearchRecipient}
           onSearchActivate={() => setShowSearchUsers(true)}
-          onCreateConversation={page.startPrivateConversation}
           submitting={page.submitting}
           mode={page.conversationMode}
           onModeChange={page.setConversationMode}
           groupTitle={page.groupTitle}
           onGroupTitleChange={page.setGroupTitle}
-          selectedRecipientId={page.selectedRecipientId}
           selectedGroupRecipientIds={page.selectedGroupRecipientIds}
           onCreateGroupConversation={page.startGroupConversation}
           embedded
@@ -57,7 +55,6 @@ export default function MessageriePage() {
             onOpenConversation={page.openOrReloadConversation}
             onArchiveConversation={page.archiveConversationById}
             onDeleteConversation={page.deleteConversationById}
-            onRefresh={page.refreshConversations}
             embedded
           />
 
@@ -93,11 +90,16 @@ export default function MessageriePage() {
                       <button
                         key={recipient.id}
                         type="button"
-                        onClick={() =>
-                          page.conversationMode === "private"
-                            ? page.setSelectedRecipientId(recipient.id)
-                            : page.toggleGroupRecipient(recipient.id)
-                        }
+                        onClick={() => {
+                          if (page.conversationMode === "private") {
+                            void page
+                              .openPrivateConversation(recipient.id)
+                              .finally(() => setShowSearchUsers(false));
+                            return;
+                          }
+
+                          page.toggleGroupRecipient(recipient.id);
+                        }}
                         className={`flex w-full items-center gap-3 rounded-[16px] border px-3 py-3 text-left transition ${
                           selected
                             ? "border-[#436D75]/25 bg-[#436D75]/6"

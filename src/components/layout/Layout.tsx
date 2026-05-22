@@ -88,7 +88,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       location.pathname !== "/my-club-requests" &&
       location.pathname !== "/club-reservations" &&
       location.pathname !== "/adherent-my-reservations" &&
-      location.pathname !== "/events"
+      location.pathname !== "/events" &&
+      location.pathname !== "/payment-history"
     ) {
       navigate("/clubs");
     }

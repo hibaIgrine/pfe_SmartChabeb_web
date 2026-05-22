@@ -331,11 +331,9 @@ export default function ClubReservationPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-4xl font-black text-[#436D75] tracking-tight">
-          Reservation Club
+          Reservation Local
         </h1>
-        <p className="text-sm text-gray-500 mt-2">
-          Le responsable de club peut reserver un local et suivre ses demandes.
-        </p>
+        
       </div>
 
       {feedback && (

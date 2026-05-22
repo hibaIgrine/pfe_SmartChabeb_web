@@ -1,8 +1,9 @@
 import {
   Archive,
   ArchiveRestore,
+  CircleUserRound,
   MoreVertical,
-  Search,
+  Users,
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
@@ -22,7 +23,6 @@ type ConversationListProps = {
   onOpenConversation: (conversationId: string) => void;
   onArchiveConversation: (conversationId: string, isArchived: boolean) => void;
   onDeleteConversation: (conversationId: string) => void;
-  onRefresh: () => void;
   embedded?: boolean;
 };
 
@@ -37,6 +37,36 @@ function formatRelativeDate(value?: string | null) {
   return `Il y a ${Math.floor(diffHours / 24)} j`;
 }
 
+function ConversationAvatar({
+  type,
+  name,
+  photoUrl,
+}: {
+  type: string;
+  name: string;
+  photoUrl?: string | null;
+}) {
+  const isGroup = type === "group";
+
+  return (
+    <div
+      className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border ${
+        isGroup
+          ? "border-[#436D75]/15 bg-[#436D75]/10 text-[#436D75]"
+          : "border-gray-200 bg-[#F7F3E9] text-gray-500"
+      }`}
+    >
+      {isGroup ? (
+        <Users size={18} />
+      ) : photoUrl ? (
+        <img src={photoUrl} alt={name} className="h-full w-full object-cover" />
+      ) : (
+        <CircleUserRound size={20} />
+      )}
+    </div>
+  );
+}
+
 export function ConversationList({
   conversations,
   activeConversationId,
@@ -45,7 +75,6 @@ export function ConversationList({
   onOpenConversation,
   onArchiveConversation,
   onDeleteConversation,
-  onRefresh,
   embedded = false,
 }: ConversationListProps) {
   const [menuConversationId, setMenuConversationId] = useState<string | null>(
@@ -68,25 +97,6 @@ export function ConversationList({
           : "flex h-full min-h-0 flex-col rounded-[28px] border border-white bg-white/85 shadow-xl backdrop-blur-md"
       }
     >
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#436D75]">
-            Messagerie
-          </p>
-          <h3 className="text-lg font-black tracking-tight text-gray-900">
-            Conversations
-          </h3>
-        </div>
-        <button
-          type="button"
-          onClick={onRefresh}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-[#436D75] transition hover:bg-[#436D75]/5"
-          title="Actualiser"
-        >
-          <Search size={16} />
-        </button>
-      </div>
-
       <ConversationFilters value={filterMode} onChange={setFilterMode} />
 
       <div className="flex-1 min-h-0 overflow-y-auto p-3">
@@ -125,7 +135,7 @@ export function ConversationList({
               return (
                 <div
                   key={conversation.id}
-                  className={`group relative rounded-[22px] border px-4 py-4 transition ${
+                  className={`group relative rounded-[22px] border px-3 py-3 transition ${
                     isActive
                       ? "border-[#436D75]/25 bg-[#436D75]/6 shadow-sm"
                       : "border-transparent bg-[#F7F3E9]/60 hover:border-gray-200 hover:bg-white"
@@ -136,35 +146,46 @@ export function ConversationList({
                     onClick={() => onOpenConversation(conversation.id)}
                     className="w-full pr-9 text-left"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-black text-gray-900">
-                          {counterpartName}
-                        </p>
-                        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#436D75]/70">
-                          {metadata}
-                          {isMuted ? (
-                            <span className="ml-2 rounded-full bg-gray-900 px-2 py-0.5 text-[9px] text-white">
-                              Muet
-                            </span>
-                          ) : null}
+                    <div className="flex items-start gap-3">
+                      <ConversationAvatar
+                        type={conversation.type}
+                        name={counterpartName}
+                        photoUrl={conversation.counterpart?.photo_profil_url}
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-black text-gray-900">
+                              {counterpartName}
+                            </p>
+                            <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-[#436D75]/70">
+                              {metadata}
+                              {isMuted ? (
+                                <span className="ml-2 rounded-full bg-gray-900 px-2 py-0.5 text-[9px] text-white">
+                                  Muet
+                                </span>
+                              ) : null}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-[10px] font-bold text-gray-400">
+                            {formatRelativeDate(conversation.last_message_at)}
+                          </span>
+                        </div>
+
+                        <p
+                          className="mt-2 text-sm text-gray-600"
+                          style={{
+                            display: "-webkit-box",
+                            WebkitBoxOrient: "vertical",
+                            WebkitLineClamp: 2,
+                            overflow: "hidden",
+                          }}
+                        >
+                          {preview || "Aucun message."}
                         </p>
                       </div>
-                      <span className="text-[10px] font-bold text-gray-400">
-                        {formatRelativeDate(conversation.last_message_at)}
-                      </span>
                     </div>
-                    <p
-                      className="mt-3 text-sm text-gray-600"
-                      style={{
-                        display: "-webkit-box",
-                        WebkitBoxOrient: "vertical",
-                        WebkitLineClamp: 2,
-                        overflow: "hidden",
-                      }}
-                    >
-                      {preview || "Aucun message."}
-                    </p>
                   </button>
 
                   <div className="absolute right-3 top-3">

@@ -1,5 +1,16 @@
 import { useEffect, useState } from "react";
-import { XCircle, Calendar, Clock, MapPin, Pencil, CalendarDays, Clock3 } from "lucide-react";
+import {
+  XCircle,
+  Calendar,
+  Clock,
+  MapPin,
+  Pencil,
+  CalendarDays,
+  Clock3,
+  CreditCard,
+  CheckCircle,
+  RefreshCw,
+} from "lucide-react";
 import api from "../../api/axios";
 
 type ReservationItem = {
@@ -9,7 +20,14 @@ type ReservationItem = {
   date_reservation: string;
   heure_debut: string;
   heure_fin: string;
+  prix_total?: number;
   local?: { nom?: string; centre?: { nom?: string }; prix_heure?: number };
+  payments?: Array<{
+    id: string;
+    status: string;
+    amount: number;
+    created_at: string;
+  }>;
 };
 
 function statusClass(status: string): string {
@@ -30,10 +48,11 @@ export default function AdherentMyReservationsPage() {
   const [reservations, setReservations] = useState<ReservationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [feedback, setFeedback] = useState<{
-    type: "success" | "error";
+    type: "success" | "error" | "warning";
     message: string;
   } | null>(null);
-  const [editingReservation, setEditingReservation] = useState<ReservationItem | null>(null);
+  const [editingReservation, setEditingReservation] =
+    useState<ReservationItem | null>(null);
   const [editForm, setEditForm] = useState({
     id_local: "",
     objet: "",
@@ -79,7 +98,89 @@ export default function AdherentMyReservationsPage() {
 
   useEffect(() => {
     loadReservations();
+
+    // Vérifier si on revient d'un paiement réussi
+    const pendingReservationId = sessionStorage.getItem(
+      "pendingPaymentReservation",
+    );
+    if (pendingReservationId) {
+      sessionStorage.removeItem("pendingPaymentReservation");
+      setFeedback({
+        type: "success",
+        message:
+          "Paiement effectué avec succès ! Mise à jour des informations...",
+      });
+
+      let retryCount = 0;
+      const maxRetries = 5;
+      const retryDelay = 3000;
+
+      const checkPaymentStatus = async () => {
+        try {
+          const fresh = await api.get("/reservations");
+          const freshData = fresh.data || [];
+          setReservations(freshData);
+          retryCount++;
+
+          const updated = freshData.find(
+            (r: any) => r.id === pendingReservationId,
+          );
+          const hasPaidPayment = updated?.payments?.some(
+            (p: any) => p.status === "PAID",
+          );
+          const isConfirmed = updated?.statut === "CONFIRME";
+
+          if (hasPaidPayment || isConfirmed || retryCount >= maxRetries) {
+            if (hasPaidPayment || isConfirmed) {
+              setFeedback({
+                type: "success",
+                message:
+                  "Paiement effectué avec succès ! Votre réservation est maintenant confirmée.",
+              });
+            } else {
+              setFeedback({
+                type: "warning",
+                message:
+                  "Paiement en cours de validation. Cliquez sur 'Actualiser' pour mettre à jour.",
+              });
+            }
+          } else {
+            setTimeout(checkPaymentStatus, retryDelay);
+          }
+        } catch (error) {
+          console.error("Erreur lors de la vérification du paiement:", error);
+          if (retryCount < maxRetries)
+            setTimeout(checkPaymentStatus, retryDelay);
+        }
+      };
+
+      setTimeout(checkPaymentStatus, 3000);
+    }
   }, []);
+
+  const handlePay = async (reservationId: string) => {
+    try {
+      const res = await api.post("/payments/pay-reservation", {
+        reservationId,
+        returnUrl: window.location.origin + "/payment-success",
+      });
+
+      if (res.data.checkoutUrl) {
+        sessionStorage.setItem("pendingPaymentReservation", reservationId);
+        window.location.href = res.data.checkoutUrl;
+      }
+    } catch {
+      setFeedback({
+        type: "error",
+        message: "Impossible de procéder au paiement.",
+      });
+    }
+  };
+
+  const handleRefresh = async () => {
+    setFeedback({ type: "success", message: "Actualisation des données..." });
+    await loadReservations();
+  };
 
   const handleCancel = async (id: string) => {
     try {
@@ -139,7 +240,8 @@ export default function AdherentMyReservationsPage() {
       today.setHours(0, 0, 0, 0);
       const selectedDate = new Date(editForm.date_reservation);
       if (selectedDate < today) {
-        newErrors.date_reservation = "La date ne peut pas être antérieure à aujourd'hui.";
+        newErrors.date_reservation =
+          "La date ne peut pas être antérieure à aujourd'hui.";
         hasError = true;
       }
     }
@@ -153,20 +255,25 @@ export default function AdherentMyReservationsPage() {
       newErrors.heure_fin = "Veuillez sélectionner une heure de fin.";
       hasError = true;
     }
-    if (editForm.heure_debut && editForm.heure_fin && editForm.heure_fin <= editForm.heure_debut) {
-      newErrors.heure_fin = "L'heure de fin doit être supérieure à l'heure de début.";
+    if (
+      editForm.heure_debut &&
+      editForm.heure_fin &&
+      editForm.heure_fin <= editForm.heure_debut
+    ) {
+      newErrors.heure_fin =
+        "L'heure de fin doit être supérieure à l'heure de début.";
       hasError = true;
     }
     // Validation des horaires d'ouverture
     if (editForm.heure_debut) {
-      const [startHours] = editForm.heure_debut.split(':').map(Number);
+      const [startHours] = editForm.heure_debut.split(":").map(Number);
       if (startHours < 8) {
         newErrors.heure_debut = "L'heure de début doit être à partir de 8h00.";
         hasError = true;
       }
     }
     if (editForm.heure_fin) {
-      const [endHours, endMinutes] = editForm.heure_fin.split(':').map(Number);
+      const [endHours, endMinutes] = editForm.heure_fin.split(":").map(Number);
       if (endHours > 23 || (endHours === 23 && endMinutes > 0)) {
         newErrors.heure_fin = "L'heure de fin ne peut pas dépasser 00h00.";
         hasError = true;
@@ -181,11 +288,14 @@ export default function AdherentMyReservationsPage() {
 
       if (isToday) {
         const nowMinutes = today.getHours() * 60 + today.getMinutes();
-        const [startHours, startMinutes] = editForm.heure_debut.split(':').map(Number);
+        const [startHours, startMinutes] = editForm.heure_debut
+          .split(":")
+          .map(Number);
         const startTotalMinutes = startHours * 60 + startMinutes;
 
         if (startTotalMinutes <= nowMinutes) {
-          newErrors.heure_debut = "Pour aujourd'hui, l'heure de début doit être dans le futur.";
+          newErrors.heure_debut =
+            "Pour aujourd'hui, l'heure de début doit être dans le futur.";
           hasError = true;
         }
       }
@@ -200,7 +310,10 @@ export default function AdherentMyReservationsPage() {
     setFieldErrors(newErrors);
 
     if (hasError) {
-      setFeedback({ type: "error", message: "Veuillez corriger les erreurs dans le formulaire." });
+      setFeedback({
+        type: "error",
+        message: "Veuillez corriger les erreurs dans le formulaire.",
+      });
       return;
     }
 
@@ -212,7 +325,10 @@ export default function AdherentMyReservationsPage() {
         heure_debut: `${editForm.date_reservation}T${editForm.heure_debut}:00`,
         heure_fin: `${editForm.date_reservation}T${editForm.heure_fin}:00`,
       });
-      setFeedback({ type: "success", message: "Réservation modifiée avec succès." });
+      setFeedback({
+        type: "success",
+        message: "Réservation modifiée avec succès.",
+      });
       setEditingReservation(null);
       await loadReservations();
     } catch {
@@ -225,19 +341,24 @@ export default function AdherentMyReservationsPage() {
 
     const start = new Date(item.heure_debut);
     const end = new Date(item.heure_fin);
-    const durationInHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+    const durationInHours =
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 
     return (durationInHours * item.local.prix_heure).toFixed(2);
   };
 
   const calculateDynamicCost = (): string => {
-    const selectedLocal = locaux.find((local) => local.id === editForm.id_local);
+    const selectedLocal = locaux.find(
+      (local) => local.id === editForm.id_local,
+    );
     if (!selectedLocal?.prix_heure) return "0.00";
 
     if (!editForm.heure_debut || !editForm.heure_fin) return "0.00";
 
-    const [startHours, startMinutes] = editForm.heure_debut.split(':').map(Number);
-    const [endHours, endMinutes] = editForm.heure_fin.split(':').map(Number);
+    const [startHours, startMinutes] = editForm.heure_debut
+      .split(":")
+      .map(Number);
+    const [endHours, endMinutes] = editForm.heure_fin.split(":").map(Number);
 
     const startTotalMinutes = startHours * 60 + startMinutes;
     const endTotalMinutes = endHours * 60 + endMinutes;
@@ -251,13 +372,23 @@ export default function AdherentMyReservationsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-4xl font-black text-[#436D75] tracking-tight">
-          Mes Réservations
-        </h1>
-        <p className="text-sm text-gray-500 mt-2">
-          Suivez le statut de vos demandes et annulez si nécessaire.
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-4xl font-black text-[#436D75] tracking-tight">
+            Mes Réservations
+          </h1>
+          <p className="text-sm text-gray-500 mt-2">
+            Suivez le statut de vos demandes et annulez si nécessaire.
+          </p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          className="flex items-center gap-2 px-4 py-2 bg-[#436D75] text-white rounded-xl hover:bg-[#355960] transition-colors"
+          title="Actualiser les données"
+        >
+          <RefreshCw size={16} />
+          Actualiser
+        </button>
       </div>
 
       {feedback && (
@@ -268,17 +399,37 @@ export default function AdherentMyReservationsPage() {
               : "bg-rose-500 text-white"
           }`}
           style={{
-            animation: 'slideInRight 0.3s ease-out'
+            animation: "slideInRight 0.3s ease-out",
           }}
         >
           <div className="flex items-start gap-3">
             {feedback.type === "success" ? (
-              <svg className="w-6 h-6 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-6 h-6 mt-0.5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             ) : (
-              <svg className="w-6 h-6 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-6 h-6 mt-0.5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             )}
             <div className="flex-1">
@@ -309,6 +460,7 @@ export default function AdherentMyReservationsPage() {
                 <th className="px-6 py-3">Coût</th>
                 <th className="px-6 py-3">Objet</th>
                 <th className="px-6 py-3">Statut</th>
+                <th className="px-6 py-3">Montant</th>
                 <th className="px-6 py-3">Action</th>
               </tr>
             </thead>
@@ -379,26 +531,46 @@ export default function AdherentMyReservationsPage() {
                         {statusLabel(item.statut)}
                       </span>
                     </td>
+                    <td className="px-6 py-4 text-sm font-bold text-[#436D75]">
+                      {item.prix_total ? `${item.prix_total} TND` : "-"}
+                    </td>
                     <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        {item.statut === "EN_ATTENTE" && (
-                          <button
-                            onClick={() => handleEdit(item)}
-                            className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-black text-blue-600 hover:bg-blue-100 transition-colors"
-                          >
-                            <Pencil size={14} /> Modifier
-                          </button>
-                        )}
-                        {(item.statut === "EN_ATTENTE" ||
-                          item.statut === "VALIDEE") && (
-                          <button
-                            onClick={() => handleCancel(item.id)}
-                            className="inline-flex items-center gap-1 rounded-lg bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 hover:bg-rose-100 transition-colors"
-                          >
-                            <XCircle size={14} /> Annuler
-                          </button>
-                        )}
-                      </div>
+                      {(() => {
+                        const hasPaidPayment = item.payments?.some(
+                          (p) => p.status === "PAID",
+                        );
+                        const isConfirmed = item.statut === "CONFIRME";
+
+                        if (hasPaidPayment || isConfirmed) {
+                          return (
+                            <span className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-black text-blue-600">
+                              <CheckCircle size={14} /> Paiement effectué
+                            </span>
+                          );
+                        }
+
+                        return (
+                          <>
+                            {item.statut === "VALIDEE" && (
+                              <button
+                                onClick={() => handlePay(item.id)}
+                                className="inline-flex items-center gap-1 rounded-lg bg-green-50 px-3 py-2 text-xs font-black text-green-600 hover:bg-green-100 mr-2"
+                              >
+                                <CreditCard size={14} /> Payer
+                              </button>
+                            )}
+                            {(item.statut === "EN_ATTENTE" ||
+                              item.statut === "VALIDEE") && (
+                              <button
+                                onClick={() => handleCancel(item.id)}
+                                className="inline-flex items-center gap-1 rounded-lg bg-rose-50 px-3 py-2 text-xs font-black text-rose-600 hover:bg-rose-100"
+                              >
+                                <XCircle size={14} /> Annuler
+                              </button>
+                            )}
+                          </>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))
@@ -422,20 +594,25 @@ export default function AdherentMyReservationsPage() {
                 </label>
                 <select
                   value={editForm.id_local}
-                  onChange={(e) => setEditForm({ ...editForm, id_local: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, id_local: e.target.value })
+                  }
                   className={`w-full rounded-xl border bg-white px-4 py-3 text-sm ${
-                    fieldErrors.local ? 'border-rose-500' : 'border-gray-200'
+                    fieldErrors.local ? "border-rose-500" : "border-gray-200"
                   }`}
                 >
                   <option value="">Choisir un local</option>
                   {locaux.map((local) => (
                     <option key={local.id} value={local.id}>
-                      {local.nom} - {local.centre?.nom || "Centre"} ({local.prix_heure || 0} DT/h)
+                      {local.nom} - {local.centre?.nom || "Centre"} (
+                      {local.prix_heure || 0} DT/h)
                     </option>
                   ))}
                 </select>
                 {fieldErrors.local && (
-                  <p className="mt-1 text-xs text-rose-600 font-bold">{fieldErrors.local}</p>
+                  <p className="mt-1 text-xs text-rose-600 font-bold">
+                    {fieldErrors.local}
+                  </p>
                 )}
               </div>
 
@@ -451,15 +628,24 @@ export default function AdherentMyReservationsPage() {
                   <input
                     type="date"
                     value={editForm.date_reservation}
-                    min={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => setEditForm({ ...editForm, date_reservation: e.target.value })}
+                    min={new Date().toISOString().split("T")[0]}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        date_reservation: e.target.value,
+                      })
+                    }
                     className={`w-full rounded-xl border bg-white pl-10 pr-3 py-3 text-sm ${
-                      fieldErrors.date_reservation ? 'border-rose-500' : 'border-gray-200'
+                      fieldErrors.date_reservation
+                        ? "border-rose-500"
+                        : "border-gray-200"
                     }`}
                   />
                 </div>
                 {fieldErrors.date_reservation && (
-                  <p className="mt-1 text-xs text-rose-600 font-bold">{fieldErrors.date_reservation}</p>
+                  <p className="mt-1 text-xs text-rose-600 font-bold">
+                    {fieldErrors.date_reservation}
+                  </p>
                 )}
               </div>
 
@@ -475,9 +661,16 @@ export default function AdherentMyReservationsPage() {
                     />
                     <select
                       value={editForm.heure_debut}
-                      onChange={(e) => setEditForm({ ...editForm, heure_debut: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          heure_debut: e.target.value,
+                        })
+                      }
                       className={`w-full rounded-xl border bg-white pl-10 pr-3 py-3 text-sm appearance-none ${
-                        fieldErrors.heure_debut ? 'border-rose-500' : 'border-gray-200'
+                        fieldErrors.heure_debut
+                          ? "border-rose-500"
+                          : "border-gray-200"
                       }`}
                     >
                       <option value="">--:--</option>
@@ -485,7 +678,7 @@ export default function AdherentMyReservationsPage() {
                         const hour = 8 + i;
                         return Array.from({ length: 2 }, (_, j) => {
                           const minutes = j * 30;
-                          const timeStr = `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                          const timeStr = `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
                           return (
                             <option key={timeStr} value={timeStr}>
                               {timeStr}
@@ -496,7 +689,9 @@ export default function AdherentMyReservationsPage() {
                     </select>
                   </div>
                   {fieldErrors.heure_debut && (
-                    <p className="mt-1 text-xs text-rose-600 font-bold">{fieldErrors.heure_debut}</p>
+                    <p className="mt-1 text-xs text-rose-600 font-bold">
+                      {fieldErrors.heure_debut}
+                    </p>
                   )}
                 </div>
 
@@ -511,9 +706,13 @@ export default function AdherentMyReservationsPage() {
                     />
                     <select
                       value={editForm.heure_fin}
-                      onChange={(e) => setEditForm({ ...editForm, heure_fin: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, heure_fin: e.target.value })
+                      }
                       className={`w-full rounded-xl border bg-white pl-10 pr-3 py-3 text-sm appearance-none ${
-                        fieldErrors.heure_fin ? 'border-rose-500' : 'border-gray-200'
+                        fieldErrors.heure_fin
+                          ? "border-rose-500"
+                          : "border-gray-200"
                       }`}
                     >
                       <option value="">--:--</option>
@@ -521,7 +720,7 @@ export default function AdherentMyReservationsPage() {
                         const hour = 8 + i;
                         return Array.from({ length: 2 }, (_, j) => {
                           const minutes = j * 30;
-                          const timeStr = `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                          const timeStr = `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
                           return (
                             <option key={timeStr} value={timeStr}>
                               {timeStr}
@@ -533,7 +732,9 @@ export default function AdherentMyReservationsPage() {
                     </select>
                   </div>
                   {fieldErrors.heure_fin && (
-                    <p className="mt-1 text-xs text-rose-600 font-bold">{fieldErrors.heure_fin}</p>
+                    <p className="mt-1 text-xs text-rose-600 font-bold">
+                      {fieldErrors.heure_fin}
+                    </p>
                   )}
                 </div>
               </div>
@@ -554,7 +755,9 @@ export default function AdherentMyReservationsPage() {
                         {calculateDynamicCost()} DT
                       </p>
                       <p className="text-xs text-white/60 mt-1">
-                        {locaux.find((local) => local.id === editForm.id_local)?.prix_heure || 0} DT/h
+                        {locaux.find((local) => local.id === editForm.id_local)
+                          ?.prix_heure || 0}{" "}
+                        DT/h
                       </p>
                     </div>
                   </div>
@@ -568,14 +771,18 @@ export default function AdherentMyReservationsPage() {
                 <input
                   type="text"
                   value={editForm.objet}
-                  onChange={(e) => setEditForm({ ...editForm, objet: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, objet: e.target.value })
+                  }
                   placeholder="Ex: repetition theatre, atelier media..."
                   className={`w-full rounded-xl border bg-white px-4 py-3 text-sm ${
-                    fieldErrors.objet ? 'border-rose-500' : 'border-gray-200'
+                    fieldErrors.objet ? "border-rose-500" : "border-gray-200"
                   }`}
                 />
                 {fieldErrors.objet && (
-                  <p className="mt-1 text-xs text-rose-600 font-bold">{fieldErrors.objet}</p>
+                  <p className="mt-1 text-xs text-rose-600 font-bold">
+                    {fieldErrors.objet}
+                  </p>
                 )}
               </div>
 

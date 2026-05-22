@@ -9,9 +9,7 @@ import AuthPage from "./pages/auth/AuthPage";
 import SignupPage from "./pages/auth/SignupPage";
 import GoogleCompleteProfile from "./pages/auth/GoogleCompleteProfile";
 import NotFound from "./pages/auth/NotFound";
-import CoachMembers from "./pages/coach/CoachMembers";
-import CreateProgram from "./pages/coach/CreateProgram";
-import MemberDetails from "./pages/coach/MembreDetails";
+
 import ClubsPage from "./pages/clubs/ClubsPage";
 import AdherentClubsPage from "./pages/clubs/AdherentClubsPage";
 import AdherentClubDetailsPage from "./pages/clubs/AdherentClubDetailsPage";
@@ -132,31 +130,9 @@ function App() {
             </Layout>
           }
         />
-        <Route
-          path="/coach-members"
-          element={
-            <Layout>
-              <CoachMembers />
-            </Layout>
-          }
-        />
+        
         {/* NOUVELLE ROUTE : Création de programme */}
-        <Route
-          path="/create-program/:idMember"
-          element={
-            <Layout>
-              <CreateProgram />
-            </Layout>
-          }
-        />
-        <Route
-          path="/member-details/:id"
-          element={
-            <Layout>
-              <MemberDetails />
-            </Layout>
-          }
-        />
+       
         <Route path="/clubs" element={<Layout>{getClubsPage()}</Layout>} />
         <Route
           path="/clubs/:clubId/requests"

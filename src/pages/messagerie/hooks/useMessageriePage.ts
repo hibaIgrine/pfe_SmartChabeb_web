@@ -472,11 +472,17 @@ export function useMessageriePage() {
       return;
     }
 
+    await openPrivateConversation(selectedRecipientId);
+  };
+
+  const openPrivateConversation = async (recipientId: string) => {
+    setSelectedRecipientId(recipientId);
+
     try {
       setSubmitting(true);
       setError(null);
       const conversation = await createPrivateConversation({
-        recipientId: selectedRecipientId,
+        recipientId,
       });
       await refreshConversations();
       setActiveConversation(conversation);
@@ -1011,6 +1017,7 @@ export function useMessageriePage() {
     attachVoiceMessage,
     refreshConversations,
     startPrivateConversation,
+    openPrivateConversation,
     startGroupConversation,
     openOrReloadConversation,
     deleteConversationById,

@@ -592,7 +592,7 @@ export function PostComposer({
 
       <div className="flex items-center justify-between">
         <span className="text-xs text-gray-500 font-medium">
-          Televersement local: Photo, Video, Document
+          
         </span>
         <button
           type="submit"
