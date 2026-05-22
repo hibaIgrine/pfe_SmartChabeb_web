@@ -69,7 +69,7 @@ export function RecommendationCard({
               <p className="text-sm text-gray-600 mt-1">
                 Probabilité:{" "}
                 <span className="font-semibold text-[#E98A7D]">
-                    {reco.probabilite}%
+                  {reco.probabilite}%
                 </span>
               </p>
             </div>

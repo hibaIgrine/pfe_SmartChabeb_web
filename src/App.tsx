@@ -32,6 +32,7 @@ import ClubMyReservationsPage from "./pages/reservations/ClubMyReservationsPage"
 import PaymentHistoryPage from "./pages/paiements/PaymentHistoryPage";
 import PaymentSuccessPage from "./pages/paiements/PaymentSuccessPage";
 import AdherentMyReservationsPage from "./pages/reservations/AdherentMyReservationsPage";
+import AdherentCertificatesPage from "./pages/certificates/AdherentCertificatesPage";
 import PresencePage from "./pages/presences/PresencePage";
 import EventsPage from "./pages/events/EventsPage";
 import EventRequestsPage from "./pages/events/EventRequestsPage";
@@ -130,9 +131,9 @@ function App() {
             </Layout>
           }
         />
-        
+
         {/* NOUVELLE ROUTE : Création de programme */}
-       
+
         <Route path="/clubs" element={<Layout>{getClubsPage()}</Layout>} />
         <Route
           path="/clubs/:clubId/requests"
@@ -272,6 +273,14 @@ function App() {
           element={
             <Layout>
               <AdherentMyReservationsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/certificats"
+          element={
+            <Layout>
+              <AdherentCertificatesPage />
             </Layout>
           }
         />

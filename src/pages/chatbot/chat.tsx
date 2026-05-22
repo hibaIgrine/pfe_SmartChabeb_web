@@ -26,7 +26,8 @@ const MAX_HISTORY = 10;
 const quickPrompts = [
   "Quels clubs sont actifs en ce moment ?",
   "Quels événements sont prévus cette semaine ?",
-  "Comment m'inscrire à un club ?",
+  "Propose une roadmap pour une séance de club",
+  "Idées d'activités pour animer un club",
   "شنوة الأنشطة المتوفرة اليوم ؟",
 ];
 
@@ -194,7 +195,7 @@ const Chat = () => {
     try {
       const response = await api.post<ChatbotResponse>("/chatbot/ask", {
         message: messageToSend,
-        history: nextMessages.slice(-MAX_HISTORY),
+        history: messages.slice(-MAX_HISTORY),
       });
 
       const botReply =
@@ -212,9 +213,13 @@ const Chat = () => {
       });
     } catch (requestError) {
       console.error("Erreur chatbot:", requestError);
-      setError(
-        "Le bot n'a pas répondu correctement. Réessaie dans un instant.",
-      );
+      const backendMessage =
+        (
+          requestError as { response?: { data?: { message?: string } } }
+        ).response?.data?.message?.trim() ??
+        "Le bot n'a pas répondu correctement. Réessaie dans un instant.";
+
+      setError(backendMessage);
       setMessages((previousMessages) => {
         const nextConversationMessages: ChatMessage[] = [
           ...previousMessages,
@@ -248,10 +253,11 @@ const Chat = () => {
                   Assistant Maison des Jeunes
                 </div>
                 <h1 className="text-3xl font-black tracking-tight text-[#1A1C1E] sm:text-4xl">
-                  Chatbot Gemini pour les clubs et événements
+                  Chatbot Gemini pour les clubs, activités et séances
                 </h1>
                 <p className="max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
-                  Pose tes questions en français ou en derja tunisienne.
+                  Pose tes questions en français ou en derja tunisienne, y
+                  compris pour des idées d'animation ou une roadmap de séance.
                 </p>
               </div>
 
@@ -300,7 +306,8 @@ const Chat = () => {
                     </h2>
                     <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
                       Tu peux demander les clubs actifs, les événements
-                      programmés, les horaires, ou une aide pour l'inscription.
+                      programmés, les horaires, une aide pour l'inscription, ou
+                      des recommandations d'activités pour une séance de club.
                     </p>
                     <div className="mt-6 flex flex-wrap justify-center gap-2">
                       {quickPrompts.map((prompt) => (
@@ -360,7 +367,7 @@ const Chat = () => {
 
               <div className="border-t border-[#e7eee9] bg-white/80 px-4 py-4 sm:px-6">
                 <div className="flex flex-col gap-3 rounded-[1.5rem] border border-[#d6e2db] bg-white p-3 shadow-sm sm:flex-row sm:items-center">
-                  <input
+                  <textarea
                     value={input}
                     onChange={(event) => {
                       setInput(event.target.value);
@@ -371,8 +378,9 @@ const Chat = () => {
                         void sendMessage();
                       }
                     }}
-                    placeholder="Écris ta question sur les clubs ou les événements..."
-                    className="min-w-0 flex-1 rounded-2xl border border-transparent bg-[#f7faf8] px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#436D75]/20 focus:bg-white"
+                    placeholder="Écris ta question sur les clubs, activités ou une roadmap de séance..."
+                    rows={3}
+                    className="min-h-[5.5rem] min-w-0 flex-1 resize-none rounded-2xl border border-transparent bg-[#f7faf8] px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#436D75]/20 focus:bg-white"
                   />
                   <button
                     type="button"

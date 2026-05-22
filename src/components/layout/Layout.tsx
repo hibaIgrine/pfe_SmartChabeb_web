@@ -20,6 +20,7 @@ import {
   CreditCard,
   Sparkles,
   Bot,
+  Award,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { FavoritePostsBell } from "./FavoritePostsBell";
@@ -88,6 +89,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       location.pathname !== "/my-club-requests" &&
       location.pathname !== "/club-reservations" &&
       location.pathname !== "/adherent-my-reservations" &&
+      location.pathname !== "/certificats" &&
       location.pathname !== "/events" &&
       location.pathname !== "/payment-history"
     ) {
@@ -451,6 +453,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               icon={<CalendarDays size={18} />}
               label="Événements"
               active={location.pathname === "/events"}
+            />
+          )}
+
+          {role === "ADHERENT" && (
+            <SidebarItem
+              to="/certificats"
+              icon={<Award size={18} />}
+              label="Mes certificats"
+              active={location.pathname === "/certificats"}
             />
           )}
 
