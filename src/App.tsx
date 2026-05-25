@@ -35,6 +35,8 @@ import AdherentMyReservationsPage from "./pages/reservations/AdherentMyReservati
 import AdherentCertificatesPage from "./pages/certificates/AdherentCertificatesPage";
 import PresencePage from "./pages/presences/PresencePage";
 import EventsPage from "./pages/events/EventsPage";
+import ClubEventsRequestsPage from "./pages/events/ClubEventsRequestsPage";
+import CentreEventsRequestsPage from "./pages/events/CentreEventsRequestsPage";
 import EventRequestsPage from "./pages/events/EventRequestsPage";
 import EventParticipantsPage from "./pages/events/EventParticipantsPage";
 import EventWaitingListPage from "./pages/events/EventWaitingListPage";
@@ -305,6 +307,22 @@ function App() {
           element={
             <Layout>
               <EventsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/club-events-requests"
+          element={
+            <Layout>
+              <ClubEventsRequestsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/centre-events-requests"
+          element={
+            <Layout>
+              <CentreEventsRequestsPage />
             </Layout>
           }
         />

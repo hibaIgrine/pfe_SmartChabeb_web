@@ -1,5 +1,7 @@
 import type { EventForm } from "./types";
 
+export const MAX_EVENT_CAPACITY = 1000000;
+
 export function toTimeHHMM(value: string) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
@@ -17,6 +19,14 @@ export function getCurrentTimeHHMM() {
 
 export function getTodayDate() {
   return new Date().toISOString().split("T")[0];
+}
+
+export function formatDateOnly(value: string) {
+  const raw = (value || "").toString();
+  if (!raw) return "-";
+
+  const datePart = raw.includes("T") ? raw.split("T")[0] : raw;
+  return datePart;
 }
 
 export function getEmptyForm(): EventForm {
@@ -54,6 +64,15 @@ export function validateEventForm(form: EventForm, today: string) {
 
   if (!/^\d+$/.test(form.capacity.trim())) {
     return "La capacité doit contenir uniquement des nombres entiers.";
+  }
+
+  const capacityValue = BigInt(form.capacity.trim());
+  if (capacityValue < 1n) {
+    return "La capacité doit être supérieure à 0.";
+  }
+
+  if (capacityValue > BigInt(MAX_EVENT_CAPACITY)) {
+    return `La capacité ne doit pas dépasser ${MAX_EVENT_CAPACITY.toLocaleString("fr-FR")}.`;
   }
 
   if (form.date_event < today) {

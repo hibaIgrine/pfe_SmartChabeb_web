@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   Building2,
   CalendarDays,
+  CalendarCheck,
   ClipboardCheck,
   Edit3,
   LayoutGrid,
@@ -114,13 +115,16 @@ export default function ResponsableCentrePage() {
   const metrics = useMemo(() => {
     const locaux = Array.isArray(centre?.locaux) ? centre.locaux : [];
     const clubs = Array.isArray(centre?.clubs) ? centre.clubs : [];
-    const inventaire = Array.isArray(centre?.inventaire) ? centre.inventaire : [];
+    const inventaire = Array.isArray(centre?.inventaire)
+      ? centre.inventaire
+      : [];
 
     return {
       locaux: locaux.length,
       clubs: clubs.length,
       inventaire: inventaire.length,
-      locauxActifs: locaux.filter((item: any) => item.est_actif !== false).length,
+      locauxActifs: locaux.filter((item: any) => item.est_actif !== false)
+        .length,
       clubsActifs: clubs.filter((item: any) => item.est_actif !== false).length,
     };
   }, [centre]);
@@ -128,8 +132,21 @@ export default function ResponsableCentrePage() {
   const quickLinks = [
     { to: "/locaux", label: "Gérer les locaux", icon: <Warehouse size={16} /> },
     { to: "/clubs", label: "Gérer les clubs", icon: <LayoutGrid size={16} /> },
-    { to: "/events", label: "Gérer les événements", icon: <CalendarDays size={16} /> },
-    { to: "/presences", label: "Suivi présence", icon: <ClipboardCheck size={16} /> },
+    {
+      to: "/events",
+      label: "Gérer les événements",
+      icon: <CalendarDays size={16} />,
+    },
+    {
+      to: "/centre-events-requests",
+      label: "Valider les demandes",
+      icon: <CalendarCheck size={16} />,
+    },
+    {
+      to: "/presences",
+      label: "Suivi présence",
+      icon: <ClipboardCheck size={16} />,
+    },
   ];
 
   return (
@@ -169,7 +186,8 @@ export default function ResponsableCentrePage() {
                 Responsable
               </p>
               <p className="mt-1 text-sm font-black">
-                {currentUser?.nom ?? user?.nom} {currentUser?.prenom ?? user?.prenom}
+                {currentUser?.nom ?? user?.nom}{" "}
+                {currentUser?.prenom ?? user?.prenom}
               </p>
               <p className="text-[10px] uppercase tracking-[0.2em] text-[#D9E8D1] font-bold mt-1">
                 RESPONSABLE_CENTRE
@@ -216,13 +234,15 @@ export default function ResponsableCentrePage() {
               icon={<Package size={20} />}
               label="Inventaire"
               value={metrics.inventaire}
-              helpText="Équipements enregistrés sur ce centre." 
+              helpText="Équipements enregistrés sur ce centre."
             />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <section className="rounded-[30px] border border-gray-100 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-black text-[#1A1C1E]">Identité du Centre</h2>
+              <h2 className="text-xl font-black text-[#1A1C1E]">
+                Identité du Centre
+              </h2>
               <p className="mt-1 text-xs text-gray-400 uppercase tracking-[0.2em] font-bold">
                 Informations officielles
               </p>
@@ -252,7 +272,9 @@ export default function ResponsableCentrePage() {
             </section>
 
             <section className="rounded-[30px] border border-[#D7E4E8] bg-[#F7FBFC] p-6 shadow-sm">
-              <h2 className="text-lg font-black text-[#244047]">Actions Rapides</h2>
+              <h2 className="text-lg font-black text-[#244047]">
+                Actions Rapides
+              </h2>
               <p className="mt-1 text-xs text-gray-500">
                 Raccourcis de gestion pour votre centre.
               </p>
@@ -276,8 +298,12 @@ export default function ResponsableCentrePage() {
 
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="rounded-[30px] border border-gray-100 bg-white p-6 shadow-sm">
-              <h3 className="text-lg font-black text-[#1A1C1E]">Clubs de Mon Centre</h3>
-              <p className="mt-1 text-xs text-gray-500">Seulement les clubs rattachés à votre centre.</p>
+              <h3 className="text-lg font-black text-[#1A1C1E]">
+                Clubs de Mon Centre
+              </h3>
+              <p className="mt-1 text-xs text-gray-500">
+                Seulement les clubs rattachés à votre centre.
+              </p>
 
               <div className="mt-4 space-y-2 max-h-[280px] overflow-y-auto pr-1">
                 {(centre.clubs ?? []).length === 0 ? (
@@ -289,9 +315,14 @@ export default function ResponsableCentrePage() {
                       className="rounded-xl border border-gray-100 px-3 py-2 flex items-center justify-between"
                     >
                       <div>
-                        <p className="font-bold text-sm text-[#203A43]">{club.nom}</p>
+                        <p className="font-bold text-sm text-[#203A43]">
+                          {club.nom}
+                        </p>
                         <p className="text-[11px] text-gray-500">
-                          Responsable: {club.responsable ? `${club.responsable.nom} ${club.responsable.prenom}` : "Non assigné"}
+                          Responsable:{" "}
+                          {club.responsable
+                            ? `${club.responsable.nom} ${club.responsable.prenom}`
+                            : "Non assigné"}
                         </p>
                       </div>
                       <span
@@ -310,12 +341,18 @@ export default function ResponsableCentrePage() {
             </section>
 
             <section className="rounded-[30px] border border-gray-100 bg-white p-6 shadow-sm">
-              <h3 className="text-lg font-black text-[#1A1C1E]">Locaux du Centre</h3>
-              <p className="mt-1 text-xs text-gray-500">Vision opérationnelle des espaces disponibles.</p>
+              <h3 className="text-lg font-black text-[#1A1C1E]">
+                Locaux du Centre
+              </h3>
+              <p className="mt-1 text-xs text-gray-500">
+                Vision opérationnelle des espaces disponibles.
+              </p>
 
               <div className="mt-4 space-y-2 max-h-[280px] overflow-y-auto pr-1">
                 {(centre.locaux ?? []).length === 0 ? (
-                  <p className="text-sm text-gray-400">Aucun local enregistré.</p>
+                  <p className="text-sm text-gray-400">
+                    Aucun local enregistré.
+                  </p>
                 ) : (
                   (centre.locaux ?? []).map((local: any) => (
                     <div
@@ -323,9 +360,12 @@ export default function ResponsableCentrePage() {
                       className="rounded-xl border border-gray-100 px-3 py-2 flex items-center justify-between"
                     >
                       <div>
-                        <p className="font-bold text-sm text-[#203A43]">{local.nom}</p>
+                        <p className="font-bold text-sm text-[#203A43]">
+                          {local.nom}
+                        </p>
                         <p className="text-[11px] text-gray-500">
-                          {local.type || "Type non défini"} • Capacité: {local.capacite ?? "—"}
+                          {local.type || "Type non défini"} • Capacité:{" "}
+                          {local.capacite ?? "—"}
                         </p>
                       </div>
                       <span

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../api/axios";
 import type { EventItem, EventParticipant } from "./types";
+import { formatDateOnly } from "./utils";
 
 type ParticipantsResponse = {
   confirmed?: EventParticipant[];
@@ -167,7 +168,7 @@ export default function EventParticipantsPage() {
                       {event.nom}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      {new Date(event.date_event).toLocaleDateString()} ·{" "}
+                      {formatDateOnly(event.date_event)} ·{" "}
                       {event.club?.nom ?? "-"}
                     </p>
                   </button>

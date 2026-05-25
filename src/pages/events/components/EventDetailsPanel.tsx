@@ -5,7 +5,7 @@ import type {
   EventParticipant,
   ParticipantStatus,
 } from "../types";
-import { toTimeHHMM } from "../utils";
+import { formatDateOnly, toTimeHHMM } from "../utils";
 
 type Props = {
   selectedDetail: EventDetail | null;
@@ -207,7 +207,7 @@ export default function EventDetailsPanel({
                 Date
               </p>
               <p className="font-bold">
-                {new Date(selectedDetail.date_event).toLocaleDateString()}
+                {formatDateOnly(selectedDetail.date_event)}
               </p>
             </div>
             <div>

@@ -7,8 +7,14 @@ type Props = {
 };
 
 function toDateKey(value: string | Date) {
-  const d = new Date(value);
-  return d.toISOString().split("T")[0];
+  if (typeof value === "string") {
+    return value.includes("T") ? value.split("T")[0] : value;
+  }
+
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function startOfMonth(date: Date) {

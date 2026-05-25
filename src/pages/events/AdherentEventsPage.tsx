@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import api from "../../api/axios";
 import type { EventItem, EventDetail } from "./types";
-import { toTimeHHMM } from "./utils";
+import { formatDateOnly, toTimeHHMM } from "./utils";
 import CertificateModal from "./components/CertificateModal";
 
 type EventFilter = "upcoming" | "past";
@@ -317,7 +317,7 @@ export default function AdherentEventsPage() {
                         <div className="flex flex-wrap gap-3 text-xs text-gray-500 font-bold">
                           <span className="inline-flex items-center gap-1">
                             <CalendarDays size={14} />
-                            {new Date(event.date_event).toLocaleDateString()}
+                            {formatDateOnly(event.date_event)}
                           </span>
                           <span className="inline-flex items-center gap-1">
                             <Clock3 size={14} />
@@ -390,7 +390,7 @@ export default function AdherentEventsPage() {
                     Date
                   </p>
                   <p className="font-bold">
-                    {new Date(selectedEvent.date_event).toLocaleDateString()}
+                    {formatDateOnly(selectedEvent.date_event)}
                   </p>
                 </div>
                 <div>

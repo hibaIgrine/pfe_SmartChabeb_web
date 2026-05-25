@@ -11,7 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import type { EventItem } from "../types";
-import { toTimeHHMM } from "../utils";
+import { formatDateOnly, toTimeHHMM } from "../utils";
 
 type Props = {
   isLoading: boolean;
@@ -68,7 +68,7 @@ export default function EventsList({
                     <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500 font-bold">
                       <span className="inline-flex items-center gap-1">
                         <CalendarDays size={14} />
-                        {new Date(event.date_event).toLocaleDateString()}
+                        {formatDateOnly(event.date_event)}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <Clock3 size={14} />

@@ -7,7 +7,6 @@ import {
   GraduationCap,
   LogOut,
   LayoutGrid,
-  ShieldCheck,
   UserCircle,
   Building2,
   CalendarCheck,
@@ -493,6 +492,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </>
           )}
 
+          {role === "RESPONSABLE_CLUB" && (
+            <SidebarItem
+              to="/club-events-requests"
+              icon={<CalendarDays size={18} />}
+              label="Mes demandes événements"
+              active={location.pathname === "/club-events-requests"}
+            />
+          )}
+
           <SidebarItem
             to="/chatbot"
             icon={<Bot size={18} />}
@@ -506,6 +514,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               icon={<CalendarDays size={18} />}
               label="Gestion Participants"
               active={location.pathname === "/events-manager"}
+            />
+          )}
+
+          {role === "RESPONSABLE_CENTRE" && (
+            <SidebarItem
+              to="/centre-events-requests"
+              icon={<CalendarCheck size={18} />}
+              label="Valider événements"
+              active={location.pathname === "/centre-events-requests"}
             />
           )}
 
