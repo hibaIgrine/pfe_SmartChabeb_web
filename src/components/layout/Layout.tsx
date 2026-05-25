@@ -20,6 +20,7 @@ import {
   Sparkles,
   Bot,
   Award,
+  Star,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { FavoritePostsBell } from "./FavoritePostsBell";
@@ -88,6 +89,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       location.pathname !== "/my-club-requests" &&
       location.pathname !== "/club-reservations" &&
       location.pathname !== "/adherent-my-reservations" &&
+      location.pathname !== "/mes-seances" &&
       location.pathname !== "/certificats" &&
       location.pathname !== "/events" &&
       location.pathname !== "/payment-history"
@@ -386,6 +388,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         >
                           Tâches
                         </Link>
+                        <span className="text-white/30">•</span>
+                        <Link
+                          to={`/my-clubs/${c.id}/feedbacks`}
+                          className="text-[11px] font-black text-white/60 hover:text-white hover:underline"
+                        >
+                          Feedbacks
+                        </Link>
                       </div>
                     </div>
                   ))}
@@ -452,6 +461,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               icon={<CalendarDays size={18} />}
               label="Événements"
               active={location.pathname === "/events"}
+            />
+          )}
+
+          {role === "ADHERENT" && (
+            <SidebarItem
+              to="/mes-seances"
+              icon={<Star size={18} />}
+              label="Feedback séances"
+              active={location.pathname === "/mes-seances"}
             />
           )}
 

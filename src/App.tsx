@@ -34,6 +34,8 @@ import PaymentSuccessPage from "./pages/paiements/PaymentSuccessPage";
 import AdherentMyReservationsPage from "./pages/reservations/AdherentMyReservationsPage";
 import AdherentCertificatesPage from "./pages/certificates/AdherentCertificatesPage";
 import PresencePage from "./pages/presences/PresencePage";
+import AdherentSeancesPage from "./pages/presences/AdherentSeancesPage";
+import ClubFeedbacksPage from "./pages/presences/ClubFeedbacksPage";
 import EventsPage from "./pages/events/EventsPage";
 import ClubEventsRequestsPage from "./pages/events/ClubEventsRequestsPage";
 import CentreEventsRequestsPage from "./pages/events/CentreEventsRequestsPage";
@@ -190,6 +192,14 @@ function App() {
           }
         />
         <Route
+          path="/my-clubs/:clubId/feedbacks"
+          element={
+            <Layout>
+              <ClubFeedbacksPage />
+            </Layout>
+          }
+        />
+        <Route
           path="/my-clubs/:clubId/staff-tasks"
           element={
             <Layout>
@@ -299,6 +309,14 @@ function App() {
           element={
             <Layout>
               <AdherentEventsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/mes-seances"
+          element={
+            <Layout>
+              <AdherentSeancesPage />
             </Layout>
           }
         />
