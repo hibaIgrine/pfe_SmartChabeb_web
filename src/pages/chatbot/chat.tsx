@@ -11,6 +11,7 @@ interface ChatMessage {
 
 interface ChatbotResponse {
   response: string;
+  conversationId: string;
 }
 
 interface StoredConversation {
@@ -20,7 +21,6 @@ interface StoredConversation {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "smartchabeb_chatbot_conversations";
 const MAX_HISTORY = 10;
 
 const quickPrompts = [
@@ -55,32 +55,6 @@ function buildConversationTitle(messages: ChatMessage[]) {
     : firstUserMessage;
 }
 
-function safeParseConversations(rawValue: string | null): StoredConversation[] {
-  if (!rawValue) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(rawValue) as StoredConversation[];
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .filter(
-        (conversation) => conversation && typeof conversation.id === "string",
-      )
-      .map((conversation) => ({
-        ...conversation,
-        messages: Array.isArray(conversation.messages)
-          ? conversation.messages
-          : [],
-      }));
-  } catch {
-    return [];
-  }
-}
-
 const Chat = () => {
   const [conversations, setConversations] = useState<StoredConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<
@@ -94,33 +68,47 @@ const Chat = () => {
   const activeConversationIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const savedConversations = safeParseConversations(
-      localStorage.getItem(STORAGE_KEY),
-    );
+    let isMounted = true;
 
-    setConversations(savedConversations);
+    const loadConversations = async () => {
+      try {
+        const response = await api.get<StoredConversation[]>(
+          "/chatbot/conversations",
+        );
+        if (!isMounted) return;
 
-    if (savedConversations.length > 0) {
-      const latestConversation = [...savedConversations].sort(
-        (left, right) =>
-          new Date(right.updatedAt).getTime() -
-          new Date(left.updatedAt).getTime(),
-      )[0];
+        const savedConversations = Array.isArray(response.data)
+          ? response.data
+          : [];
 
-      setActiveConversationId(latestConversation.id);
-      activeConversationIdRef.current = latestConversation.id;
-      setMessages(latestConversation.messages);
-    }
+        setConversations(savedConversations);
+
+        if (savedConversations.length > 0) {
+          const latestConversation = [...savedConversations].sort(
+            (left, right) =>
+              new Date(right.updatedAt).getTime() -
+              new Date(left.updatedAt).getTime(),
+          )[0];
+
+          setActiveConversationId(latestConversation.id);
+          activeConversationIdRef.current = latestConversation.id;
+          setMessages(latestConversation.messages);
+        } else {
+          setActiveConversationId(null);
+          activeConversationIdRef.current = null;
+          setMessages([]);
+        }
+      } catch (requestError) {
+        console.error("Erreur de chargement des conversations:", requestError);
+      }
+    };
+
+    void loadConversations();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
-
-  useEffect(() => {
-    if (conversations.length === 0) {
-      localStorage.removeItem(STORAGE_KEY);
-      return;
-    }
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
-  }, [conversations]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -188,19 +176,17 @@ const Chat = () => {
     setLoading(true);
     setError(null);
 
-    const conversationId =
-      activeConversationIdRef.current ?? createConversationId();
-    upsertConversation(nextMessages, conversationId);
-
     try {
       const response = await api.post<ChatbotResponse>("/chatbot/ask", {
         message: messageToSend,
+        conversationId: activeConversationIdRef.current ?? undefined,
         history: messages.slice(-MAX_HISTORY),
       });
 
       const botReply =
         response.data.response?.trim() ||
         "Désolé, je n'ai pas pu générer de réponse pour le moment.";
+      const resolvedConversationId = response.data.conversationId;
 
       setMessages((previousMessages) => {
         const nextConversationMessages: ChatMessage[] = [
@@ -208,7 +194,7 @@ const Chat = () => {
           { role: "model", parts: [{ text: botReply }] },
         ];
 
-        upsertConversation(nextConversationMessages, conversationId);
+        upsertConversation(nextConversationMessages, resolvedConversationId);
         return nextConversationMessages;
       });
     } catch (requestError) {
@@ -233,7 +219,6 @@ const Chat = () => {
           },
         ];
 
-        upsertConversation(nextConversationMessages, conversationId);
         return nextConversationMessages;
       });
     } finally {
@@ -253,7 +238,7 @@ const Chat = () => {
                   Assistant Maison des Jeunes
                 </div>
                 <h1 className="text-3xl font-black tracking-tight text-[#1A1C1E] sm:text-4xl">
-                  Chatbot Gemini pour les clubs, activités et séances
+                  Chatbot pour les clubs, activités et séances
                 </h1>
                 <p className="max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
                   Pose tes questions en français ou en derja tunisienne, y
@@ -284,7 +269,7 @@ const Chat = () => {
                       Conversation en direct
                     </p>
                     <p className="text-xs text-slate-500">
-                      Historique sauvegardé sur l'appareil.
+                      Historique sauvegardé sur votre compte.
                     </p>
                   </div>
                 </div>
@@ -411,7 +396,7 @@ const Chat = () => {
                       Historique
                     </p>
                     <p className="text-sm text-slate-500">
-                      Conversations récentes enregistrées localement.
+                      Conversations récentes enregistrées sur le serveur.
                     </p>
                   </div>
 
