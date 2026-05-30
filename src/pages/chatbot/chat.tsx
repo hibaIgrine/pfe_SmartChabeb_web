@@ -26,6 +26,7 @@ const MAX_HISTORY = 10;
 const quickPrompts = [
   "Quels clubs sont actifs en ce moment ?",
   "Quels événements sont prévus cette semaine ?",
+  "Aide-moi à planifier un événement avec une timeline",
   "Propose une roadmap pour une séance de club",
   "Idées d'activités pour animer un club",
   "شنوة الأنشطة المتوفرة اليوم ؟",

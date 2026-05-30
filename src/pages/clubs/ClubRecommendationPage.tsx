@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import api from "../../api/axios";
 import {
-  chooseActivity,
   createSession,
   getRecommendation,
   getSessionRecommendations,
@@ -46,6 +45,7 @@ type SessionRecord = {
   club_id: string;
   num_seance: number;
   activite_actuelle: string;
+  activite_choisie: string | null;
   created_at: string;
 };
 
@@ -390,6 +390,7 @@ export default function ClubRecommendationPage() {
   const [history, setHistory] = useState<Recommendation[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
+  const previousClubIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -469,14 +470,53 @@ export default function ClubRecommendationPage() {
         "—",
       totalMembers,
       nextSessionNumber,
-      previousActivity: latest?.activite_actuelle || "Aucune",
-      activityBeforePrevious: previous?.activite_actuelle || "Aucune",
+      previousActivity: previous?.activite_actuelle || "Aucune",
+      activityBeforePrevious: latest?.activite_actuelle || "Aucune",
+      suggestedNextActivity: latest?.activite_choisie || "",
       month: dateContext.month,
       monthLabel: dateContext.monthLabel,
       dayLabel: dateContext.dayLabel,
       season: dateContext.season,
     };
   }, [dateContext, selectedClub, selectedClubId, sessions]);
+
+  useEffect(() => {
+    if (!selectedClubId) {
+      return;
+    }
+
+    if (previousClubIdRef.current === selectedClubId) {
+      return;
+    }
+
+    previousClubIdRef.current = selectedClubId;
+
+    setForm({
+      ...createEmptyForm(dateContext.suggestedPhase),
+      activite_actuelle: autoContext.suggestedNextActivity || "",
+    });
+  }, [
+    selectedClubId,
+    autoContext.suggestedNextActivity,
+    dateContext.suggestedPhase,
+  ]);
+
+  useEffect(() => {
+    if (!selectedClubId || !autoContext.suggestedNextActivity) {
+      return;
+    }
+
+    setForm((previous) => {
+      if (previous.activite_actuelle) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        activite_actuelle: autoContext.suggestedNextActivity,
+      };
+    });
+  }, [selectedClubId, autoContext.suggestedNextActivity]);
 
   const nbPresents = Number(form.nb_presents || 0);
   const tauxPresence =
@@ -552,8 +592,8 @@ export default function ClubRecommendationPage() {
       format_seance: form.format_seance,
       lieu: autoContext.local,
       duree_minutes: Number(form.duree_minutes || 0),
-      activite_j_minus_2: autoContext.previousActivity,
-      activite_precedente: autoContext.activityBeforePrevious,
+      activite_j_minus_2: autoContext.activityBeforePrevious,
+      activite_precedente: autoContext.previousActivity,
       activite_actuelle: form.activite_actuelle,
       difficulte: form.difficulte,
       niveau_fatigue: form.niveau_fatigue,
@@ -586,15 +626,6 @@ export default function ClubRecommendationPage() {
       );
     } finally {
       setSubmitLoading(false);
-    }
-  };
-
-  const handleChooseActivity = async (recoId: number, activite: string) => {
-    await chooseActivity(recoId, activite);
-    if (currentSession) {
-      await refreshHistory(currentSession.id);
-      const refreshed = await getRecommendation(currentSession.id);
-      setPrediction(refreshed);
     }
   };
 
