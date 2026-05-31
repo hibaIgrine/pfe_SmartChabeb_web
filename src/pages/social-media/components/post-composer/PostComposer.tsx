@@ -185,8 +185,9 @@ export function PostComposer({
         onChange={(event) => setComposerText(event.target.value)}
         placeholder="Quoi de neuf aujourd hui ?"
         rows={4}
-        className="w-full rounded-xl border border-[#d8d1c2] bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#436D75]/30"
+        className="w-full rounded-xl border border-[#d8d1c2] bg-white px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#436D75]/30"
       />
+      <p className="mt-1 text-xs text-gray-500">Ex : post, storie, photo...</p>
 
       <div className="flex items-center justify-between gap-3 rounded-xl border border-[#e7dfcf] bg-white px-3 py-2">
         <p className="text-xs font-black uppercase tracking-[0.12em] text-gray-500">
@@ -591,13 +592,11 @@ export function PostComposer({
       )}
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-500 font-medium">
-          
-        </span>
+        <span className="text-xs text-gray-500 font-medium"></span>
         <button
           type="submit"
           disabled={!canSubmit || submitting}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#E98A7D] px-5 py-2.5 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#db7465]"
+          className="inline-flex items-center gap-2 rounded-xl bg-[#E98A7D] px-4 py-2 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#db7465]"
         >
           <Upload size={15} />
           {submitting

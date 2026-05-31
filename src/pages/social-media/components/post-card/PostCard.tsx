@@ -17,6 +17,7 @@ import type {
 } from "../../../../api/social-media.api";
 import {
   Edit2,
+  CircleUserRound,
   EyeOff,
   FileText,
   Heart,
@@ -172,12 +173,12 @@ export function PostCard({
     [post.media],
   );
   const isOwnPost = Boolean(currentUserId && post.user?.id === currentUserId);
-  const visibilityLabel =
-    post.visibility === "PRIVATE"
-      ? "Prive"
-      : post.visibility === "MASKED"
-        ? "Masque"
-        : "Public";
+  const authorPhotoUrl =
+    typeof post.user?.photo_profil_url === "string" &&
+    post.user.photo_profil_url.trim() !== "" &&
+    post.user.photo_profil_url.trim().toLowerCase() !== "null"
+      ? post.user.photo_profil_url.trim()
+      : "";
   const isFavorite = Boolean(post.is_favorite);
   const favoriteCount = post.favorite_count ?? 0;
 
@@ -747,7 +748,7 @@ export function PostCard({
           ) : (
             <div className="mt-2 space-y-2">
               {comment.parsed.text ? (
-                <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                <p className="text-base text-gray-800 whitespace-pre-wrap">
                   {comment.parsed.text}
                 </p>
               ) : null}
@@ -880,40 +881,51 @@ export function PostCard({
 
   return (
     <>
-      <article className="rounded-2xl border border-[#e7dfcf] bg-white p-5 shadow-sm transition-all">
+      <article className="text-base rounded-2xl border border-[#e7dfcf] bg-white p-5 shadow-sm transition-all">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            {post.user?.id ? (
-              <Link
-                to={`/utilisateurs/${post.user.id}`}
-                className="text-sm font-black text-[#436D75] hover:underline"
-              >
-                {post.user?.nom} {post.user?.prenom}
-              </Link>
-            ) : (
-              <h3 className="text-sm font-black text-[#436D75]">
-                {post.user?.nom} {post.user?.prenom}
-              </h3>
-            )}
-            {post.location ? (
-              <div className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-[#f8f1e9] px-3 py-1 text-xs font-semibold text-[#8a5d2a]">
-                <MapPin size={14} />
-                {post.location}
-              </div>
-            ) : null}
-            <p className="text-xs text-gray-400 font-medium">
-              {new Date(post.created_at).toLocaleString("fr-FR")}
-            </p>
-            <span className="mt-1 inline-flex rounded-full bg-[#f0f4f7] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-[#4b6c79]">
-              {visibilityLabel}
-            </span>
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#dde6e8] bg-[#f1f4f5] text-[#a1a9ae]">
+              {authorPhotoUrl ? (
+                <img
+                  src={authorPhotoUrl}
+                  alt={`${post.user?.nom ?? "Utilisateur"} ${post.user?.prenom ?? ""}`.trim()}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <CircleUserRound size={24} strokeWidth={1.8} />
+              )}
+            </div>
+
+            <div>
+              {post.user?.id ? (
+                <Link
+                  to={`/utilisateurs/${post.user.id}`}
+                  className="text-base font-black text-[#436D75] hover:underline"
+                >
+                  {post.user?.nom} {post.user?.prenom}
+                </Link>
+              ) : (
+                <h3 className="text-base font-black text-[#436D75]">
+                  {post.user?.nom} {post.user?.prenom}
+                </h3>
+              )}
+              {post.location ? (
+                <div className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-[#f8f1e9] px-3 py-1 text-sm font-semibold text-[#8a5d2a]">
+                  <MapPin size={14} />
+                  {post.location}
+                </div>
+              ) : null}
+              <p className="text-sm text-gray-400 font-medium">
+                {new Date(post.created_at).toLocaleString("fr-FR")}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {onToggleFavorite && (
               <button
                 type="button"
                 onClick={() => onToggleFavorite(post.id, isFavorite)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-bold transition-colors ${
                   isFavorite
                     ? "border-[#ef8f84] bg-[#fff1ef] text-[#c65142] hover:bg-[#ffe7e3]"
                     : "border-[#d8d1c2] text-[#7a6a58] hover:bg-[#f7f3e9]"
@@ -930,7 +942,7 @@ export function PostCard({
               <button
                 type="button"
                 onClick={() => onHideAuthor(post.user.id)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#d8d1c2] px-3 py-1 text-xs font-bold text-[#7a6a58] hover:bg-[#f7f3e9]"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#d8d1c2] px-3 py-1.5 text-sm font-bold text-[#7a6a58] hover:bg-[#f7f3e9]"
                 title="Masquer cette personne"
               >
                 <EyeOff size={13} />
@@ -941,7 +953,7 @@ export function PostCard({
               <button
                 type="button"
                 onClick={() => onEdit(post)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#d8d1c2] px-3 py-1 text-xs font-bold text-[#436D75] hover:bg-[#f7f3e9]"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#d8d1c2] px-3 py-1.5 text-sm font-bold text-[#436D75] hover:bg-[#f7f3e9]"
               >
                 <Edit2 size={13} />
                 Modifier
@@ -960,7 +972,7 @@ export function PostCard({
         </div>
 
         {parsedSharedPost.messageText ? (
-          <p className="mt-3 text-sm text-gray-800 whitespace-pre-wrap">
+          <p className="mt-3 text-lg text-gray-800 whitespace-pre-wrap">
             {parsedSharedPost.messageText}
           </p>
         ) : null}
@@ -973,7 +985,7 @@ export function PostCard({
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#9b7d54]">
               Message partagé
             </p>
-            <p className="mt-0.5 text-xs font-medium text-[#7a6345]">
+            <p className="mt-0.5 text-sm font-medium text-[#7a6345]">
               {parsedSharedPost.shared.author}
             </p>
             {parsedSharedPost.shared.location ? (
@@ -983,7 +995,7 @@ export function PostCard({
               </div>
             ) : null}
             {parsedSharedPost.shared.content ? (
-              <p className="mt-1.5 text-xs text-[#4a4035] whitespace-pre-wrap break-words leading-relaxed">
+              <p className="mt-1.5 text-sm text-[#4a4035] whitespace-pre-wrap break-words leading-relaxed">
                 {parsedSharedPost.shared.content}
               </p>
             ) : null}
@@ -1001,7 +1013,7 @@ export function PostCard({
             {post.mentions.map((mention) => (
               <span
                 key={`${post.id}-${mention.mentioned_user.id}`}
-                className="rounded-full bg-[#edf6fb] px-2.5 py-1 text-xs font-semibold text-[#2f6f8b]"
+                className="rounded-full bg-[#edf6fb] px-2.5 py-1 text-sm font-semibold text-[#2f6f8b]"
               >
                 @{mention.mentioned_user.nom}_{mention.mentioned_user.prenom}
               </span>
@@ -1014,7 +1026,7 @@ export function PostCard({
             {post.hashtags.map((item) => (
               <span
                 key={`${post.id}-${item.hashtag}`}
-                className="rounded-full bg-[#f4f0ff] px-2.5 py-1 text-xs font-semibold text-[#6457a2]"
+                className="rounded-full bg-[#f4f0ff] px-2.5 py-1 text-sm font-semibold text-[#6457a2]"
               >
                 #{item.hashtag}
               </span>

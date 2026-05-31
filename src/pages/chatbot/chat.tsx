@@ -228,20 +228,20 @@ const Chat = () => {
   };
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top_left,_rgba(67,109,117,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(233,138,125,0.18),_transparent_28%),linear-gradient(180deg,_#f7f3e9_0%,_#eef4ef_100%)] p-4 sm:p-6">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-        <section className="overflow-hidden rounded-[2rem] border border-white/80 bg-white/75 shadow-[0_24px_80px_rgba(34,51,48,0.12)] backdrop-blur-xl">
-          <div className="border-b border-[#dbe7e2] bg-[linear-gradient(135deg,_rgba(67,109,117,0.1),_rgba(233,138,125,0.1))] px-5 py-4 sm:px-6">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className="h-full min-h-0 bg-[radial-gradient(circle_at_top_left,_rgba(67,109,117,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(233,138,125,0.18),_transparent_28%),linear-gradient(180deg,_#f7f3e9_0%,_#eef4ef_100%)] p-2 sm:p-3 lg:p-4">
+      <div className="flex h-full min-h-0 w-full flex-col gap-2 sm:gap-3">
+        <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/78 shadow-[0_18px_50px_rgba(34,51,48,0.10)] backdrop-blur-xl">
+          <div className="border-b border-[#dbe7e2] bg-[linear-gradient(135deg,_rgba(67,109,117,0.08),_rgba(233,138,125,0.08))] px-4 py-3 sm:px-5 sm:py-4">
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#436D75]/15 bg-white px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.25em] text-[#436D75] shadow-sm">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#436D75]/15 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#436D75] shadow-sm">
                   <Sparkles size={14} />
                   Assistant Maison des Jeunes
                 </div>
-                <h1 className="text-3xl font-black tracking-tight text-[#1A1C1E] sm:text-4xl">
+                <h1 className="text-2xl font-black tracking-tight text-[#1A1C1E] sm:text-3xl">
                   Chatbot pour les clubs, activités et séances
                 </h1>
-                <p className="max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
+                <p className="max-w-3xl text-sm leading-5 text-slate-600 sm:text-[15px]">
                   Pose tes questions en français ou en derja tunisienne, y
                   compris pour des idées d'animation ou une roadmap de séance.
                 </p>
@@ -258,9 +258,9 @@ const Chat = () => {
             </div>
           </div>
 
-          <div className="grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
-            <div className="border-b border-[#e7eee9] lg:border-b-0 lg:border-r">
-              <div className="flex items-center justify-between border-b border-[#e7eee9] px-5 py-3 sm:px-6">
+          <div className="grid flex-1 min-h-0 gap-0 lg:grid-cols-[1.4fr_0.6fr]">
+            <div className="flex min-h-0 flex-col border-b border-[#e7eee9] lg:border-b-0 lg:border-r">
+              <div className="flex items-center justify-between border-b border-[#e7eee9] px-4 py-3 sm:px-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#436D75] text-white shadow-lg shadow-[#436D75]/20">
                     <Bot size={20} />
@@ -281,9 +281,9 @@ const Chat = () => {
                 </div>
               </div>
 
-              <div className="max-h-[62vh] min-h-[24rem] space-y-4 overflow-y-auto px-4 py-5 sm:px-6">
+              <div className="flex-1 min-h-0 space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
                 {messages.length === 0 ? (
-                  <div className="flex h-full min-h-[22rem] flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-[#d6e2db] bg-[linear-gradient(135deg,_rgba(255,255,255,0.95),_rgba(247,243,233,0.8))] px-6 py-10 text-center">
+                  <div className="flex h-full min-h-[18rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-[#d6e2db] bg-[linear-gradient(135deg,_rgba(255,255,255,0.95),_rgba(247,243,233,0.8))] px-6 py-8 text-center">
                     <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-[#436D75] text-white shadow-xl shadow-[#436D75]/20">
                       <Zap size={28} />
                     </div>
@@ -351,7 +351,7 @@ const Chat = () => {
                 )}
               </div>
 
-              <div className="border-t border-[#e7eee9] bg-white/80 px-4 py-4 sm:px-6">
+              <div className="sticky bottom-0 border-t border-[#e7eee9] bg-white/85 px-4 py-3 sm:px-5">
                 <div className="flex flex-col gap-3 rounded-[1.5rem] border border-[#d6e2db] bg-white p-3 shadow-sm sm:flex-row sm:items-center">
                   <textarea
                     value={input}
@@ -365,8 +365,8 @@ const Chat = () => {
                       }
                     }}
                     placeholder="Écris ta question sur les clubs, activités ou une roadmap de séance..."
-                    rows={3}
-                    className="min-h-[5.5rem] min-w-0 flex-1 resize-none rounded-2xl border border-transparent bg-[#f7faf8] px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#436D75]/20 focus:bg-white"
+                    rows={2}
+                    className="min-h-[4.5rem] min-w-0 flex-1 resize-none rounded-2xl border border-transparent bg-[#f7faf8] px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#436D75]/20 focus:bg-white"
                   />
                   <button
                     type="button"
@@ -389,14 +389,14 @@ const Chat = () => {
               </div>
             </div>
 
-            <aside className="bg-[linear-gradient(180deg,_rgba(67,109,117,0.06),_rgba(233,138,125,0.06))] p-5 sm:p-6">
-              <div className="rounded-[1.75rem] border border-white/80 bg-white/85 p-5 shadow-sm backdrop-blur">
+            <aside className="flex min-h-0 flex-col bg-[linear-gradient(180deg,_rgba(67,109,117,0.04),_rgba(233,138,125,0.04))] p-3 sm:p-4">
+              <div className="flex h-full min-h-0 flex-col rounded-[1.35rem] border border-white/80 bg-white/85 p-4 shadow-sm backdrop-blur">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-black uppercase tracking-[0.2em] text-[#355860]">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#355860]">
                       Historique
                     </p>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-xs text-slate-500">
                       Conversations récentes enregistrées sur le serveur.
                     </p>
                   </div>
@@ -410,7 +410,7 @@ const Chat = () => {
                   </button>
                 </div>
 
-                <div className="mt-5 max-h-[34rem] space-y-3 overflow-y-auto pr-1">
+                <div className="mt-4 flex-1 min-h-0 space-y-3 overflow-y-auto pr-1">
                   {conversations.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-[#d6e2db] bg-[#f8fbf9] px-4 py-4 text-sm text-slate-500">
                       Aucune conversation sauvegardée.

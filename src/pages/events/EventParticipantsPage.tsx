@@ -141,8 +141,8 @@ export default function EventParticipantsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm p-5 xl:col-span-1">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.4fr)] gap-6 items-start">
+        <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm p-5 xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto xl:self-start">
           <h3 className="text-lg font-black italic text-smart-teal mb-4">
             Événements
           </h3>
@@ -178,7 +178,7 @@ export default function EventParticipantsPage() {
           )}
         </div>
 
-        <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm p-5 xl:col-span-2 space-y-4">
+        <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm p-5 space-y-4 xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto xl:self-start">
           <h3 className="text-lg font-black italic text-smart-teal mb-1">
             Participants
           </h3>

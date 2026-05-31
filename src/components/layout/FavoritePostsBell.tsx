@@ -7,6 +7,7 @@ import {
   fetchFavoritePostsCount,
   type Publication,
 } from "../../api/social-media.api";
+import { parseSharedPostContent } from "../../pages/social-media/components/post-card/shared-post-content";
 
 function formatRelativeDate(value: string) {
   const date = new Date(value);
@@ -24,12 +25,32 @@ function formatRelativeDate(value: string) {
 }
 
 function getPostPreviewText(post: Publication) {
-  const text = (post.content ?? "").trim();
-  if (!text) {
+  const parsed = parseSharedPostContent(post.content ?? "");
+  const text = parsed.messageText.trim();
+
+  if (text) {
+    return text.length > 82 ? `${text.slice(0, 82)}...` : text;
+  }
+
+  if (parsed.shared) {
+    const sharedText = parsed.shared.content.trim();
+    if (sharedText) {
+      return sharedText.length > 82
+        ? `${sharedText.slice(0, 82)}...`
+        : sharedText;
+    }
+
+    return `Publication partagee de ${parsed.shared.author}`;
+  }
+
+  const fallbackText = (post.content ?? "").trim();
+  if (!fallbackText) {
     return "Publication sans texte";
   }
 
-  return text.length > 82 ? `${text.slice(0, 82)}...` : text;
+  return fallbackText.length > 82
+    ? `${fallbackText.slice(0, 82)}...`
+    : fallbackText;
 }
 
 export function FavoritePostsBell() {

@@ -11,6 +11,8 @@ import {
   Award,
 } from "lucide-react";
 import api from "../../api/axios";
+// navigation not needed; modal is used for details
+import EventDetailsModal from "./components/EventDetailsModal";
 import type { EventItem, EventDetail } from "./types";
 import { formatDateOnly, toTimeHHMM } from "./utils";
 import CertificateModal from "./components/CertificateModal";
@@ -216,6 +218,13 @@ export default function AdherentEventsPage() {
     }
   };
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const openModalForEvent = async (eventId: string) => {
+    await loadEventDetail(eventId);
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="space-y-6 pb-8">
       {notification && (
@@ -291,11 +300,11 @@ export default function AdherentEventsPage() {
                     className={`p-5 transition cursor-pointer ${
                       isSelected ? "bg-[#D9E8D1]/25" : "hover:bg-gray-50"
                     }`}
-                    onClick={() => loadEventDetail(event.id)}
+                    onClick={() => void openModalForEvent(event.id)}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <h3 className="text-lg font-black italic text-smart-teal mb-2">
+                        <h3 className="text-base font-black italic text-smart-teal mb-2">
                           {event.nom}
                         </h3>
                         <p className="text-xs text-gray-500 mb-3 font-semibold">
@@ -338,7 +347,7 @@ export default function AdherentEventsPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          loadEventDetail(event.id);
+                          void openModalForEvent(event.id);
                         }}
                         className="p-2 rounded-xl bg-gray-100 text-gray-600 hover:bg-[#436D75] hover:text-white transition"
                         title="Voir détails"
@@ -694,6 +703,37 @@ export default function AdherentEventsPage() {
         participantName={certificateData?.participantName}
         eventName={selectedEvent?.nom}
         onClose={() => setIsCertificateModalOpen(false)}
+      />
+
+      <EventDetailsModal
+        isOpen={isModalOpen}
+        selectedDetail={selectedEvent}
+        onClose={() => setIsModalOpen(false)}
+        onRequestParticipation={(eventId) =>
+          void handleRequestParticipation(eventId)
+        }
+        onCancelParticipation={(eventId) =>
+          void handleCancelParticipation(eventId)
+        }
+        isActionLoading={isActionLoading}
+        onSubmitFeedback={(eventId, note, commentaire) =>
+          void handleSubmitFeedback(eventId, note, commentaire)
+        }
+        isSubmittingFeedback={isSubmittingFeedback}
+        onSelfCheckin={async (eventId: string) => {
+          try {
+            await api.patch(
+              `/events/${eventId}/participants/me/checkin`,
+              {},
+              { headers },
+            );
+            showAlert("Votre présence a été enregistrée!", "success");
+            await loadEventDetail(eventId);
+            await loadEvents();
+          } catch {
+            showAlert("Check-in impossible.", "error");
+          }
+        }}
       />
     </div>
   );

@@ -133,7 +133,7 @@ export default function EventWaitingListPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-5 xl:max-h-[calc(100vh-12rem)] xl:overflow-y-auto xl:pr-1">
           {waitingEvents.map(({ event, confirmedCount, waitingList }) => (
             <div
               key={event.id}

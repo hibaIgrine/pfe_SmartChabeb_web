@@ -120,6 +120,7 @@ export default function ClubEventsRequestsPage() {
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [managedClubs, setManagedClubs] = useState<ClubLite[]>([]);
+  const [centreClubs, setCentreClubs] = useState<ClubLite[]>([]);
   const [events, setEvents] = useState<RequestItem[]>([]);
   const [locaux, setLocaux] = useState<LocalLite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -194,13 +195,19 @@ export default function ClubEventsRequestsPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [profileRes, managedClubsRes, eventsRes, locauxRes] =
-        await Promise.all([
-          api.get("/users/me/profile", { headers }),
-          api.get("/presences/my-clubs", { headers }),
-          api.get("/event-request-creations/me", { headers }),
-          api.get("/locaux", { headers }),
-        ]);
+      const [
+        profileRes,
+        managedClubsRes,
+        centreClubsRes,
+        eventsRes,
+        locauxRes,
+      ] = await Promise.all([
+        api.get("/users/me/profile", { headers }),
+        api.get("/presences/my-clubs", { headers }),
+        api.get("/clubs/my-centre", { headers }),
+        api.get("/event-request-creations/me", { headers }),
+        api.get("/locaux", { headers }),
+      ]);
 
       const profile = profileRes.data as UserProfile;
       const profileClubs = Array.isArray(profileRes.data?.clubs_diriges)
@@ -208,6 +215,12 @@ export default function ClubEventsRequestsPage() {
         : [];
       const managedClubs = Array.isArray(managedClubsRes.data)
         ? (managedClubsRes.data as ClubLite[])
+        : [];
+      const centrePayload = centreClubsRes.data as {
+        clubs?: ClubLite[];
+      } | null;
+      const centreClubsList = Array.isArray(centrePayload?.clubs)
+        ? centrePayload!.clubs!
         : [];
       const clubs = managedClubs.length > 0 ? managedClubs : profileClubs;
       const allEvents = Array.isArray(eventsRes.data)
@@ -219,6 +232,7 @@ export default function ClubEventsRequestsPage() {
 
       setUser(profile);
       setManagedClubs(clubs);
+      setCentreClubs(centreClubsList);
       setEvents(allEvents);
       setLocaux(allLocaux);
 
@@ -468,9 +482,7 @@ export default function ClubEventsRequestsPage() {
                 Centre du club actif
               </p>
               <p className="mt-2 text-sm font-bold text-[#244047]">
-                {selectedClubContext?.id_centre ||
-                  activeCentreId ||
-                  "Non défini"}
+                {selectedClubContext ? "Centre associé" : "Non défini"}
               </p>
             </div>
 
@@ -571,6 +583,31 @@ export default function ClubEventsRequestsPage() {
                             </p>
                           </div>
 
+                          {Array.isArray(event.timeline) &&
+                            event.timeline.length > 0 && (
+                              <div className="mt-2">
+                                <p className="text-[11px] uppercase tracking-[0.18em] font-black text-gray-400">
+                                  Timeline
+                                </p>
+                                <ul className="mt-2 text-sm text-gray-700 space-y-1">
+                                  {(event.timeline as any[]).map((step, i) => (
+                                    <li
+                                      key={i}
+                                      className="flex items-start gap-3"
+                                    >
+                                      <span className="font-mono text-xs text-gray-500 w-[80px]">
+                                        {step.start_time || "--:--"} -{" "}
+                                        {step.end_time || "--:--"}
+                                      </span>
+                                      <span className="font-medium">
+                                        {step.title || "(Sans titre)"}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
                           <div className="flex flex-wrap gap-4 text-xs font-bold text-gray-500">
                             <span className="inline-flex items-center gap-2">
                               <CalendarDays size={14} />{" "}
@@ -624,7 +661,7 @@ export default function ClubEventsRequestsPage() {
           editingEvent={null}
           isAdmin={false}
           form={form}
-          clubs={managedClubs}
+          clubs={centreClubs.length > 0 ? centreClubs : managedClubs}
           filteredLocaux={filteredLocaux}
           gouvernorats={[]}
           centresByGouvernorat={[]}

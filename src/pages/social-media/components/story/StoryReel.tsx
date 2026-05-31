@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Plus } from "lucide-react";
 import {
   fetchStoriesByUser,
@@ -62,6 +62,7 @@ export function StoryReel({ currentUserId, onStoryCreated }: StoryReelProps) {
   const [myStories, setMyStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const showUploadModalRef = useRef(false);
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
 
@@ -88,13 +89,22 @@ export function StoryReel({ currentUserId, onStoryCreated }: StoryReelProps) {
   };
 
   useEffect(() => {
+    // Start by loading stories once. While the upload modal is open we
+    // avoid refreshing the list to prevent interrupting in-progress
+    // story creation (which would reset file inputs / previews).
     void loadStories();
     const interval = setInterval(() => {
+      // Respect current modal state; skip refresh while user is composing.
+      if (showUploadModalRef.current) return;
       void loadStories();
     }, 30000);
 
     return () => clearInterval(interval);
   }, [currentUserId]);
+
+  useEffect(() => {
+    showUploadModalRef.current = showUploadModal;
+  }, [showUploadModal]);
 
   const handleStoryCreated = () => {
     setShowUploadModal(false);

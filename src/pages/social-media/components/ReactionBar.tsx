@@ -122,9 +122,9 @@ export function ReactionBar({
             return (
               <div
                 key={type}
-                className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs gap-1"
+                className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1.5 text-sm gap-2"
               >
-                <span className="text-sm">{REACTION_EMOJIS[type]}</span>
+                <span className="text-xl">{REACTION_EMOJIS[type]}</span>
                 <span className="font-medium text-gray-700">{count}</span>
               </div>
             );
@@ -143,7 +143,7 @@ export function ReactionBar({
             <button
               type="button"
               onClick={handleRemoveReaction}
-              className="relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 font-medium text-sm transition-colors bg-blue-50 text-blue-700 hover:bg-blue-100"
+              className="relative inline-flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-base transition-colors bg-blue-50 text-blue-700 hover:bg-blue-100"
               title={`${REACTION_LABELS[userReaction]} - cliquez pour retirer`}
             >
               <span className="text-lg">{REACTION_EMOJIS[userReaction]}</span>
@@ -157,7 +157,7 @@ export function ReactionBar({
             <button
               type="button"
               onClick={() => handleReactionSelect("like")}
-              className={`relative inline-flex items-center gap-2 rounded-lg px-3 py-1.5 font-medium text-sm transition-colors ${
+              className={`relative inline-flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-base transition-colors ${
                 userReaction === "like"
                   ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
                   : "bg-gray-50 text-gray-700 hover:bg-gray-100"
@@ -178,14 +178,14 @@ export function ReactionBar({
           <button
             type="button"
             onClick={onCommentClick}
-            className={`justify-self-center rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+            className={`justify-self-center rounded-full px-4 py-2 text-base font-semibold transition-colors ${
               commentsOpen
                 ? "bg-[#f7f3e9] text-[#2f5560]"
                 : "text-[#436D75] hover:bg-[#f7f3e9]"
             }`}
           >
-            <span className="inline-flex items-center gap-1.5">
-              <MessageCircle size={16} />
+            <span className="inline-flex items-center gap-2">
+              <MessageCircle size={18} />
               Commentaire ({commentCount})
             </span>
           </button>
@@ -197,10 +197,10 @@ export function ReactionBar({
           <button
             type="button"
             onClick={onShareClick}
-            className="justify-self-end rounded-full px-4 py-1.5 text-sm font-semibold text-[#436D75] hover:bg-[#f7f3e9] transition-colors"
+            className="justify-self-end rounded-full px-4 py-2 text-base font-semibold text-[#436D75] hover:bg-[#f7f3e9] transition-colors"
           >
-            <span className="inline-flex items-center gap-1.5">
-              <Share2 size={16} />
+            <span className="inline-flex items-center gap-2">
+              <Share2 size={18} />
               Partager
             </span>
           </button>

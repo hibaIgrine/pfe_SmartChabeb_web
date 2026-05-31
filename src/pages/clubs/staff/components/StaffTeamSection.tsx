@@ -39,14 +39,14 @@ export function StaffTeamSection({
 
   return (
     <section className="bg-white border border-gray-100 rounded-[32px] p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-black text-smart-teal">Equipe du club</h2>
           <p className="text-sm text-gray-500">
             Gérer les rôles et l'état actif du personnel du club.
           </p>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-full bg-smart-sage/10 px-4 py-2 text-[11px] uppercase tracking-[0.35em] font-black text-smart-teal">
+        <div className="inline-flex items-center gap-2 self-start rounded-full bg-smart-sage/10 px-4 py-2 text-[11px] uppercase tracking-[0.35em] font-black text-smart-teal sm:self-auto">
           <Users size={14} /> {staffCount} membre(s)
         </div>
       </div>
@@ -115,7 +115,7 @@ export function StaffTeamSection({
                     </div>
                   </div>
 
-                  <div className="relative flex items-center justify-start gap-2 md:justify-end">
+                  <div className="relative grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-start md:justify-end">
                     <button
                       type="button"
                       disabled={isInactive || !utilisateurId}
@@ -124,7 +124,7 @@ export function StaffTeamSection({
                           prev === item.id ? null : item.id,
                         )
                       }
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-smart-teal transition hover:border-smart-teal hover:bg-smart-teal/5 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                      className="inline-flex h-9 w-9 items-center justify-center justify-self-start rounded-lg border border-gray-200 bg-white text-smart-teal transition hover:border-smart-teal hover:bg-smart-teal/5 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                       title="Choisir un rôle"
                       aria-label="Choisir un rôle"
                     >
@@ -133,8 +133,14 @@ export function StaffTeamSection({
 
                     <button
                       type="button"
-                      onClick={() => onUpdateStaffRole(utilisateurId, selectedRoleValue)}
-                      disabled={updatingStaffRoleId === utilisateurId || isInactive || !utilisateurId}
+                      onClick={() =>
+                        onUpdateStaffRole(utilisateurId, selectedRoleValue)
+                      }
+                      disabled={
+                        updatingStaffRoleId === utilisateurId ||
+                        isInactive ||
+                        !utilisateurId
+                      }
                       title="Mettre à jour le rôle"
                       aria-label="Mettre à jour le rôle"
                       className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-smart-teal text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
@@ -164,13 +170,23 @@ export function StaffTeamSection({
                         type="button"
                         onClick={() => onToggleStaffActive(item.id, isInactive)}
                         disabled={updatingStaffActiveId === item.id}
-                        title={isInactive ? "Activer le staff" : "Désactiver le staff"}
-                        aria-label={isInactive ? "Activer le staff" : "Désactiver le staff"}
+                        title={
+                          isInactive
+                            ? "Activer le staff"
+                            : "Désactiver le staff"
+                        }
+                        aria-label={
+                          isInactive
+                            ? "Activer le staff"
+                            : "Désactiver le staff"
+                        }
                         className={`inline-flex h-9 w-9 items-center justify-center rounded-lg transition disabled:opacity-40 ${isInactive ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-700 hover:bg-red-200"}`}
                       >
-                        {updatingStaffActiveId === item.id
-                          ? <span className="text-xs font-black">...</span>
-                          : <Power size={15} />}
+                        {updatingStaffActiveId === item.id ? (
+                          <span className="text-xs font-black">...</span>
+                        ) : (
+                          <Power size={15} />
+                        )}
                       </button>
                     ) : null}
 

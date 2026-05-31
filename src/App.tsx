@@ -44,6 +44,7 @@ import EventParticipantsPage from "./pages/events/EventParticipantsPage";
 import EventWaitingListPage from "./pages/events/EventWaitingListPage";
 import EventsManagerPage from "./pages/events/EventsManagerPage";
 import AdherentEventsPage from "./pages/events/AdherentEventsPage";
+import EventDetailsPage from "./pages/events/EventDetailsPage";
 import ProfileGamificationPage from "./pages/profile/ProfileGamificationPage";
 import MyProfilePage from "./pages/profile/MyProfilePage";
 import UserProfilePage from "./pages/profile/UserProfilePage";
@@ -309,6 +310,14 @@ function App() {
           element={
             <Layout>
               <AdherentEventsPage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/events/:id"
+          element={
+            <Layout>
+              <EventDetailsPage />
             </Layout>
           }
         />

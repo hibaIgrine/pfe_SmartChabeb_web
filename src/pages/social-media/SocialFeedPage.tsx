@@ -1,6 +1,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { X } from "lucide-react";
 import { FeedHeader, FeedList, PostComposer } from "./components";
 import { useSocialFeed } from "./hooks/useSocialFeed";
 import { OriginalPostModal } from "./components/post-card/OriginalPostModal";
@@ -21,6 +22,19 @@ export default function SocialFeedPage() {
   useEffect(() => {
     setOriginalPostId(targetPostId ?? null);
   }, [targetPostId]);
+
+  useEffect(() => {
+    if (!feed.editingPostId) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [feed.editingPostId]);
 
   const handleCloseOriginalPostModal = () => {
     setOriginalPostId(null);
@@ -44,6 +58,8 @@ export default function SocialFeedPage() {
     void feed.publish();
   };
 
+  const isEditingPost = Boolean(feed.editingPostId);
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <FeedHeader
@@ -54,34 +70,94 @@ export default function SocialFeedPage() {
 
       <StoryReel currentUserId={feed.me?.id} onStoryCreated={feed.loadFeed} />
 
-      <PostComposer
-        composerText={feed.composerText}
-        draftMediaItems={feed.draftMediaItems}
-        location={feed.location}
-        visibility={feed.visibility}
-        mentions={feed.mentions}
-        hiddenUsers={feed.hiddenUsers}
-        hashtagInput={feed.hashtagInput}
-        hashtags={feed.hashtags}
-        mentionUsers={feed.mentionUsers}
-        canSubmit={feed.canSubmit}
-        submitting={feed.submitting}
-        onSubmit={onSubmit}
-        setComposerText={feed.setComposerText}
-        setLocation={feed.setLocation}
-        setVisibility={feed.setVisibility}
-        setHashtagInput={feed.setHashtagInput}
-        onAddMediaFile={feed.addMediaFile}
-        onRemoveMediaLine={feed.removeMediaLine}
-        onAddMentionById={feed.addMentionById}
-        onRemoveMention={feed.removeMention}
-        onAddHiddenUserById={feed.addHiddenUserById}
-        onRemoveHiddenUser={feed.removeHiddenUser}
-        onAddHashtag={feed.addHashtag}
-        onRemoveHashtag={feed.removeHashtag}
-        isEditing={Boolean(feed.editingPostId)}
-        onCancelEdit={feed.cancelEdit}
-      />
+      {!isEditingPost ? (
+        <PostComposer
+          composerText={feed.composerText}
+          draftMediaItems={feed.draftMediaItems}
+          location={feed.location}
+          visibility={feed.visibility}
+          mentions={feed.mentions}
+          hiddenUsers={feed.hiddenUsers}
+          hashtagInput={feed.hashtagInput}
+          hashtags={feed.hashtags}
+          mentionUsers={feed.mentionUsers}
+          canSubmit={feed.canSubmit}
+          submitting={feed.submitting}
+          onSubmit={onSubmit}
+          setComposerText={feed.setComposerText}
+          setLocation={feed.setLocation}
+          setVisibility={feed.setVisibility}
+          setHashtagInput={feed.setHashtagInput}
+          onAddMediaFile={feed.addMediaFile}
+          onRemoveMediaLine={feed.removeMediaLine}
+          onAddMentionById={feed.addMentionById}
+          onRemoveMention={feed.removeMention}
+          onAddHiddenUserById={feed.addHiddenUserById}
+          onRemoveHiddenUser={feed.removeHiddenUser}
+          onAddHashtag={feed.addHashtag}
+          onRemoveHashtag={feed.removeHashtag}
+          isEditing={false}
+          onCancelEdit={feed.cancelEdit}
+        />
+      ) : null}
+
+      {isEditingPost ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
+          <div className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl border border-[#e7dfcf] bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#efe9db] px-5 py-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.15em] text-gray-400">
+                  Modifier la publication
+                </p>
+                <p className="text-sm text-gray-500">
+                  Modifiez le contenu, les medias et la visibilite sans quitter
+                  le feed.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={feed.cancelEdit}
+                className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+                aria-label="Fermer"
+                title="Fermer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-5">
+              <PostComposer
+                composerText={feed.composerText}
+                draftMediaItems={feed.draftMediaItems}
+                location={feed.location}
+                visibility={feed.visibility}
+                mentions={feed.mentions}
+                hiddenUsers={feed.hiddenUsers}
+                hashtagInput={feed.hashtagInput}
+                hashtags={feed.hashtags}
+                mentionUsers={feed.mentionUsers}
+                canSubmit={feed.canSubmit}
+                submitting={feed.submitting}
+                onSubmit={onSubmit}
+                setComposerText={feed.setComposerText}
+                setLocation={feed.setLocation}
+                setVisibility={feed.setVisibility}
+                setHashtagInput={feed.setHashtagInput}
+                onAddMediaFile={feed.addMediaFile}
+                onRemoveMediaLine={feed.removeMediaLine}
+                onAddMentionById={feed.addMentionById}
+                onRemoveMention={feed.removeMention}
+                onAddHiddenUserById={feed.addHiddenUserById}
+                onRemoveHiddenUser={feed.removeHiddenUser}
+                onAddHashtag={feed.addHashtag}
+                onRemoveHashtag={feed.removeHashtag}
+                isEditing
+                onCancelEdit={feed.cancelEdit}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {feed.error && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

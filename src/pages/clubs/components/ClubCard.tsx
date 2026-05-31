@@ -244,7 +244,7 @@ export const ClubCard = ({
               )}
             </button>
           )}
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <button
               onClick={() => onViewRequests(club)}
               className="px-4 py-3 bg-smart-teal text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition hover:bg-black"

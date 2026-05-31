@@ -51,6 +51,9 @@ export default function EventsPage() {
     useState<EventDashboardStats | null>(null);
 
   const [showInactive, setShowInactive] = useState(true);
+  const [eventFilter, setEventFilter] = useState<"upcoming" | "past" | "all">(
+    "upcoming",
+  );
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<EventDetail | null>(
     null,
@@ -92,6 +95,21 @@ export default function EventsPage() {
       return relatedIds.some((clubId) => clubIds.has(clubId));
     });
   }, [events, isResponsableCentre, resolvedCentreId, scopedClubs]);
+
+  const visibleEvents = useMemo(() => {
+    const filtered = scopedEvents.filter((event) => {
+      if (eventFilter === "all") return true;
+      const eventDate = event.date_event?.split("T")[0] ?? event.date_event;
+      if (eventFilter === "upcoming") return eventDate >= today;
+      return eventDate < today;
+    });
+
+    return [...filtered].sort((a, b) => {
+      const dateCompare = b.date_event.localeCompare(a.date_event);
+      if (dateCompare !== 0) return dateCompare;
+      return b.start_time.localeCompare(a.start_time);
+    });
+  }, [scopedEvents, eventFilter, today]);
 
   const scopedDashboardStats = useMemo(() => {
     if (!dashboardStats || !isResponsableCentre) return dashboardStats;
@@ -243,6 +261,18 @@ export default function EventsPage() {
       setSelectedDetail(null);
     }
   }, [selectedEventId, scopedEvents]);
+
+  useEffect(() => {
+    if (!selectedEventId) return;
+
+    const stillVisible = visibleEvents.some(
+      (event) => event.id === selectedEventId,
+    );
+    if (!stillVisible) {
+      setSelectedEventId(null);
+      setSelectedDetail(null);
+    }
+  }, [selectedEventId, visibleEvents]);
 
   useEffect(() => {
     if (!isAdmin || !selectedClubContextId) return;
@@ -653,30 +683,59 @@ export default function EventsPage() {
         isLoading={isLoading}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <EventsList
-          isLoading={isLoading}
-          events={scopedEvents}
-          selectedEventId={selectedEventId}
-          onView={loadDetail}
-          onPresence={openPresence}
-          onEdit={openEditModal}
-          onToggleActive={toggleActive}
-          onCancel={openCancelConfirmation}
-        />
-
-        <EventDetailsPanel
-          selectedDetail={selectedDetail}
-          canManageParticipants={canManageParticipants}
-          onUpdateParticipantStatus={updateParticipantStatus}
-          onToggleCheckin={toggleParticipantCheckin}
-          onSelfCheckin={selfCheckin}
-          onSubmitFeedback={submitFeedback}
-          isSubmittingFeedback={isSubmittingFeedback}
-        />
+      <div className="flex flex-wrap items-center gap-2 rounded-[28px] border border-gray-100 bg-white shadow-sm p-4">
+        <span className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mr-2">
+          Filtrer les événements
+        </span>
+        {(
+          [
+            ["upcoming", "À venir"],
+            ["past", "Passés"],
+            ["all", "Tous"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            onClick={() => setEventFilter(value)}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition ${
+              eventFilter === value
+                ? "bg-[#436D75] text-white"
+                : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      <EventsCalendar events={scopedEvents} onSelectEvent={loadDetail} />
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.85fr)] gap-6 items-start">
+        <div className="xl:sticky xl:top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto pr-1">
+          <EventsList
+            isLoading={isLoading}
+            events={visibleEvents}
+            selectedEventId={selectedEventId}
+            onView={loadDetail}
+            onPresence={openPresence}
+            onEdit={openEditModal}
+            onToggleActive={toggleActive}
+            onCancel={openCancelConfirmation}
+          />
+        </div>
+
+        <div className="xl:sticky xl:top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto pr-1">
+          <EventDetailsPanel
+            selectedDetail={selectedDetail}
+            canManageParticipants={canManageParticipants}
+            onUpdateParticipantStatus={updateParticipantStatus}
+            onToggleCheckin={toggleParticipantCheckin}
+            onSelfCheckin={selfCheckin}
+            onSubmitFeedback={submitFeedback}
+            isSubmittingFeedback={isSubmittingFeedback}
+          />
+        </div>
+      </div>
+
+      <EventsCalendar events={visibleEvents} onSelectEvent={loadDetail} />
 
       <EventFormModal
         isOpen={isModalOpen}

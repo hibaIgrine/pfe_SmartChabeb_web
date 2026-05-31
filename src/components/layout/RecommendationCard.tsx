@@ -4,7 +4,6 @@ import { chooseActivity } from "../../api/recommendations";
 
 interface Reco {
   activite: string;
-  probabilite: number;
 }
 interface Props {
   recoId: number;
@@ -66,12 +65,6 @@ export function RecommendationCard({
               <h3 className="text-lg font-semibold text-gray-800">
                 {idx + 1}. {reco.activite}
               </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Probabilité:{" "}
-                <span className="font-semibold text-[#E98A7D]">
-                  {reco.probabilite}%
-                </span>
-              </p>
             </div>
             {chosen === reco.activite && (
               <CheckCircle2
@@ -79,16 +72,6 @@ export function RecommendationCard({
                 size={24}
               />
             )}
-          </div>
-
-          {/* Barre de progression */}
-          <div className="mb-4 bg-gray-200 rounded-full h-2 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-[#E98A7D] to-[#FF6B4A] rounded-full transition-all"
-              style={{
-                width: `${Math.round(reco.probabilite * 100)}%`,
-              }}
-            />
           </div>
 
           {/* Bouton Choisir */}

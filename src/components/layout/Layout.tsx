@@ -48,6 +48,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(() => getStoredUser());
   const [dbProfile, setDbProfile] = useState<any>(null);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [managedClubs, setManagedClubs] = useState<any[]>([]);
   const [staffClubs, setStaffClubs] = useState<any[]>([]);
   const [managedClubsLoading, setManagedClubsLoading] = useState(false);
@@ -61,6 +62,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const showTopBarImage = hasProfileImage && !topBarImageError;
   const isMessageriePage = location.pathname === "/messagerie";
   const isStaffCalendarPage = location.pathname === "/staff-calendar";
+  const isChatbotPage = location.pathname === "/chatbot";
 
   useEffect(() => {
     if (!user) {
@@ -213,6 +215,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [displayUser?.photo_profil_url]);
 
   useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
     if (!isMessageriePage) {
       return;
     }
@@ -239,11 +245,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   if (!user) return <Navigate to="/auth" replace />;
 
   return (
-    <div className="flex h-screen bg-[#F7F3E9] font-sans overflow-hidden">
+    <div className="relative flex h-screen bg-[#F7F3E9] font-sans overflow-hidden">
+      {mobileSidebarOpen ? (
+        <button
+          type="button"
+          aria-label="Fermer le menu"
+          onClick={() => setMobileSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+        />
+      ) : null}
+
       {/* --- 🟦 SIDEBAR RÉDUITE --- */}
-      <aside className="w-64 bg-[#436D75] text-white flex flex-col h-full flex-shrink-0 shadow-2xl">
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#436D75] text-white flex flex-col flex-shrink-0 shadow-2xl transition-transform duration-300 md:static md:z-auto md:translate-x-0 ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+      >
         {/* LOGO RÉDUIT (pt-6 au lieu de pt-10) */}
-        <div className="pt-6 px-8 pb-4 flex flex-col items-start border-b border-white/10">
+        <div className="pt-6 px-6 pb-4 flex flex-col items-start border-b border-white/10 md:px-8">
           <div className="text-xl font-black tracking-tighter leading-none italic">
             <span className="text-white">SMART</span>
             <span className="text-[#E98A7D] ml-1">CHABEB</span>
@@ -368,33 +385,32 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       </Link>
 
                       <div className="ml-8 mt-1 flex items-center gap-2">
-                        <Link
-                          to={`/clubs/${c.id}/requests`}
-                          className="text-[11px] font-black text-white/60 hover:text-white hover:underline"
-                        >
-                          Membres
-                        </Link>
-                        <span className="text-white/30">•</span>
-                        <Link
-                          to={`/clubs/${c.id}/staff`}
-                          className="text-[11px] font-black text-white/60 hover:text-white hover:underline"
-                        >
-                          Staff
-                        </Link>
-                        <span className="text-white/30">•</span>
-                        <Link
-                          to={`/my-clubs/${c.id}/tasks`}
-                          className="text-[11px] font-black text-white/60 hover:text-white hover:underline"
-                        >
-                          Tâches
-                        </Link>
-                        <span className="text-white/30">•</span>
-                        <Link
-                          to={`/my-clubs/${c.id}/feedbacks`}
-                          className="text-[11px] font-black text-white/60 hover:text-white hover:underline"
-                        >
-                          Feedbacks
-                        </Link>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-black text-white/60">
+                          <Link
+                            to={`/clubs/${c.id}/requests`}
+                            className="hover:text-white hover:underline"
+                          >
+                            Membres
+                          </Link>
+                          <Link
+                            to={`/clubs/${c.id}/staff`}
+                            className="hover:text-white hover:underline"
+                          >
+                            Staff
+                          </Link>
+                          <Link
+                            to={`/my-clubs/${c.id}/tasks`}
+                            className="hover:text-white hover:underline"
+                          >
+                            Tâches
+                          </Link>
+                          <Link
+                            to={`/my-clubs/${c.id}/feedbacks`}
+                            className="hover:text-white hover:underline"
+                          >
+                            Feedbacks
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -614,9 +630,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* --- 🏛️ ZONE DE DROITE --- */}
-      <main className="flex-1 flex flex-col overflow-hidden p-4">
-        <header className="relative z-0 bg-white/60 backdrop-blur-md h-16 px-6 flex justify-between items-center rounded-3xl border border-white shadow-sm mb-4 flex-shrink-0 overflow-visible">
-          <div className="flex items-center space-x-4">
+      <main className="flex-1 flex flex-col overflow-hidden p-3 md:p-4">
+        <header className="relative z-0 mb-3 flex min-h-16 flex-col gap-3 rounded-3xl border border-white bg-white/60 px-4 py-3 shadow-sm backdrop-blur-md overflow-visible md:mb-4 md:h-16 md:flex-row md:items-center md:justify-between md:px-6 md:py-0">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-gray-200 bg-white text-[#436D75] shadow-sm md:hidden"
+              aria-label="Ouvrir le menu"
+            >
+              <LayoutGrid size={18} />
+            </button>
             <img
               src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Flag_of_Tunisia.svg"
               className="h-6 shadow-sm rounded-sm"
@@ -632,7 +656,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
             <MessageBell />
             <Link
               to="/fil-actualite"
@@ -645,7 +669,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <NotificationBell />
             <Link
               to="/mon-profil"
-              className="flex items-center space-x-3 bg-white p-1 rounded-full pr-4 border border-gray-100 shadow-sm hover:border-[#436D75]/30 hover:bg-[#F8FBFA] transition-colors"
+              className="flex items-center gap-2 rounded-full border border-gray-100 bg-white p-1 pr-3 shadow-sm transition-colors hover:border-[#436D75]/30 hover:bg-[#F8FBFA] md:space-x-3 md:pr-4"
               title="Mon profil"
             >
               <div className="w-8 h-8 rounded-full overflow-hidden bg-[#ECEFF3] flex items-center justify-center text-[#9AA3AF] shadow-inner">
@@ -660,7 +684,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <UserCircle size={20} />
                 )}
               </div>
-              <div className="text-left">
+              <div className="hidden text-left md:block">
                 <p className="text-[10px] font-black text-[#436D75] leading-none">
                   {displayUser?.nom} {displayUser?.prenom}
                 </p>
@@ -672,9 +696,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <div className="relative z-0 flex-1 min-h-0 bg-white rounded-[40px] shadow-2xl border border-gray-50 overflow-hidden flex flex-col">
+        <div
+          className={`relative z-0 flex-1 min-h-0 overflow-hidden flex flex-col ${
+            isChatbotPage
+              ? "bg-transparent border-0 shadow-none rounded-none"
+              : "bg-white rounded-[40px] shadow-2xl border border-gray-50"
+          }`}
+        >
           <div
-            className={`p-8 flex-1 min-h-0 ${isMessageriePage ? "overflow-hidden" : "overflow-y-auto custom-scrollbar"}`}
+            className={`flex-1 min-h-0 ${
+              isChatbotPage
+                ? "p-0 overflow-hidden"
+                : `p-8 ${isMessageriePage ? "overflow-hidden" : "overflow-y-auto custom-scrollbar"}`
+            }`}
             data-layout-scroll-container="true"
           >
             {children}

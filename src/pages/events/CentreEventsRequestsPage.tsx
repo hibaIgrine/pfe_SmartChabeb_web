@@ -128,6 +128,13 @@ export default function CentreEventsRequestsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState<EventForm>(getEmptyForm());
   const [tab, setTab] = useState<RequestTab>("pending");
+  const [eventsFilter, setEventsFilter] = useState<"upcoming" | "past" | "all">(
+    "upcoming",
+  );
+  const [sortOption, setSortOption] = useState<"upcomingFirst" | "recentFirst">(
+    "upcomingFirst",
+  );
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [notification, setNotification] = useState<AlertState>(null);
   const [formAlert, setFormAlert] = useState<AlertState>(null);
 
@@ -162,14 +169,38 @@ export default function CentreEventsRequestsPage() {
   }, [centreId, centreLocaux, events]);
 
   const filteredEvents = useMemo(() => {
-    return centreEvents.filter((event) => {
+    let list = centreEvents.filter((event) => {
       const status = normalizeRequestStatus(event);
       if (tab === "all") return true;
       if (tab === "pending") return status === "PENDING";
       if (tab === "approved") return status === "APPROVED";
       return status === "REFUSED";
     });
-  }, [centreEvents, tab]);
+
+    // filter by upcoming / past
+    const todayIso = today; // YYYY-MM-DD from utils
+    if (eventsFilter === "upcoming") {
+      list = list.filter((e) => e.date_event >= todayIso);
+    } else if (eventsFilter === "past") {
+      list = list.filter((e) => e.date_event < todayIso);
+    }
+
+    // sort
+    list.sort((a, b) => {
+      if (sortOption === "upcomingFirst") {
+        // nearest upcoming first -> ascending by date_event then start_time
+        if (a.date_event !== b.date_event)
+          return a.date_event.localeCompare(b.date_event);
+        return a.start_time.localeCompare(b.start_time);
+      }
+      // recentFirst: newest date on top
+      if (a.date_event !== b.date_event)
+        return b.date_event.localeCompare(a.date_event);
+      return b.start_time.localeCompare(a.start_time);
+    });
+
+    return list;
+  }, [centreEvents, tab, eventsFilter, sortOption, today]);
 
   const counts = useMemo(() => {
     const tally = { pending: 0, approved: 0, refused: 0 };
@@ -490,11 +521,6 @@ export default function CentreEventsRequestsPage() {
                     <p className="text-sm font-black text-[#244047]">
                       {club.nom}
                     </p>
-                    <p className="mt-1 text-xs text-gray-500">
-                      {club.id_centre
-                        ? "Club du centre sélectionné"
-                        : "Club lié au centre"}
-                    </p>
                   </button>
                 );
               })}
@@ -560,6 +586,51 @@ export default function CentreEventsRequestsPage() {
                   </button>
                 ))}
               </div>
+              <div className="flex items-center gap-2">
+                <div className="text-xs text-gray-500 mr-2">Filtrer :</div>
+                {(
+                  [
+                    ["upcoming", "À venir"],
+                    ["past", "Passés"],
+                    ["all", "Tous"],
+                  ] as const
+                ).map(([val, label]) => (
+                  <button
+                    key={val}
+                    onClick={() => setEventsFilter(val as any)}
+                    className={`rounded-xl px-2 py-1 text-xs font-black transition ${
+                      eventsFilter === val
+                        ? "bg-[#436D75] text-white"
+                        : "bg-[#F7FBFC] text-[#244047]"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+
+                <div className="w-px h-6 bg-gray-100 mx-2" />
+                <div className="text-xs text-gray-500 mr-2">Trier :</div>
+                <button
+                  onClick={() => setSortOption("upcomingFirst")}
+                  className={`rounded-xl px-2 py-1 text-xs font-black transition ${
+                    sortOption === "upcomingFirst"
+                      ? "bg-[#436D75] text-white"
+                      : "bg-[#F7FBFC] text-[#244047]"
+                  }`}
+                >
+                  À venir d'abord
+                </button>
+                <button
+                  onClick={() => setSortOption("recentFirst")}
+                  className={`rounded-xl px-2 py-1 text-xs font-black transition ${
+                    sortOption === "recentFirst"
+                      ? "bg-[#436D75] text-white"
+                      : "bg-[#F7FBFC] text-[#244047]"
+                  }`}
+                >
+                  Récents
+                </button>
+              </div>
             </div>
 
             {filteredEvents.length === 0 ? (
@@ -568,6 +639,61 @@ export default function CentreEventsRequestsPage() {
               </div>
             ) : (
               <div className="space-y-3">
+                {selectedEventId && (
+                  <div className="sticky top-4 z-20 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.2em] font-black text-gray-400">
+                          Sélection
+                        </p>
+                        <p className="mt-1 text-sm font-black text-[#244047]">
+                          {
+                            filteredEvents.find((e) => e.id === selectedEventId)
+                              ?.nom
+                          }
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {normalizeRequestStatus(
+                          filteredEvents.find((e) => e.id === selectedEventId)!,
+                        ) === "PENDING" && (
+                          <>
+                            <button
+                              onClick={() =>
+                                void resolveRequestAction(
+                                  selectedEventId!,
+                                  "approve",
+                                )
+                              }
+                              disabled={isSaving}
+                              className="rounded-xl bg-[#436D75] px-3 py-2 text-xs font-black text-white disabled:opacity-60"
+                            >
+                              Confirmer
+                            </button>
+                            <button
+                              onClick={() =>
+                                void resolveRequestAction(
+                                  selectedEventId!,
+                                  "refuse",
+                                )
+                              }
+                              disabled={isSaving}
+                              className="rounded-xl border border-[#E98A7D]/40 bg-[#FDE5E1] px-3 py-2 text-xs font-black text-[#B23A2B] disabled:opacity-60"
+                            >
+                              Refuser
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => setSelectedEventId(null)}
+                          className="rounded-xl px-3 py-2 text-xs font-black bg-[#F7FBFC] text-[#244047]"
+                        >
+                          Désélectionner
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {filteredEvents.map((event) => {
                   const status = normalizeRequestStatus(event);
                   const collaborators = (event.collaborating_club_ids || [])
@@ -576,10 +702,13 @@ export default function CentreEventsRequestsPage() {
                     )
                     .filter(Boolean);
 
+                  const isSelected = selectedEventId === event.id;
+
                   return (
                     <article
                       key={event.id}
-                      className="rounded-[26px] border border-gray-100 bg-[#FAFBFC] p-4 md:p-5 shadow-sm"
+                      onClick={() => setSelectedEventId(event.id)}
+                      className={`rounded-[26px] border p-4 md:p-5 shadow-sm transition ${isSelected ? "border-[#436D75] bg-[#EAF2F4]" : "border-gray-100 bg-[#FAFBFC] hover:bg-gray-50"}`}
                     >
                       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                         <div className="space-y-3">
@@ -604,6 +733,31 @@ export default function CentreEventsRequestsPage() {
                               {event.description || "Aucune description."}
                             </p>
                           </div>
+
+                          {Array.isArray(event.timeline) &&
+                            event.timeline.length > 0 && (
+                              <div className="mt-2">
+                                <p className="text-[11px] uppercase tracking-[0.18em] font-black text-gray-400">
+                                  Timeline
+                                </p>
+                                <ul className="mt-2 text-sm text-gray-700 space-y-1">
+                                  {(event.timeline as any[]).map((step, i) => (
+                                    <li
+                                      key={i}
+                                      className="flex items-start gap-3"
+                                    >
+                                      <span className="font-mono text-xs text-gray-500 w-[80px]">
+                                        {step.start_time || "--:--"} -{" "}
+                                        {step.end_time || "--:--"}
+                                      </span>
+                                      <span className="font-medium">
+                                        {step.title || "(Sans titre)"}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
 
                           <div className="flex flex-wrap gap-4 text-xs font-bold text-gray-500">
                             <span className="inline-flex items-center gap-2">
@@ -645,18 +799,23 @@ export default function CentreEventsRequestsPage() {
                           {status === "PENDING" && (
                             <div className="flex gap-2 pt-1">
                               <button
-                                onClick={() =>
-                                  void resolveRequestAction(event.id, "approve")
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void resolveRequestAction(
+                                    event.id,
+                                    "approve",
+                                  );
+                                }}
                                 disabled={isSaving}
                                 className="flex-1 rounded-xl bg-[#436D75] px-3 py-2 text-xs font-black text-white disabled:opacity-60"
                               >
                                 Confirmer
                               </button>
                               <button
-                                onClick={() =>
-                                  void resolveRequestAction(event.id, "refuse")
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void resolveRequestAction(event.id, "refuse");
+                                }}
                                 disabled={isSaving}
                                 className="flex-1 rounded-xl border border-[#E98A7D]/40 bg-[#FDE5E1] px-3 py-2 text-xs font-black text-[#B23A2B] disabled:opacity-60"
                               >

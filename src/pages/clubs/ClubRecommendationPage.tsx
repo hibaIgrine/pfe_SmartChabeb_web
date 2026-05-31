@@ -641,8 +641,7 @@ export default function ClubRecommendationPage() {
           <p className="mt-2 max-w-4xl text-sm text-gray-600">
             Le club, le contexte de la séance, le local, le nombre de membres,
             le numéro de séance et les activités précédentes sont calculés
-            automatiquement. Le responsable ne saisit que les champs utiles à
-            l'analyse.
+            automatiquement. 
           </p>
         </div>
 
@@ -702,7 +701,7 @@ export default function ClubRecommendationPage() {
 
             <Card
               title="Contexte de la séance"
-              subtitle="Mois, jour de la semaine et saison sont déduits de la date du jour. Le numéro de séance s'incrémente automatiquement à partir de l'historique."
+              
             >
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <ReadOnlyBox
@@ -777,7 +776,7 @@ export default function ClubRecommendationPage() {
 
             <Card
               title="Activités"
-              subtitle="L'activité J-2 et l'activité précédente sont récupérées depuis l'historique des séances du même club."
+              
             >
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <ReadOnlyBox
@@ -840,7 +839,7 @@ export default function ClubRecommendationPage() {
 
             <Card
               title="État du groupe"
-              subtitle="Les listes de choix ont été adaptées pour coller à votre demande."
+              
             >
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <SelectField
@@ -895,7 +894,7 @@ export default function ClubRecommendationPage() {
 
             <Card
               title="Présence et évaluation"
-              subtitle="Le taux de présence est calculé automatiquement: présents ÷ total de membres."
+              subtitle="Le taux de présence est calculé automatiquement"
             >
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <ReadOnlyBox
@@ -1160,9 +1159,7 @@ export default function ClubRecommendationPage() {
                             <span className="text-gray-700">
                               {row.activite}
                             </span>
-                            <span className="font-bold text-[#E98A7D]">
-                              {row.probabilite}%
-                            </span>
+                            
                           </div>
                         ))}
                       </div>

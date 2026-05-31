@@ -19,10 +19,10 @@ export function IconActionButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-xl border border-transparent ${bg} ${color} px-2 py-2 flex items-center gap-2 justify-center hover:brightness-95 transition-colors`}
+      className={`rounded-lg border border-transparent ${bg} ${color} px-2 py-1.5 flex items-center gap-1.5 justify-center hover:brightness-95 transition-colors`}
     >
       {icon}
-      <span className="text-xs font-bold">{label}</span>
+      <span className="text-[12px] font-bold">{label}</span>
     </button>
   );
 }
