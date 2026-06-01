@@ -29,7 +29,10 @@ import {
   leaveConversationSocketRoom,
   subscribeTypingUpdates,
 } from "../../../api/messagerie.socket";
-import { getConversationSortTime } from "../conversationFilters";
+import {
+  getConversationSortTime,
+  isChatbotConversation,
+} from "../conversationFilters";
 import type {
   MessengerConversation,
   MessengerConversationSummary,
@@ -52,6 +55,21 @@ function sortConversationsByRecency(items: MessengerConversationSummary[]) {
     (left, right) =>
       getConversationSortTime(right) - getConversationSortTime(left),
   );
+}
+
+function filterUserConversations(items: MessengerConversationSummary[]) {
+  return items.filter((conversation) => !isChatbotConversation(conversation));
+}
+
+function isChatbotUser(user: MessengerUser) {
+  const fullName = `${user.nom} ${user.prenom}`.trim().toLowerCase();
+  const role = user.role?.trim().toLowerCase() ?? "";
+
+  return role.includes("chatbot") || fullName === "chatbot assistant";
+}
+
+function filterVisibleUsers(items: MessengerUser[]) {
+  return items.filter((user) => !isChatbotUser(user));
 }
 
 export function useMessageriePage() {
@@ -148,9 +166,11 @@ export function useMessageriePage() {
   const syncConversationSnapshot = (
     nextConversations: MessengerConversationSummary[],
   ) => {
+    const visibleConversations = filterUserConversations(nextConversations);
+
     if (!hasHydratedConversationsRef.current) {
       hasHydratedConversationsRef.current = true;
-      const sorted = sortConversationsByRecency(nextConversations);
+      const sorted = sortConversationsByRecency(visibleConversations);
       previousConversationsRef.current = sorted;
       setConversations(sorted);
       return;
@@ -160,7 +180,7 @@ export function useMessageriePage() {
       previousConversationsRef.current.map((item) => [item.id, item]),
     );
 
-    const nextIncomingMessage = nextConversations.find((item) => {
+    const nextIncomingMessage = visibleConversations.find((item) => {
       const previous = previousById.get(item.id);
       if (!previous) return false;
 
@@ -184,14 +204,14 @@ export function useMessageriePage() {
       window.dispatchEvent(new Event("messagerie-updated"));
     }
 
-    const sorted = sortConversationsByRecency(nextConversations);
+    const sorted = sortConversationsByRecency(visibleConversations);
     previousConversationsRef.current = sorted;
     setConversations(sorted);
   };
 
   const filteredUsers = useMemo(() => {
     const query = searchRecipient.trim().toLowerCase();
-    return users
+    return filterVisibleUsers(users)
       .filter((user) => user.id !== currentUser?.id)
       .filter((user) => {
         if (!query) return true;
@@ -201,7 +221,9 @@ export function useMessageriePage() {
   }, [currentUser?.id, searchRecipient, users]);
 
   const groupCandidateUsers = useMemo(() => {
-    return users.filter((user) => user.id !== currentUser?.id);
+    return filterVisibleUsers(users).filter(
+      (user) => user.id !== currentUser?.id,
+    );
   }, [currentUser?.id, users]);
 
   const refreshCurrentUser = async () => {
@@ -231,12 +253,23 @@ export function useMessageriePage() {
   const refreshUsers = async () => {
     try {
       const data = await fetchMessengerUsers();
-      setUsers(Array.isArray(data) ? data : []);
-      if (!selectedRecipientId && data.length > 0) {
-        const firstOther = data.find((user) => user.id !== currentUser?.id);
-        if (firstOther) {
-          setSelectedRecipientId(firstOther.id);
-        }
+      const visibleUsers = filterVisibleUsers(Array.isArray(data) ? data : []);
+      setUsers(visibleUsers);
+
+      const firstOther = visibleUsers.find(
+        (user) => user.id !== currentUser?.id,
+      );
+
+      if (!selectedRecipientId && firstOther) {
+        setSelectedRecipientId(firstOther.id);
+      }
+
+      if (
+        selectedRecipientId &&
+        !visibleUsers.some((user) => user.id === selectedRecipientId) &&
+        firstOther
+      ) {
+        setSelectedRecipientId(firstOther.id);
       }
     } catch {
       setUsers([]);

@@ -6,6 +6,12 @@ export type ConversationListFilterMode =
   | "GROUP"
   | "ARCHIVED";
 
+export function isChatbotConversation(
+  conversation: MessengerConversationSummary,
+) {
+  return conversation.type === "chatbot";
+}
+
 export function getConversationSortTime(
   conversation: MessengerConversationSummary,
 ) {
@@ -43,6 +49,10 @@ export function filterConversations(
 ) {
   return conversations
     .filter((conversation) => {
+      if (isChatbotConversation(conversation)) {
+        return false;
+      }
+
       const isArchived = Boolean(conversation.current_user_archived_at);
       const isGroup = conversation.type === "group";
       const unread = isConversationUnread(conversation, meId);

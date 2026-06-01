@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Check,
   Download,
@@ -9,6 +9,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import api from "../../../api/axios";
 import type { MessengerMessage } from "../types";
 
 type MessageBubbleProps = {
@@ -26,6 +27,129 @@ type AttachmentPreview = {
   fileName: string;
   mimeType: string;
 };
+
+const MIME_BY_EXTENSION: Record<string, string> = {
+  pdf: "application/pdf",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls: "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  txt: "text/plain",
+  csv: "text/csv",
+  json: "application/json",
+};
+
+const OFFICE_MIME_TYPES = new Set([
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+]);
+
+const TEXT_MIME_TYPES = new Set(["text/plain", "text/csv", "application/json"]);
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function buildPreviewHtml(content: string) {
+  return `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+          body {
+            margin: 0;
+            padding: 20px;
+            font-family: Inter, Arial, sans-serif;
+            color: #111827;
+            background: #ffffff;
+          }
+
+          img, video {
+            max-width: 100%;
+            height: auto;
+          }
+
+          table {
+            border-collapse: collapse;
+            width: 100%;
+          }
+
+          td, th {
+            border: 1px solid #e5e7eb;
+            padding: 8px;
+            vertical-align: top;
+          }
+
+          pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: Consolas, Monaco, 'Courier New', monospace;
+            font-size: 13px;
+          }
+        </style>
+      </head>
+      <body>
+        ${content}
+      </body>
+    </html>
+  `;
+}
+
+function resolveAttachmentUrl(value: string) {
+  if (value.startsWith("data:")) {
+    return value;
+  }
+
+  const baseUrl = api.defaults.baseURL || window.location.origin;
+  return new URL(value, baseUrl).toString();
+}
+
+function getAttachmentExtension(value: string) {
+  if (value.startsWith("data:")) {
+    return "";
+  }
+
+  try {
+    const pathname = new URL(
+      value,
+      api.defaults.baseURL || window.location.origin,
+    ).pathname;
+    return pathname.split(".").pop()?.toLowerCase() ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function inferAttachmentMimeType(message: MessengerMessage, value: string) {
+  const dataUrlMime = getDataUrlMimeType(value).toLowerCase();
+  if (dataUrlMime) {
+    return dataUrlMime;
+  }
+
+  const extension = getAttachmentExtension(value);
+  if (extension && MIME_BY_EXTENSION[extension]) {
+    return MIME_BY_EXTENSION[extension];
+  }
+
+  if (message.type === "IMAGE") return "image/*";
+  if (message.type === "VIDEO") return "video/*";
+
+  return "application/octet-stream";
+}
 
 function getMessageStatusLabel(status: MessengerMessage["status"]) {
   if (status === "READ") {
@@ -45,14 +169,59 @@ function getDataUrlMimeType(value: string) {
 }
 
 function getAttachmentMeta(message: MessengerMessage, value: string) {
-  const mimeType =
-    message.type === "IMAGE"
-      ? getDataUrlMimeType(value) || "image/*"
-      : message.type === "VIDEO"
-        ? getDataUrlMimeType(value) || "video/*"
-        : getDataUrlMimeType(value) || "application/octet-stream";
+  const mimeType = inferAttachmentMimeType(message, value);
 
   return { mimeType };
+}
+
+function getDocumentLabel(mimeType: string) {
+  if (mimeType === "application/pdf") return "PDF";
+  if (mimeType === "application/msword") return "Word";
+  if (
+    mimeType ===
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    return "Word";
+  }
+  if (
+    mimeType === "application/vnd.ms-excel" ||
+    mimeType ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  ) {
+    return "Excel";
+  }
+  if (
+    mimeType === "application/vnd.ms-powerpoint" ||
+    mimeType ===
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  ) {
+    return "PowerPoint";
+  }
+  if (mimeType === "text/plain") return "Texte";
+  if (mimeType === "text/csv") return "CSV";
+  if (mimeType === "application/json") return "JSON";
+  return "Document";
+}
+
+function isPublicHttpUrl(value: string) {
+  try {
+    const parsedUrl = new URL(value);
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      return false;
+    }
+
+    return !["localhost", "127.0.0.1", "::1"].includes(parsedUrl.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function getOfficeViewerUrl(value: string) {
+  if (!isPublicHttpUrl(value)) {
+    return null;
+  }
+
+  return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(value)}`;
 }
 
 function VoiceAudioCard({ src }: { src: string }) {
@@ -89,7 +258,7 @@ function renderMedia(
               <img
                 src={item}
                 alt="Pièce jointe"
-                className="max-h-72 w-full object-cover"
+                className="max-h-72 w-full bg-white object-contain"
               />
               <div className="px-4 py-3">
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] opacity-80">
@@ -112,7 +281,7 @@ function renderMedia(
               <video
                 src={item}
                 muted
-                className="max-h-72 w-full object-cover"
+                className="max-h-72 w-full bg-black object-contain"
               />
               <div className="px-4 py-3 text-white">
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] opacity-80">
@@ -127,6 +296,7 @@ function renderMedia(
         const mimeType = getDataUrlMimeType(item);
         const isPdf = mimeType === "application/pdf";
         const isAudio = mimeType.startsWith("audio/");
+        const documentLabel = getDocumentLabel(mimeType);
 
         if (isAudio) {
           return <VoiceAudioCard key={`${message.id}-${index}`} src={item} />;
@@ -141,7 +311,7 @@ function renderMedia(
           >
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-[0.16em] opacity-80">
-                {isPdf ? "PDF" : message.type}
+                {isPdf ? "PDF" : documentLabel}
               </p>
               <p className="truncate text-sm font-semibold">
                 Cliquer pour ouvrir
@@ -168,6 +338,16 @@ export function MessageBubble({
   onTogglePin,
 }: MessageBubbleProps) {
   const [preview, setPreview] = useState<AttachmentPreview | null>(null);
+  const [documentPreviewHtml, setDocumentPreviewHtml] = useState<string | null>(
+    null,
+  );
+  const [documentPreviewUrl, setDocumentPreviewUrl] = useState<string | null>(
+    null,
+  );
+  const [documentPreviewLoading, setDocumentPreviewLoading] = useState(false);
+  const [documentPreviewError, setDocumentPreviewError] = useState<
+    string | null
+  >(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.content ?? "");
@@ -214,6 +394,168 @@ export function MessageBubble({
   };
 
   const closePreview = () => setPreview(null);
+
+  useEffect(() => {
+    if (!preview) {
+      setDocumentPreviewHtml(null);
+      setDocumentPreviewUrl(null);
+      setDocumentPreviewLoading(false);
+      setDocumentPreviewError(null);
+      return;
+    }
+
+    const mimeType = preview.mimeType.toLowerCase();
+
+    if (
+      mimeType.startsWith("image/") ||
+      mimeType.startsWith("video/") ||
+      mimeType.startsWith("audio/") ||
+      mimeType === "application/pdf"
+    ) {
+      setDocumentPreviewHtml(null);
+      setDocumentPreviewUrl(null);
+      setDocumentPreviewLoading(false);
+      setDocumentPreviewError(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadDocumentPreview = async () => {
+      setDocumentPreviewLoading(true);
+      setDocumentPreviewHtml(null);
+      setDocumentPreviewUrl(null);
+      setDocumentPreviewError(null);
+
+      try {
+        const resolvedUrl = resolveAttachmentUrl(preview.value);
+
+        if (mimeType === "application/msword") {
+          const officeUrl = getOfficeViewerUrl(resolvedUrl);
+          if (officeUrl) {
+            if (!cancelled) {
+              setDocumentPreviewUrl(officeUrl);
+            }
+            return;
+          }
+        }
+
+        if (
+          mimeType ===
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ) {
+          const mammoth = await import("mammoth");
+          const response = await fetch(resolvedUrl);
+          if (!response.ok) {
+            throw new Error("Impossible de charger le document");
+          }
+
+          const { value } = await mammoth.convertToHtml({
+            arrayBuffer: await response.arrayBuffer(),
+          });
+
+          if (!cancelled) {
+            setDocumentPreviewHtml(buildPreviewHtml(value));
+          }
+          return;
+        }
+
+        if (
+          mimeType === "application/vnd.ms-excel" ||
+          mimeType ===
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ) {
+          const xlsx = await import("xlsx");
+          const response = await fetch(resolvedUrl);
+          if (!response.ok) {
+            throw new Error("Impossible de charger le tableur");
+          }
+
+          const workbook = xlsx.read(await response.arrayBuffer(), {
+            type: "array",
+          });
+          const firstSheetName = workbook.SheetNames[0];
+          if (!firstSheetName) {
+            throw new Error("Aucune feuille trouvée dans le tableur");
+          }
+
+          const sheetHtml = xlsx.utils.sheet_to_html(
+            workbook.Sheets[firstSheetName],
+          );
+
+          if (!cancelled) {
+            setDocumentPreviewHtml(buildPreviewHtml(sheetHtml));
+          }
+          return;
+        }
+
+        if (TEXT_MIME_TYPES.has(mimeType)) {
+          const response = await fetch(resolvedUrl);
+          if (!response.ok) {
+            throw new Error("Impossible de charger le fichier texte");
+          }
+
+          const text = await response.text();
+          const formattedText =
+            mimeType === "application/json"
+              ? JSON.stringify(JSON.parse(text), null, 2)
+              : text;
+
+          if (!cancelled) {
+            setDocumentPreviewHtml(
+              buildPreviewHtml(`<pre>${escapeHtml(formattedText)}</pre>`),
+            );
+          }
+          return;
+        }
+
+        const officeViewerUrl = getOfficeViewerUrl(resolvedUrl);
+        if (officeViewerUrl && OFFICE_MIME_TYPES.has(mimeType)) {
+          if (!cancelled) {
+            setDocumentPreviewUrl(officeViewerUrl);
+          }
+          return;
+        }
+
+        throw new Error("Aperçu indisponible pour ce format");
+      } catch {
+        if (!cancelled) {
+          setDocumentPreviewError(
+            "Aperçu indisponible pour ce format. Utilise le téléchargement.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setDocumentPreviewLoading(false);
+        }
+      }
+    };
+
+    void loadDocumentPreview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [preview]);
+
+  useEffect(() => {
+    if (!preview) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closePreview();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [preview]);
 
   const handlePrint = () => {
     window.print();
@@ -380,7 +722,7 @@ export function MessageBubble({
 
       {preview ? (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-4xl rounded-[30px] border border-white/30 bg-white shadow-2xl">
+          <div className="flex w-full max-w-4xl max-h-[90vh] flex-col overflow-hidden rounded-[30px] border border-white/30 bg-white shadow-2xl">
             <style>{`
               @media print {
                 body * {
@@ -400,7 +742,7 @@ export function MessageBubble({
               }
             `}</style>
 
-            <div className="attachment-modal">
+            <div className="attachment-modal flex min-h-0 flex-1 flex-col">
               <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
                 <div className="min-w-0">
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#436D75]">
@@ -439,12 +781,12 @@ export function MessageBubble({
                 </div>
               </div>
 
-              <div className="p-5">
+              <div className="min-h-0 flex-1 overflow-auto p-5">
                 {message.type === "IMAGE" ? (
                   <img
                     src={preview.value}
                     alt={preview.fileName}
-                    className="max-h-[75vh] w-full rounded-[24px] object-contain"
+                    className="mx-auto block max-h-[75vh] max-w-full rounded-[24px] object-contain"
                   />
                 ) : null}
 
@@ -453,34 +795,42 @@ export function MessageBubble({
                     src={preview.value}
                     controls
                     autoPlay
-                    className="max-h-[75vh] w-full rounded-[24px] bg-black"
+                    className="mx-auto block max-h-[75vh] max-w-full rounded-[24px] bg-black"
                   />
                 ) : null}
 
                 {message.type === "DOCUMENT" ? (
                   <div className="space-y-4">
-                    {preview.mimeType.startsWith("audio/") ? (
-                      <div className="rounded-[24px] border border-[#b8caa9] bg-[#D9E8D1]/60 p-6">
-                        <audio
-                          src={preview.value}
-                          controls
-                          autoPlay
-                          className="w-full"
-                        />
-                      </div>
-                    ) : preview.mimeType === "application/pdf" ? (
+                    {preview.mimeType === "application/pdf" ? (
                       <iframe
                         src={preview.value}
                         title={preview.fileName}
-                        className="h-[75vh] w-full rounded-[24px] border border-gray-200"
+                        className="h-[75vh] w-full rounded-[24px] border border-gray-200 bg-white"
+                      />
+                    ) : documentPreviewLoading ? (
+                      <div className="flex min-h-[280px] items-center justify-center rounded-[24px] border border-dashed border-gray-200 bg-[#F7F3E9]/40 px-6 py-10 text-sm text-gray-500">
+                        Préparation de l’aperçu...
+                      </div>
+                    ) : documentPreviewHtml ? (
+                      <iframe
+                        srcDoc={documentPreviewHtml}
+                        title={preview.fileName}
+                        className="h-[75vh] w-full rounded-[24px] border border-gray-200 bg-white"
+                      />
+                    ) : documentPreviewUrl ? (
+                      <iframe
+                        src={documentPreviewUrl}
+                        title={preview.fileName}
+                        className="h-[75vh] w-full rounded-[24px] border border-gray-200 bg-white"
                       />
                     ) : (
                       <div className="rounded-[24px] border border-dashed border-gray-200 bg-[#F7F3E9]/50 p-6">
                         <p className="text-lg font-black text-gray-900">
-                          Aperçu indisponible pour ce format
+                          {documentPreviewError ??
+                            "Aperçu indisponible pour ce format"}
                         </p>
                         <p className="mt-2 text-sm text-gray-500">
-                          Utilisez les boutons imprimer ou télécharger.
+                          Utilise les boutons imprimer ou télécharger.
                         </p>
                       </div>
                     )}

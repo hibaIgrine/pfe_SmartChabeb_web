@@ -28,7 +28,7 @@ export default function MessageriePage() {
   }, [page, searchParams, setSearchParams]);
 
   return (
-    <div className="mx-auto grid h-full min-h-0 max-w-7xl gap-5 overflow-hidden lg:grid-cols-[340px_1fr]">
+    <div className="grid h-full min-h-0 w-full gap-4 overflow-hidden lg:grid-cols-[360px_minmax(0,1fr)]">
       <section className="flex min-h-0 flex-col overflow-hidden rounded-[28px] border border-white bg-white/85 p-4 shadow-xl backdrop-blur-md">
         <RecipientPanel
           searchValue={page.searchRecipient}

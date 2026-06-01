@@ -531,7 +531,7 @@ export function ConversationView({
         </div>
       ) : null}
 
-      <div className="flex-1 overflow-y-auto p-5">
+      <div ref={messageContainerRef} className="flex-1 overflow-y-auto p-5">
         {loading ? (
           <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-400">
             Chargement du fil de messages...
@@ -656,6 +656,14 @@ export function ConversationView({
               <input
                 value={composerText}
                 onChange={(event) => onComposerTextChange(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter") {
+                    return;
+                  }
+
+                  event.preventDefault();
+                  onSendMessage();
+                }}
                 placeholder={
                   messageType === "TEXT"
                     ? "Écrire un message..."

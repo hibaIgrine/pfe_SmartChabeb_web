@@ -37,6 +37,92 @@ function formatRelativeDate(value?: string | null) {
   return `Il y a ${Math.floor(diffHours / 24)} j`;
 }
 
+function getDataUrlMimeType(value: string) {
+  const match = /^data:([^;]+);/i.exec(value);
+  return match?.[1]?.toLowerCase() ?? "";
+}
+
+function getUrlExtension(value: string) {
+  try {
+    const url = new URL(value, window.location.origin);
+    return url.pathname.split(".").pop()?.toLowerCase() ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function getAttachmentMimeType(value?: string | null) {
+  if (!value) return "";
+
+  const dataUrlMimeType = getDataUrlMimeType(value);
+  if (dataUrlMimeType) {
+    return dataUrlMimeType;
+  }
+
+  const extension = getUrlExtension(value);
+  if (extension === "pdf") return "application/pdf";
+  if (extension === "doc" || extension === "docx") {
+    return "application/msword";
+  }
+  if (extension === "xls" || extension === "xlsx") {
+    return "application/vnd.ms-excel";
+  }
+  if (extension === "ppt" || extension === "pptx") {
+    return "application/vnd.ms-powerpoint";
+  }
+  if (extension === "txt") return "text/plain";
+
+  return "";
+}
+
+function getConversationPreview(
+  conversation: MessengerConversationSummary,
+  meId?: string | null,
+) {
+  const lastMessage = conversation.last_message;
+  const isMine = lastMessage?.sender_id === meId;
+  const prefix = isMine ? "Vous avez envoyé " : "";
+  const suffix = isMine ? "" : " a envoyé ";
+
+  if (!lastMessage) {
+    return "Aucun message.";
+  }
+
+  const content = lastMessage.content?.trim();
+  if (content) {
+    return isMine
+      ? `Vous : ${content}`
+      : `${conversation.counterpart?.prenom ?? "Quelqu'un"} a envoyé ${content}`;
+  }
+
+  if (lastMessage.type === "IMAGE") {
+    return isMine
+      ? `${prefix}une image`
+      : `${conversation.counterpart?.prenom ?? "Quelqu'un"}${suffix}une image`;
+  }
+
+  if (lastMessage.type === "VIDEO") {
+    return isMine
+      ? `${prefix}une vidéo`
+      : `${conversation.counterpart?.prenom ?? "Quelqu'un"}${suffix}une vidéo`;
+  }
+
+  if (lastMessage.type === "DOCUMENT") {
+    const mediaMimeType = getAttachmentMimeType(lastMessage.media?.[0]);
+    if (mediaMimeType.startsWith("audio/")) {
+      return isMine
+        ? `${prefix}un message vocal`
+        : `${conversation.counterpart?.prenom ?? "Quelqu'un"}${suffix}un message vocal`;
+    }
+
+    return isMine
+      ? `${prefix}une pièce jointe`
+      : `${conversation.counterpart?.prenom ?? "Quelqu'un"}${suffix}une pièce jointe`;
+  }
+
+  return "Aucun message.";
+}
+
 function ConversationAvatar({
   type,
   name,
@@ -125,7 +211,7 @@ export function ConversationList({
                   : conversation.counterpart
                     ? `${conversation.counterpart.nom} ${conversation.counterpart.prenom}`
                     : "Conversation privée";
-              const preview = conversation.last_message?.content?.trim();
+              const preview = getConversationPreview(conversation, meId);
               const metadata =
                 conversation.type === "group"
                   ? `${conversation.participant_count ?? 0} membres`

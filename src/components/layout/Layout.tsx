@@ -53,7 +53,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [staffClubs, setStaffClubs] = useState<any[]>([]);
   const [managedClubsLoading, setManagedClubsLoading] = useState(false);
   const [staffClubsLoading, setStaffClubsLoading] = useState(false);
-  const role = user?.role;
+  const role = dbProfile?.role ?? user?.role;
   const displayUser = dbProfile ?? user;
   const hasProfileImage =
     typeof displayUser?.photo_profil_url === "string" &&
