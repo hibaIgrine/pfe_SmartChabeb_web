@@ -52,6 +52,33 @@ import UserProfilePage from "./pages/profile/UserProfilePage";
 import SocialFeedPage from "./pages/social-media/SocialFeedPage";
 import MessageriePage from "./pages/messagerie/MessageriePage";
 import Chat from "./pages/chatbot/chat";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { AUTH_SESSION_INVALIDATED_EVENT } from "./utils/authSession";
+
+function SessionRedirectListener() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleSessionInvalidated = () => {
+      navigate("/auth", { replace: true });
+    };
+
+    window.addEventListener(
+      AUTH_SESSION_INVALIDATED_EVENT,
+      handleSessionInvalidated as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        AUTH_SESSION_INVALIDATED_EVENT,
+        handleSessionInvalidated as EventListener,
+      );
+    };
+  }, [navigate]);
+
+  return null;
+}
 
 function App() {
   const getCentrePage = () => {
@@ -107,6 +134,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <SessionRedirectListener />
       <Routes>
         {/* Page d'accueil publique */}
         <Route path="/" element={<Home />} />

@@ -27,6 +27,7 @@ import { NotificationBell } from "./NotificationBell";
 import { FavoritePostsBell } from "./FavoritePostsBell";
 import { MessageBell } from "./MessageBell";
 import api from "../../api/axios";
+import { forceLogout, isAccountLockMessage } from "../../utils/authSession";
 
 function getStoredUser() {
   const raw = localStorage.getItem("user");
@@ -113,8 +114,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         const response = await api.get("/users/me/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
+
+        if (response.data?.compte_actif === false) {
+          forceLogout("account-disabled");
+          return;
+        }
+
         setDbProfile(response.data);
-      } catch {
+      } catch (error: any) {
+        const status = error?.response?.status;
+        const message = error?.response?.data?.message;
+
+        if (status === 401 || (status === 403 && isAccountLockMessage(message))) {
+          forceLogout(message);
+          return;
+        }
+
         setDbProfile(null);
       }
     };
@@ -152,14 +167,96 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     window.addEventListener("storage", syncUser);
     window.addEventListener("user-updated", handleUserUpdated as EventListener);
 
+    const handleSessionInvalidated = () => {
+      setUser(null);
+      setDbProfile(null);
+      setManagedClubs([]);
+      setStaffClubs([]);
+    };
+
+    window.addEventListener(
+      "auth-session-invalidated",
+      handleSessionInvalidated as EventListener,
+    );
+
     return () => {
       window.removeEventListener("storage", syncUser);
       window.removeEventListener(
         "user-updated",
         handleUserUpdated as EventListener,
       );
+      window.removeEventListener(
+        "auth-session-invalidated",
+        handleSessionInvalidated as EventListener,
+      );
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const verifyCurrentSession = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        return;
+      }
+
+      try {
+        const response = await api.get("/users/me/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        if (response.data?.compte_actif === false) {
+          forceLogout("account-disabled");
+          return;
+        }
+
+        setDbProfile(response.data);
+      } catch (error: any) {
+        if (cancelled) {
+          return;
+        }
+
+        const status = error?.response?.status;
+        const message = error?.response?.data?.message;
+
+        if (status === 401 || (status === 403 && isAccountLockMessage(message))) {
+          forceLogout(message);
+          return;
+        }
+      }
+    };
+
+    void verifyCurrentSession();
+
+    const intervalId = window.setInterval(verifyCurrentSession, 10000);
+    const handleFocus = () => {
+      void verifyCurrentSession();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void verifyCurrentSession();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [user]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
