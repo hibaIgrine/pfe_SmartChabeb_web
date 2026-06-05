@@ -21,6 +21,7 @@ import {
   Bot,
   Award,
   Star,
+  Wallet,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { FavoritePostsBell } from "./FavoritePostsBell";
@@ -278,6 +279,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               icon={<LayoutDashboard size={18} />}
               label="Statistiques"
               active={location.pathname === "/dashboard"}
+            />
+          )}
+
+          {role === "ADMIN" && (
+            <SidebarItem
+              to="/reservation-revenues"
+              icon={<Wallet size={18} />}
+              label="Revenus Réservations"
+              active={location.pathname === "/reservation-revenues"}
             />
           )}
 

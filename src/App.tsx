@@ -5,6 +5,7 @@ import CentresPage from "./pages/admin/centres/CentresPage";
 import ResponsableCentrePage from "./pages/centres/ResponsableCentrePage";
 import Dashboard from "./pages/admin/Dashboard";
 import MembresPage from "./pages/admin/MembresPage";
+import ReservationRevenuePage from "./pages/admin/reservations/ReservationRevenuePage";
 import AuthPage from "./pages/auth/AuthPage";
 import SignupPage from "./pages/auth/SignupPage";
 import GoogleCompleteProfile from "./pages/auth/GoogleCompleteProfile";
@@ -124,6 +125,14 @@ function App() {
           element={
             <Layout>
               <Dashboard />
+            </Layout>
+          }
+        />
+        <Route
+          path="/reservation-revenues"
+          element={
+            <Layout>
+              <ReservationRevenuePage />
             </Layout>
           }
         />
