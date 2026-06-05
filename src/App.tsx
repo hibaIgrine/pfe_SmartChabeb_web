@@ -14,7 +14,6 @@ import NotFound from "./pages/auth/NotFound";
 import ClubsPage from "./pages/clubs/ClubsPage";
 import AdherentClubsPage from "./pages/clubs/AdherentClubsPage";
 import AdherentClubDetailsPage from "./pages/clubs/AdherentClubDetailsPage";
-import MyClubRequestsPage from "./pages/clubs/MyClubRequestsPage";
 import MyAllRequestsPage from "./pages/clubs/MyAllRequestsPage";
 import ClubStaffPage from "./pages/clubs/ClubStaffPage";
 import ManagedClubDetailsPage from "./pages/clubs/ManagedClubDetailsPage";
@@ -52,9 +51,12 @@ import UserProfilePage from "./pages/profile/UserProfilePage";
 import SocialFeedPage from "./pages/social-media/SocialFeedPage";
 import MessageriePage from "./pages/messagerie/MessageriePage";
 import Chat from "./pages/chatbot/chat";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AUTH_SESSION_INVALIDATED_EVENT } from "./utils/authSession";
+import {
+  AUTH_SESSION_INVALIDATED_EVENT,
+  AUTH_USER_UPDATED_EVENT,
+} from "./utils/authSession";
 
 function SessionRedirectListener() {
   const navigate = useNavigate();
@@ -81,6 +83,24 @@ function SessionRedirectListener() {
 }
 
 function App() {
+  const [, setSessionRevision] = useState(0);
+
+  useEffect(() => {
+    const bumpRevision = () => {
+      setSessionRevision((value) => value + 1);
+    };
+
+    window.addEventListener("storage", bumpRevision);
+    window.addEventListener(AUTH_USER_UPDATED_EVENT, bumpRevision);
+    window.addEventListener(AUTH_SESSION_INVALIDATED_EVENT, bumpRevision);
+
+    return () => {
+      window.removeEventListener("storage", bumpRevision);
+      window.removeEventListener(AUTH_USER_UPDATED_EVENT, bumpRevision);
+      window.removeEventListener(AUTH_SESSION_INVALIDATED_EVENT, bumpRevision);
+    };
+  }, []);
+
   const getCentrePage = () => {
     const userStr = localStorage.getItem("user");
     let user = null;

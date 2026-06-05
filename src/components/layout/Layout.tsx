@@ -27,7 +27,11 @@ import { NotificationBell } from "./NotificationBell";
 import { FavoritePostsBell } from "./FavoritePostsBell";
 import { MessageBell } from "./MessageBell";
 import api from "../../api/axios";
-import { forceLogout, isAccountLockMessage } from "../../utils/authSession";
+import {
+  forceLogout,
+  isAccountLockMessage,
+  syncStoredUserFromProfile,
+} from "../../utils/authSession";
 
 function getStoredUser() {
   const raw = localStorage.getItem("user");
@@ -120,12 +124,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           return;
         }
 
+        syncStoredUserFromProfile(response.data);
         setDbProfile(response.data);
       } catch (error: any) {
         const status = error?.response?.status;
         const message = error?.response?.data?.message;
 
-        if (status === 401 || (status === 403 && isAccountLockMessage(message))) {
+        if (
+          status === 401 ||
+          (status === 403 && isAccountLockMessage(message))
+        ) {
           forceLogout(message);
           return;
         }
@@ -219,6 +227,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           return;
         }
 
+        syncStoredUserFromProfile(response.data);
         setDbProfile(response.data);
       } catch (error: any) {
         if (cancelled) {
@@ -228,7 +237,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         const status = error?.response?.status;
         const message = error?.response?.data?.message;
 
-        if (status === 401 || (status === 403 && isAccountLockMessage(message))) {
+        if (
+          status === 401 ||
+          (status === 403 && isAccountLockMessage(message))
+        ) {
           forceLogout(message);
           return;
         }
