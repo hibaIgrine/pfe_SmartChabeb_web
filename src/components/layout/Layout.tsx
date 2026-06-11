@@ -626,9 +626,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "ADMIN" ||
-            role === "RESPONSABLE_CENTRE" ||
-            role === "RESPONSABLE_CLUB") && (
+          {role === "ADMIN" && (
+            <SidebarItem
+              to={ROUTES.admin.eventsManagement}
+              icon={<CalendarDays size={18} />}
+              label="Gestion Événements"
+              active={location.pathname === ROUTES.admin.eventsManagement}
+            />
+          )}
+
+          {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
               to={ROUTES.centre.eventsManagement}
               icon={<CalendarDays size={18} />}

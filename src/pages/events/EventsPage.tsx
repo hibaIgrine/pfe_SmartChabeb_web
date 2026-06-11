@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import { ROUTES } from "../../constants/routes";
 import api from "../../api/axios";
 import EventDetailsPanel from "./components/EventDetailsPanel";
 import EventsDashboardStats from "./components/EventsDashboardStats";
@@ -45,6 +46,7 @@ export default function EventsPage() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [clubs, setClubs] = useState<ClubLite[]>([]);
   const [locaux, setLocaux] = useState<LocalLite[]>([]);
+  const [allCentres, setAllCentres] = useState<{ id: string; nom: string; gouvernorat: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [dashboardStats, setDashboardStats] =
@@ -74,27 +76,61 @@ export default function EventsPage() {
   const [selectedGouvernorat, setSelectedGouvernorat] = useState("");
   const [selectedCentreForAdmin, setSelectedCentreForAdmin] = useState("");
 
+  // Filtres liste (indépendants du formulaire)
+  const [filterGouvernorat, setFilterGouvernorat] = useState("");
+  const [filterCentreId, setFilterCentreId] = useState("");
+
   const [notification, setNotification] = useState<AlertState>(null);
   const [formAlert, setFormAlert] = useState<AlertState>(null);
 
   const today = getTodayDate();
 
   const scopedClubs = useMemo(() => {
-    if (!isResponsableCentre || !resolvedCentreId) return clubs;
-    return clubs.filter((club) => club.id_centre === resolvedCentreId);
-  }, [clubs, isResponsableCentre, resolvedCentreId]);
+    if (isResponsableCentre && resolvedCentreId)
+      return clubs.filter((c) => c.id_centre === resolvedCentreId);
+    if (isAdmin && (selectedCentreForAdmin || filterCentreId))
+      return clubs.filter((c) => c.id_centre === (selectedCentreForAdmin || filterCentreId));
+    return clubs;
+  }, [clubs, isResponsableCentre, isAdmin, resolvedCentreId, selectedCentreForAdmin, filterCentreId]);
+
+  const adminFilteredCentreIds = useMemo<Set<string> | null>(() => {
+    if (!isAdmin) return null;
+    if (filterCentreId) return new Set([filterCentreId]);
+    if (filterGouvernorat) {
+      const ids = new Set(
+        allCentres.filter((c) => c.gouvernorat === filterGouvernorat).map((c) => c.id),
+      );
+      return ids.size > 0 ? ids : null;
+    }
+    return null;
+  }, [isAdmin, filterCentreId, filterGouvernorat, allCentres]);
 
   const scopedEvents = useMemo(() => {
-    if (!isResponsableCentre || !resolvedCentreId) return events;
-    const clubIds = new Set(scopedClubs.map((club) => club.id));
-    return events.filter((event) => {
-      const relatedIds = [
-        event.club_id,
-        ...(event.collaborating_club_ids || []),
-      ].filter(Boolean) as string[];
-      return relatedIds.some((clubId) => clubIds.has(clubId));
-    });
-  }, [events, isResponsableCentre, resolvedCentreId, scopedClubs]);
+    if (isResponsableCentre && resolvedCentreId) {
+      const clubIds = new Set(scopedClubs.map((c) => c.id));
+      return events.filter((e) => {
+        const related = [e.club_id, ...(e.collaborating_club_ids || [])].filter(Boolean) as string[];
+        return related.some((id) => clubIds.has(id));
+      });
+    }
+    if (isAdmin && adminFilteredCentreIds) {
+      const localIds = new Set(
+        locaux.filter((l) => {
+          const cid = l.id_centre || l.centre?.id;
+          return cid && adminFilteredCentreIds.has(cid);
+        }).map((l) => l.id),
+      );
+      const clubIds = new Set(
+        clubs.filter((c) => c.id_centre && adminFilteredCentreIds.has(c.id_centre)).map((c) => c.id),
+      );
+      return events.filter((e) => {
+        if (e.locaux_id && localIds.has(e.locaux_id)) return true;
+        const related = [e.club_id, ...(e.collaborating_club_ids || [])].filter(Boolean) as string[];
+        return related.some((id) => clubIds.has(id));
+      });
+    }
+    return events;
+  }, [events, isResponsableCentre, isAdmin, resolvedCentreId, adminFilteredCentreIds, scopedClubs, locaux, clubs]);
 
   const visibleEvents = useMemo(() => {
     const filtered = scopedEvents.filter((event) => {
@@ -112,36 +148,40 @@ export default function EventsPage() {
   }, [scopedEvents, eventFilter, today]);
 
   const scopedDashboardStats = useMemo(() => {
-    if (!dashboardStats || !isResponsableCentre) return dashboardStats;
-
-    const scopedEventIds = new Set(scopedEvents.map((event) => event.id));
-    const scopedClubIds = new Set(scopedClubs.map((club) => club.id));
-
+    if (!dashboardStats || !isResponsableCentre || !resolvedCentreId)
+      return dashboardStats;
+    const scopedEventIds = new Set(scopedEvents.map((e) => e.id));
+    const scopedClubIds = new Set(scopedClubs.map((c) => c.id));
     return {
       ...dashboardStats,
       nombreEvenements: scopedEvents.length,
       evenementsPopulaires: (dashboardStats.evenementsPopulaires || []).filter(
-        (event) => scopedEventIds.has(event.id),
+        (e) => scopedEventIds.has(e.id),
       ),
       participationParClub: (dashboardStats.participationParClub || []).filter(
-        (club) => scopedClubIds.has(club.clubId),
+        (c) => scopedClubIds.has(c.clubId),
       ),
     };
-  }, [dashboardStats, isResponsableCentre, scopedClubs, scopedEvents]);
+  }, [dashboardStats, isResponsableCentre, resolvedCentreId, scopedClubs, scopedEvents]);
 
   const selectedClubContextId = form.club_id || form.club_ids[0] || "";
   const selectedClub = scopedClubs.find((c) => c.id === selectedClubContextId);
 
-  const gouvernorats = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          locaux
-            .map((local) => local?.centre?.gouvernorat)
-            .filter((g): g is string => Boolean(g)),
-        ),
+  const gouvernorats = useMemo(() => {
+    if (isAdmin)
+      return Array.from(new Set(allCentres.map((c) => c.gouvernorat).filter(Boolean))).sort();
+    return Array.from(
+      new Set(
+        locaux
+          .map((local) => local?.centre?.gouvernorat)
+          .filter((g): g is string => Boolean(g)),
       ),
-    [locaux],
+    );
+  }, [locaux, allCentres, isAdmin]);
+
+  const filterCentresByGouvernorat = useMemo(
+    () => allCentres.filter((c) => !filterGouvernorat || c.gouvernorat === filterGouvernorat),
+    [allCentres, filterGouvernorat],
   );
 
   const centresByGouvernorat = useMemo(() => {
@@ -207,19 +247,29 @@ export default function EventsPage() {
         }
       }
 
-      const [eventsRes, clubsRes, locauxRes, statsRes] = await Promise.all([
+      const requests: Promise<any>[] = [
         api.get(`/events?includeInactive=${showInactive}`, { headers }),
         api.get("/clubs", { headers }),
         api.get("/locaux", { headers }),
-        api.get(`/events/stats/dashboard?includeInactive=${showInactive}`, {
-          headers,
-        }),
-      ]);
+        api.get(`/events/stats/dashboard?includeInactive=${showInactive}`, { headers }),
+      ];
+      if (isAdmin) requests.push(api.get("/centres", { headers }));
+
+      const [eventsRes, clubsRes, locauxRes, statsRes, centresRes] = await Promise.all(requests);
 
       setEvents(Array.isArray(eventsRes.data) ? eventsRes.data : []);
       setClubs(Array.isArray(clubsRes.data) ? clubsRes.data : []);
       setLocaux(Array.isArray(locauxRes.data) ? locauxRes.data : []);
       setDashboardStats(statsRes.data ?? null);
+      if (isAdmin && centresRes) {
+        setAllCentres(
+          (Array.isArray(centresRes.data) ? centresRes.data : []).map((c: any) => ({
+            id: c.id,
+            nom: c.nom,
+            gouvernorat: c.gouvernorat ?? "",
+          })),
+        );
+      }
     } catch {
       showAlert("Erreur lors du chargement des événements.", "error");
       setDashboardStats(null);
@@ -661,7 +711,7 @@ export default function EventsPage() {
         </div>
       )}
 
-      {canManageParticipants && (
+      {canManageParticipants && !isAdmin && (
         <div className="flex justify-end">
           <Link
             to="/events-requests"
@@ -678,10 +728,65 @@ export default function EventsPage() {
         onCreate={openCreateModal}
       />
 
-      <EventsDashboardStats
-        stats={scopedDashboardStats}
-        isLoading={isLoading}
-      />
+      {isAdmin && (
+        <div className="flex justify-end">
+          <Link
+            to={ROUTES.admin.eventsStats}
+            className="inline-flex items-center gap-2 rounded-2xl bg-smart-teal px-5 py-2.5 text-xs font-black uppercase tracking-[0.15em] text-white hover:bg-black transition"
+          >
+            Voir les statistiques
+          </Link>
+        </div>
+      )}
+
+      {!isAdmin && (
+        <EventsDashboardStats
+          stats={scopedDashboardStats}
+          isLoading={isLoading}
+        />
+      )}
+
+      {isAdmin && (
+        <div className="flex flex-wrap items-center gap-3 rounded-[28px] border border-gray-100 bg-white shadow-sm p-4">
+          <span className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 shrink-0">
+            Filtrer par
+          </span>
+          <select
+            value={filterGouvernorat}
+            onChange={(e) => { setFilterGouvernorat(e.target.value); setFilterCentreId(""); }}
+            className="rounded-xl border border-gray-200 bg-[#F7F3E9] px-3 py-2 text-xs font-bold text-smart-teal outline-none focus:ring-2 focus:ring-smart-teal/20 cursor-pointer"
+          >
+            <option value="">Tous les gouvernorats</option>
+            {gouvernorats.map((g) => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+          </select>
+          <select
+            value={filterCentreId}
+            onChange={(e) => setFilterCentreId(e.target.value)}
+            className="rounded-xl border border-gray-200 bg-[#F7F3E9] px-3 py-2 text-xs font-bold text-smart-teal outline-none focus:ring-2 focus:ring-smart-teal/20 cursor-pointer"
+          >
+            <option value="">Tous les centres</option>
+            {filterCentresByGouvernorat.map((c) => (
+              <option key={c.id} value={c.id}>{c.nom}</option>
+            ))}
+          </select>
+          {(filterGouvernorat || filterCentreId) && (
+            <>
+              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-smart-teal">
+                {scopedEvents.length} événement{scopedEvents.length !== 1 ? "s" : ""}
+              </span>
+              <button
+                type="button"
+                onClick={() => { setFilterGouvernorat(""); setFilterCentreId(""); }}
+                className="ml-auto px-3 py-1.5 rounded-xl bg-gray-100 text-xs font-black text-gray-500 hover:bg-gray-200 transition"
+              >
+                Réinitialiser
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2 rounded-[28px] border border-gray-100 bg-white shadow-sm p-4">
         <span className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mr-2">

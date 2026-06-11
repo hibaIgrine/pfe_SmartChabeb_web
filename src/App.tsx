@@ -37,6 +37,7 @@ import PresencePage from "./pages/presences/PresencePage";
 import AdherentSeancesPage from "./pages/presences/AdherentSeancesPage";
 import ClubFeedbacksPage from "./pages/presences/ClubFeedbacksPage";
 import EventsPage from "./pages/events/EventsPage";
+import AdminEventsStatsPage from "./pages/events/AdminEventsStatsPage";
 import ClubEventsRequestsPage from "./pages/events/ClubEventsRequestsPage";
 import CentreEventsRequestsPage from "./pages/events/CentreEventsRequestsPage";
 import EventRequestsPage from "./pages/events/EventRequestsPage";
@@ -454,6 +455,24 @@ function App() {
             CENTRE_ONLY,
             <Layout>
               <EventsPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.admin.eventsManagement}
+          element={withAccess(
+            ADMIN_ONLY,
+            <Layout>
+              <EventsPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.admin.eventsStats}
+          element={withAccess(
+            ADMIN_ONLY,
+            <Layout>
+              <AdminEventsStatsPage />
             </Layout>,
           )}
         />

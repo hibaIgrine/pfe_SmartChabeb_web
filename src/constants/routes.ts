@@ -13,6 +13,8 @@ export const ROUTES = {
     membres: "/admin/membres",
     reservationRevenues: "/admin/reservation-revenues",
     roles: "/admin/roles",
+    eventsManagement: "/admin/events-management",
+    eventsStats: "/admin/events-stats",
   },
   centre: {
     home: "/centre/mon-centre",
