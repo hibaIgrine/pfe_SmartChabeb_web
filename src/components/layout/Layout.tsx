@@ -356,6 +356,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   if (!user) return <Navigate to="/auth" replace />;
 
+  // Clubs pour la section "Taches staff" : staff classique + clubs gérés (RESPONSABLE_CLUB)
+  const staffTaskClubs: Array<{ id: string; nom: string }> = [
+    ...staffClubs.map((item: any) => ({ id: item.club.id, nom: item.club.nom })),
+    ...(role === "RESPONSABLE_CLUB"
+      ? managedClubs
+          .filter(
+            (c: any) => !staffClubs.some((s: any) => s.club.id === c.id),
+          )
+          .map((c: any) => ({ id: c.id, nom: c.nom }))
+      : []),
+  ];
+
   return (
     <div className="relative flex h-screen bg-[#F7F3E9] font-sans overflow-hidden">
       {mobileSidebarOpen ? (
@@ -555,43 +567,40 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {staffClubs.length > 0 && (
+          {staffTaskClubs.length > 0 && (
             <div className="px-3 mt-4">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-2">
                 Taches staff
               </div>
-              {staffClubsLoading ? (
+              {staffClubsLoading || managedClubsLoading ? (
                 <div className="text-[10px] text-white/60 px-4">
                   Chargement...
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {staffClubs.map((item) => {
-                    const club = item.club;
-                    return (
-                      <div key={item.id} className="px-1">
-                        <Link
-                          to={`/my-clubs/${club.id}/staff-tasks`}
-                          className={`flex items-center gap-2 py-1.5 px-3 rounded-md transition-all text-sm truncate ${
-                            location.pathname.startsWith(
-                              `/my-clubs/${club.id}/staff-tasks`,
-                            )
-                              ? "bg-white text-[#436D75]"
-                              : "text-white/80 hover:bg-white/5"
-                          }`}
-                        >
-                          <ListTodo size={14} />
-                          <span className="font-bold truncate">{club.nom}</span>
-                        </Link>
-                      </div>
-                    );
-                  })}
+                  {staffTaskClubs.map((club) => (
+                    <div key={club.id} className="px-1">
+                      <Link
+                        to={`/my-clubs/${club.id}/staff-tasks`}
+                        className={`flex items-center gap-2 py-1.5 px-3 rounded-md transition-all text-sm truncate ${
+                          location.pathname.startsWith(
+                            `/my-clubs/${club.id}/staff-tasks`,
+                          )
+                            ? "bg-white text-[#436D75]"
+                            : "text-white/80 hover:bg-white/5"
+                        }`}
+                      >
+                        <ListTodo size={14} />
+                        <span className="font-bold truncate">{club.nom}</span>
+                      </Link>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           )}
 
-          {staffClubs.length > 0 && (
+          {staffTaskClubs.length > 0 && (
             <div className="px-3 mt-3">
               <Link
                 to={ROUTES.club.staffCalendar}

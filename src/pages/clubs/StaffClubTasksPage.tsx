@@ -1090,9 +1090,19 @@ function TaskDetailsModal({
               ) : (
                 comments.map((c) => (
                   <div key={c.id} className="flex gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#D9E8D1] text-[11px] font-black uppercase text-smart-teal">
+                    <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#D9E8D1] text-[11px] font-black uppercase text-smart-teal">
                       {(c.utilisateur?.prenom?.[0] ?? "") +
                         (c.utilisateur?.nom?.[0] ?? "")}
+                      {c.utilisateur?.photo_profil_url && (
+                        <img
+                          src={c.utilisateur.photo_profil_url}
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      )}
                     </div>
                     <div>
                       <div className="text-sm font-bold text-gray-800">

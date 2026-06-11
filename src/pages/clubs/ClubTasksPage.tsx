@@ -128,6 +128,34 @@ const defaultTaskForm: TaskFormData = {
   utilisateurs: [],
 };
 
+function normalizeStatus(status: string) {
+  if (!status) return "EN_ATTENTE";
+  const normalized = status.toUpperCase();
+  if (normalized === "A_FAIRE") return "EN_ATTENTE";
+  return normalized;
+}
+
+function statusLabel(status: string) {
+  const normalized = normalizeStatus(status);
+  if (normalized === "EN_ATTENTE") return "En attente";
+  if (normalized === "EN_COURS") return "En cours";
+  if (normalized === "TERMINE") return "Terminee";
+  if (normalized === "VALIDEE") return "Validee";
+  if (normalized === "REFUSE") return "Refusee";
+  if (normalized === "ANNULE") return "Annulee";
+  return "En attente";
+}
+
+function statusIcon(status: string) {
+  const normalized = normalizeStatus(status);
+  if (normalized === "EN_ATTENTE") return <AlertCircle size={14} />;
+  if (normalized === "EN_COURS") return <Users size={14} />;
+  if (normalized === "TERMINE") return <CheckCircle2 size={14} />;
+  if (normalized === "VALIDEE") return <ShieldCheck size={14} />;
+  if (normalized === "REFUSE") return <XCircle size={14} />;
+  return <AlertCircle size={14} />;
+}
+
 export default function ClubTasksPage() {
   const { clubId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -359,19 +387,6 @@ export default function ClubTasksPage() {
     }
   };
 
-  const normalizeStatus = (status: string) => {
-    if (!status) {
-      return "EN_ATTENTE";
-    }
-
-    const normalized = status.toUpperCase();
-    if (normalized === "A_FAIRE") {
-      return "EN_ATTENTE";
-    }
-
-    return normalized;
-  };
-
   const totalAssignments = useMemo(
     () =>
       tasks.reduce((acc, task) => acc + (task.affectations?.length || 0), 0),
@@ -443,31 +458,6 @@ export default function ClubTasksPage() {
   }
 
   const isOverdue = (dateLimite: string) => new Date(dateLimite) < new Date();
-
-  const statusLabel = (status: string) => {
-    const normalized = normalizeStatus(status);
-
-    if (normalized === "EN_ATTENTE") return "En attente";
-    if (normalized === "EN_COURS") return "En cours";
-    if (normalized === "TERMINE") return "Terminee";
-    if (normalized === "VALIDEE") return "Validee";
-    if (normalized === "REFUSE") return "Refusee";
-    if (normalized === "ANNULE") return "Annulee";
-
-    return "En attente";
-  };
-
-  const statusIcon = (status: string) => {
-    const normalized = normalizeStatus(status);
-
-    if (normalized === "EN_ATTENTE") return <AlertCircle size={14} />;
-    if (normalized === "EN_COURS") return <Users size={14} />;
-    if (normalized === "TERMINE") return <CheckCircle2 size={14} />;
-    if (normalized === "VALIDEE") return <ShieldCheck size={14} />;
-    if (normalized === "REFUSE") return <XCircle size={14} />;
-
-    return <AlertCircle size={14} />;
-  };
 
   if (loading) {
     return (
@@ -1037,51 +1027,94 @@ function TaskDetailsModal({
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [viewerProof]);
+  const normalizedStatus =
+    task.statut?.toUpperCase() === "A_FAIRE"
+      ? "EN_ATTENTE"
+      : (task.statut || "EN_ATTENTE").toUpperCase();
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
-      <div className="w-full rounded-t-3xl border border-slate-200 bg-white shadow-xl sm:max-h-[92vh] sm:max-w-3xl sm:rounded-3xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4">
+      <div className="w-full rounded-t-[32px] border border-gray-100 bg-white shadow-2xl sm:max-w-3xl sm:rounded-[32px]">
+
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 sm:px-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Details de la tache
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-smart-teal/60">
+              Détails de la tâche
             </p>
-            <h2 className="text-lg font-bold text-[#2E5A66] sm:text-2xl">
+            <h2 className="text-xl font-black text-gray-900 sm:text-2xl">
               {task.titre}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+            className="rounded-xl p-2 text-gray-400 transition hover:bg-gray-100"
             aria-label="Fermer"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="max-h-[80vh] overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <InfoBlock label="Priorite" value={task.priorite} />
-            <InfoBlock label="Type" value={task.type_tache} />
-            <InfoBlock
-              label="Date limite"
-              value={formatDateTime(task.date_limite)}
-            />
-            <InfoBlock label="Statut" value={task.statut} />
+        <div className="max-h-[82vh] overflow-y-auto px-5 py-5 sm:px-6">
+
+          {/* Badges */}
+          <div className="flex flex-wrap gap-2">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${priorityColors[task.priorite]}`}
+            >
+              {priorityIcons[task.priorite]}
+              {task.priorite === "HAUTE"
+                ? "Haute"
+                : task.priorite === "MOYENNE"
+                  ? "Moyenne"
+                  : "Faible"}
+            </span>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${statusColors[normalizedStatus] || statusColors.A_FAIRE}`}
+            >
+              {statusIcon(task.statut)}
+              {statusLabel(task.statut)}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-100 px-3 py-1 text-xs font-bold text-sky-700">
+              {task.type_tache}
+            </span>
           </div>
 
+          {/* Info grid */}
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl bg-[#F7F3E9] px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
+                Échéance
+              </p>
+              <p className="mt-0.5 text-sm font-bold text-gray-800">
+                {formatDateTime(task.date_limite)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-[#F7F3E9] px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
+                Créée le
+              </p>
+              <p className="mt-0.5 text-sm font-bold text-gray-800">
+                {formatDateTime(task.created_at)}
+              </p>
+            </div>
+          </div>
+
+          {/* Description */}
           {task.description && (
-            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="mb-2 text-sm font-semibold text-slate-700">
+            <div className="mt-4 rounded-2xl bg-[#D9E8D1]/40 p-4">
+              <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-smart-teal/60">
                 Description
               </p>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
                 {task.description}
               </p>
             </div>
           )}
 
-          <div className="mt-5 rounded-2xl border border-slate-200 p-4">
-            <p className="mb-3 text-sm font-semibold text-slate-700">
+          {/* Affectations */}
+          <div className="mt-4 rounded-2xl border border-gray-100 p-4">
+            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
               Affectations
             </p>
             <div className="flex flex-wrap gap-2">
@@ -1089,91 +1122,101 @@ function TaskDetailsModal({
                 task.affectations.map((affectation) => (
                   <span
                     key={affectation.id}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-smart-teal/10 px-3 py-1 text-xs font-bold text-smart-teal"
                   >
                     {affectation.utilisateur.prenom}{" "}
                     {affectation.utilisateur.nom}
                   </span>
                 ))
               ) : (
-                <p className="text-sm text-slate-500">Aucun membre affecte.</p>
+                <p className="text-sm text-gray-400">Aucun membre affecté.</p>
               )}
             </div>
           </div>
 
-          {task.statut === "TERMINE" &&
-            Array.isArray(task.preuves) &&
-            task.preuves.length > 0 && (
-              <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                <p className="mb-3 text-sm font-semibold text-emerald-800">
-                  Preuves soumises
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {task.preuves.map((preuve) => {
-                    const isImage = isImageProof(preuve);
-                    return (
-                      <button
-                        key={preuve.id}
-                        type="button"
-                        onClick={() => setViewerProof(preuve)}
-                        className="group flex overflow-hidden rounded-xl border border-emerald-200 bg-white text-left text-sm text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50"
-                      >
-                        <div className="flex h-full w-full min-h-[88px] items-stretch gap-3 p-2">
-                          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-                            {isImage ? (
-                              <img
-                                src={resolveProofUrl(preuve.url)}
-                                alt={preuve.filename || "Preuve"}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full flex-col items-center justify-center px-1 text-center text-[11px] text-slate-500">
-                                <span className="font-semibold uppercase tracking-wide text-emerald-700">
-                                  Document
-                                </span>
-                                <span className="mt-1 line-clamp-2 break-words">
-                                  Aperçu interne
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1 py-1 pr-1">
-                            <p className="line-clamp-2 font-medium text-slate-800">
-                              {preuve.filename || preuve.url}
-                            </p>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Cliquez pour ouvrir l’aperçu dans la page
-                            </p>
-                          </div>
+          {/* Preuves soumises */}
+          {Array.isArray(task.preuves) && task.preuves.length > 0 && (
+            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <p className="mb-3 text-[10px] font-black uppercase tracking-[0.15em] text-emerald-700">
+                Preuves soumises
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {task.preuves.map((preuve) => {
+                  const isImage = isImageProof(preuve);
+                  return (
+                    <button
+                      key={preuve.id}
+                      type="button"
+                      onClick={() => setViewerProof(preuve)}
+                      className="group flex overflow-hidden rounded-xl border border-emerald-200 bg-white text-left transition hover:border-emerald-300 hover:bg-emerald-50"
+                    >
+                      <div className="flex h-full w-full min-h-[80px] items-stretch gap-3 p-2">
+                        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
+                          {isImage ? (
+                            <img
+                              src={resolveProofUrl(preuve.url)}
+                              alt={preuve.filename || "Preuve"}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center">
+                              <span className="text-[10px] font-black uppercase tracking-wide text-emerald-700">
+                                Doc
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                        <div className="min-w-0 flex-1 py-1 pr-1">
+                          <p className="line-clamp-2 text-sm font-bold text-gray-800">
+                            {preuve.filename || preuve.url}
+                          </p>
+                          <p className="mt-1 text-xs text-gray-400">
+                            Cliquez pour ouvrir l’aperçu
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-            )}
+            </div>
+          )}
 
-          <div className="mt-5 rounded-2xl border border-slate-200 p-4">
-            <p className="mb-3 text-sm font-semibold text-slate-700">
+          {/* Commentaires */}
+          <div className="mt-4 rounded-2xl border border-gray-100 p-4">
+            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
               Commentaires
             </p>
             <div className="max-h-48 space-y-3 overflow-y-auto">
               {loadingComments ? (
-                <p className="text-sm text-slate-500">Chargement...</p>
+                <p className="text-sm text-gray-400">Chargement...</p>
               ) : comments.length === 0 ? (
-                <p className="text-sm text-slate-500">Aucun commentaire.</p>
+                <p className="text-sm text-gray-400">Aucun commentaire.</p>
               ) : (
                 comments.map((c) => (
                   <div key={c.id} className="flex gap-3">
-                    <div className="h-8 w-8 rounded-full bg-slate-200" />
+                    <div className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#D9E8D1] text-[11px] font-black uppercase text-smart-teal">
+                      {(c.utilisateur?.prenom?.[0] ?? "") +
+                        (c.utilisateur?.nom?.[0] ?? "")}
+                      {c.utilisateur?.photo_profil_url && (
+                        <img
+                          src={c.utilisateur.photo_profil_url}
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      )}
+                    </div>
                     <div>
-                      <div className="text-sm font-medium text-slate-700">
+                      <div className="text-sm font-bold text-gray-800">
                         {c.utilisateur?.prenom} {c.utilisateur?.nom}
-                        <span className="ml-2 text-xs font-normal text-slate-400">
+                        <span className="ml-2 text-xs font-normal text-gray-400">
                           {new Date(c.created_at).toLocaleString()}
                         </span>
                       </div>
-                      <div className="text-sm text-slate-600 whitespace-pre-wrap">
+                      <div className="whitespace-pre-wrap text-sm text-gray-600">
                         {c.message}
                       </div>
                     </div>
@@ -1181,12 +1224,13 @@ function TaskDetailsModal({
                 ))
               )}
             </div>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-4 flex gap-2">
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none"
-                placeholder="Ecrire un commentaire..."
+                className="flex-1 resize-none rounded-2xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-smart-teal focus:ring-2 focus:ring-smart-teal/10"
+                placeholder="Écrire un commentaire..."
+                rows={2}
               />
               <button
                 disabled={sendingComment || !newComment.trim() || !clubId}
@@ -1194,13 +1238,10 @@ function TaskDetailsModal({
                   if (!clubId) return;
                   try {
                     setSendingComment(true);
-                    const created = await import("../../api/comments.api").then(
-                      (m) =>
-                        m.createTaskComment(
-                          clubId!,
-                          task.id,
-                          newComment.trim(),
-                        ),
+                    const created = await import(
+                      "../../api/comments.api"
+                    ).then((m) =>
+                      m.createTaskComment(clubId!, task.id, newComment.trim()),
                     );
                     setComments((cur) => [...cur, created]);
                     setNewComment("");
@@ -1209,7 +1250,7 @@ function TaskDetailsModal({
                     setSendingComment(false);
                   }
                 }}
-                className="rounded-xl bg-[#2E5A66] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className="self-end rounded-2xl bg-smart-teal px-4 py-2.5 text-sm font-black text-white transition hover:bg-black disabled:opacity-40"
               >
                 Envoyer
               </button>
@@ -1220,21 +1261,21 @@ function TaskDetailsModal({
 
       {viewerProof && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-4xl rounded-3xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-6">
+          <div className="w-full max-w-4xl rounded-[32px] bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3 sm:px-6">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-smart-teal/60">
                   Aperçu de la preuve
                 </p>
-                <h4 className="truncate text-base font-semibold text-slate-800">
+                <h4 className="truncate text-base font-black text-gray-900">
                   {viewerProof.filename || "Preuve"}
                 </h4>
               </div>
               <button
                 type="button"
                 onClick={() => setViewerProof(null)}
-                className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"
-                aria-label="Fermer l'aperçu"
+                className="rounded-xl p-2 text-gray-400 transition hover:bg-gray-100"
+                aria-label="Fermer l’aperçu"
               >
                 <X size={18} />
               </button>
@@ -1244,7 +1285,7 @@ function TaskDetailsModal({
                 <img
                   src={resolveProofUrl(viewerProof.url)}
                   alt={viewerProof.filename || "Preuve"}
-                  className="mx-auto max-h-[70vh] w-auto rounded-2xl border border-slate-200 object-contain"
+                  className="mx-auto max-h-[70vh] w-auto rounded-2xl border border-gray-100 object-contain"
                 />
               ) : viewerProof.type?.includes("pdf") ||
                 viewerProof.url.toLowerCase().endsWith(".pdf") ? (
@@ -1252,24 +1293,24 @@ function TaskDetailsModal({
                   <iframe
                     src={viewerBlobUrl}
                     title={viewerProof.filename || "Preuve PDF"}
-                    className="h-[70vh] w-full rounded-2xl border border-slate-200"
+                    className="h-[70vh] w-full rounded-2xl border border-gray-100"
                   />
                 ) : (
-                  <div className="flex items-center justify-center">
-                    <span className="text-sm text-slate-500">
+                  <div className="flex items-center justify-center py-8">
+                    <span className="text-sm text-gray-400">
                       Chargement du PDF…
                     </span>
                   </div>
                 )
               ) : (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-700">
-                  <p className="font-semibold text-slate-800">
+                <div className="rounded-2xl border border-gray-100 bg-[#F7F3E9] p-6 text-sm">
+                  <p className="font-black text-gray-800">
                     Aperçu non disponible
                   </p>
-                  <p className="mt-2 break-words">
+                  <p className="mt-2 break-words text-gray-600">
                     {viewerProof.filename || viewerProof.url}
                   </p>
-                  <p className="mt-2 text-slate-500">
+                  <p className="mt-2 text-gray-400">
                     Ce type de document ne peut pas être affiché directement
                     dans le navigateur.
                   </p>
@@ -1314,18 +1355,6 @@ function resolveProofUrl(url: string) {
   }
 }
 
-// PDF blob helper and URL resolver are defined above and used inside the modal
-
-function InfoBlock({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-      <p className="mt-2 text-sm font-medium text-slate-800">{value}</p>
-    </div>
-  );
-}
 
 interface TaskModalProps {
   mode: "create" | "edit";
