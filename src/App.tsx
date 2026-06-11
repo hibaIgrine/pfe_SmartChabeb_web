@@ -428,7 +428,7 @@ function App() {
         <Route
           path={ROUTES.adherent.presences}
           element={withAccess(
-            ADMIN_OR_ADHERENT,
+            ["ADMIN", "ADHERENT", "RESPONSABLE_CLUB"],
             <Layout>
               <PresencePage />
             </Layout>,

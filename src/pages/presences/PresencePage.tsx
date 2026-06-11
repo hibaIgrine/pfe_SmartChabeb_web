@@ -18,7 +18,7 @@ function formatDate(date: Date) {
 }
 
 function hasArabic(text: string) {
-  return /[\u0600-\u06FF]/.test(text);
+  return /[؀-ۿ]/.test(text);
 }
 
 function textToImageDataUrl(
@@ -75,12 +75,17 @@ export default function PresencePage() {
   const [stats, setStats] = useState<any>(null);
   const [seances, setSeances] = useState<any[]>([]);
   const [selectedSeance, setSelectedSeance] = useState<any>(null);
-  const [isCreateSeanceOpen, setIsCreateSeanceOpen] = useState(false);
+
+  // ── new seance creation mode ──────────────────────────────────────────────
+  const [isNewSeanceMode, setIsNewSeanceMode] = useState(false);
   const [newSeanceTitle, setNewSeanceTitle] = useState("");
-  const [busyUserId, setBusyUserId] = useState<string | null>(null);
+  const [localAttendance, setLocalAttendance] = useState<
+    Record<string, "PRESENT" | "ABSENT" | null>
+  >({});
+  const [isSavingPresences, setIsSavingPresences] = useState(false);
+
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const [seanceJustCreated, setSeanceJustCreated] = useState(false);
   const [notification, setNotification] = useState<{
     msg: string;
     type: "success" | "error";
@@ -201,105 +206,174 @@ export default function PresencePage() {
       setStats(null);
       setSeances([]);
       setSelectedSeance(null);
-      setSeanceJustCreated(false);
+      setIsNewSeanceMode(false);
       return;
     }
-
     void loadClubData(selectedClubId, selectedDate);
   }, [selectedClubId]);
 
+  // Sync local attendance from API data whenever members change (not in create mode)
   useEffect(() => {
-    setSeanceJustCreated(false);
-  }, [selectedDate, selectedClubId]);
+    if (isNewSeanceMode) return;
+    const initial: Record<string, "PRESENT" | "ABSENT" | null> = {};
+    members.forEach((m) => {
+      initial[m.id_utilisateur] =
+        m.statut_jour === "PRESENT" || m.statut_jour === "ABSENT"
+          ? m.statut_jour
+          : null;
+    });
+    setLocalAttendance(initial);
+  }, [members, isNewSeanceMode]);
 
-  const markAttendance = async (member: any, statut: "PRESENT" | "ABSENT") => {
-    if (!club?.id) return;
+  // ── local attendance helpers ───────────────────────────────────────────────
 
-    setBusyUserId(member.id_utilisateur);
-    try {
-      const payload: any = {
-        id_club: club.id,
-        id_utilisateur: member.id_utilisateur,
-        date_presence: selectedDate,
-        statut,
-        remarque: null,
-      };
-      if (selectedSeance?.id) payload.id_seance = selectedSeance.id;
-
-      await api.post("/presences/mark", payload);
-
-      await loadClubData(selectedClubId, selectedDate, selectedSeance?.id, {
-        showLoading: false,
-        preserveScroll: true,
-      });
-    } catch (error: any) {
-      console.error(error);
-      showAlert(
-        error?.response?.data?.message ||
-          "Erreur lors du marquage de présence.",
-        "error",
-      );
-    } finally {
-      setBusyUserId(null);
-    }
+  const startNewSeance = () => {
+    const initial: Record<string, "PRESENT" | "ABSENT" | null> = {};
+    members.forEach((m) => {
+      initial[m.id_utilisateur] = null;
+    });
+    setLocalAttendance(initial);
+    setNewSeanceTitle(`Séance ${selectedDate}`);
+    setIsNewSeanceMode(true);
   };
 
-  const createSeance = async () => {
-    if (!club?.id) return;
+  const cancelNewSeance = () => {
+    setIsNewSeanceMode(false);
+    setNewSeanceTitle("");
+    // Restore from members
+    const initial: Record<string, "PRESENT" | "ABSENT" | null> = {};
+    members.forEach((m) => {
+      initial[m.id_utilisateur] =
+        m.statut_jour === "PRESENT" || m.statut_jour === "ABSENT"
+          ? m.statut_jour
+          : null;
+    });
+    setLocalAttendance(initial);
+  };
 
-    const title = newSeanceTitle.trim();
-    if (!title) return;
+  const toggleLocalAttendance = (
+    userId: string,
+    status: "PRESENT" | "ABSENT",
+  ) => {
+    setLocalAttendance((prev) => ({
+      ...prev,
+      [userId]: prev[userId] === status ? null : status,
+    }));
+  };
 
+  const clearLocalAttendance = (userId: string) => {
+    setLocalAttendance((prev) => ({ ...prev, [userId]: null }));
+  };
+
+  // ── submit new seance + all presences ─────────────────────────────────────
+
+  const submitNewSeance = async () => {
+    if (!club?.id || !newSeanceTitle.trim()) return;
+    setIsSavingPresences(true);
     try {
       const res = await api.post("/presences/seances", {
         id_club: club.id,
         date_seance: selectedDate,
-        titre: title,
+        titre: newSeanceTitle.trim(),
       });
+      const seanceId = res.data?.id;
+
+      const toSave = Object.entries(localAttendance).filter(
+        ([, s]) => s !== null,
+      );
+      if (toSave.length > 0) {
+        await Promise.all(
+          toSave.map(([userId, status]) =>
+            api.post("/presences/mark", {
+              id_club: club.id,
+              id_utilisateur: userId,
+              date_presence: selectedDate,
+              statut: status,
+              remarque: null,
+              id_seance: seanceId,
+            }),
+          ),
+        );
+      }
+
+      setIsNewSeanceMode(false);
       setNewSeanceTitle("");
-      setIsCreateSeanceOpen(false);
-      setSeanceJustCreated(true);
-      await loadClubData(selectedClubId, selectedDate, res.data?.id, {
-        showLoading: false,
-        preserveScroll: true,
+      setLocalAttendance({});
+      await loadClubData(selectedClubId, selectedDate, seanceId, {
+        showLoading: true,
       });
-      showAlert("Séance créée.", "success");
+      showAlert("Séance et présences enregistrées avec succès.", "success");
     } catch (err: any) {
-      console.error(err);
-      showAlert("Erreur création séance.", "error");
+      showAlert(
+        err?.response?.data?.message || "Erreur lors de l'enregistrement.",
+        "error",
+      );
+    } finally {
+      setIsSavingPresences(false);
     }
   };
 
-  const unmarkAttendance = async (member: any) => {
-    if (!club?.id || !selectedSeance?.id) return;
+  // ── submit presence changes for an existing seance ────────────────────────
 
-    setBusyUserId(member.id_utilisateur);
+  const submitExistingPresences = async () => {
+    if (!club?.id || !selectedSeance?.id) return;
+    setIsSavingPresences(true);
     try {
-      await api.post("/presences/unmark", {
-        id_club: club.id,
-        id_utilisateur: member.id_utilisateur,
-        id_seance: selectedSeance.id,
+      const saves: Promise<any>[] = [];
+
+      Object.entries(localAttendance).forEach(([userId, status]) => {
+        const original = members.find((m) => m.id_utilisateur === userId);
+        const originalStatus =
+          original?.statut_jour === "PRESENT" ||
+          original?.statut_jour === "ABSENT"
+            ? original.statut_jour
+            : null;
+
+        if (status === originalStatus) return;
+
+        if (status === null) {
+          saves.push(
+            api.post("/presences/unmark", {
+              id_club: club.id,
+              id_utilisateur: userId,
+              id_seance: selectedSeance.id,
+            }),
+          );
+        } else {
+          saves.push(
+            api.post("/presences/mark", {
+              id_club: club.id,
+              id_utilisateur: userId,
+              date_presence: selectedDate,
+              statut: status,
+              remarque: null,
+              id_seance: selectedSeance.id,
+            }),
+          );
+        }
       });
+
+      if (saves.length > 0) await Promise.all(saves);
 
       await loadClubData(selectedClubId, selectedDate, selectedSeance.id, {
         showLoading: false,
         preserveScroll: true,
       });
-    } catch (error: any) {
-      console.error(error);
+      showAlert("Présences enregistrées.", "success");
+    } catch (err: any) {
       showAlert(
-        error?.response?.data?.message ||
-          "Impossible d'annuler cette présence.",
+        err?.response?.data?.message || "Erreur lors de l'enregistrement.",
         "error",
       );
     } finally {
-      setBusyUserId(null);
+      setIsSavingPresences(false);
     }
   };
 
+  // ── exports ───────────────────────────────────────────────────────────────
+
   const exportDailyFile = async (targetSeance?: any) => {
     if (!club?.id) return;
-
     const seance = targetSeance ?? selectedSeance;
     if (!seance?.id) return;
 
@@ -315,22 +389,19 @@ export default function PresencePage() {
         throw new Error("Contenu d'export invalide.");
       }
 
-      const blob = new Blob([`\uFEFF${csvContent}`], {
+      const blob = new Blob([`﻿${csvContent}`], {
         type: "text/csv;charset=utf-8;",
       });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
-
       link.href = url;
       link.setAttribute("download", fileName);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-
       showAlert("Fichier d'export téléchargé avec succès.", "success");
     } catch (error: any) {
-      console.error(error);
       showAlert(
         error?.response?.data?.message ||
           error?.message ||
@@ -344,7 +415,6 @@ export default function PresencePage() {
 
   const exportDailyPdf = async (targetSeance?: any) => {
     if (!club?.id) return;
-
     const seance = targetSeance ?? selectedSeance;
     if (!seance?.id) return;
 
@@ -353,7 +423,6 @@ export default function PresencePage() {
       const response = await api.get(
         `/presences/${club.id}/export?seanceId=${seance.id}`,
       );
-
       const records = Array.isArray(response.data?.records)
         ? response.data.records
         : [];
@@ -363,15 +432,10 @@ export default function PresencePage() {
         throw new Error("Aucune donnée à exporter pour cette date.");
       }
 
-      const doc = new jsPDF({
-        orientation: "landscape",
-        unit: "pt",
-        format: "a4",
-      });
+      const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
 
-      // Bande institutionnelle sur une seule ligne
       doc.setTextColor(31, 41, 55);
       doc.setFontSize(14);
       doc.text("République Tunisienne", 40, 46);
@@ -402,7 +466,6 @@ export default function PresencePage() {
       doc.setLineWidth(1.2);
       doc.line(40, 82, pageWidth - 40, 82);
 
-      // Titre centré
       doc.setFontSize(16);
       doc.setTextColor(67, 109, 117);
       doc.text("Fiche Journalière de Présence", pageWidth / 2, 104, {
@@ -418,21 +481,11 @@ export default function PresencePage() {
       );
       doc.text(`Club: ${metadata?.club?.nom || club.nom || "-"}`, 40, 138);
 
-      // Nom du centre déjà placé dans la bande institutionnelle
-
       autoTable(doc, {
         startY: 158,
         styles: { fontSize: 8 },
         head: [
-          [
-            "Nom",
-            "Prénom",
-            "Email",
-            "Rôle",
-            "Statut",
-            "Remarque",
-            "Marqué par",
-          ],
+          ["Nom", "Prénom", "Email", "Rôle", "Statut", "Remarque", "Marqué par"],
         ],
         body: records.map((row: any) => [
           row.utilisateurNom || "",
@@ -452,9 +505,7 @@ export default function PresencePage() {
         `Date de la fiche: ${metadata?.datePresence || selectedDate}`,
         pageWidth - 40,
         finalY,
-        {
-          align: "right",
-        },
+        { align: "right" },
       );
 
       const presentsCount = records.filter(
@@ -481,14 +532,9 @@ export default function PresencePage() {
         40,
         pageHeight - 22,
       );
-      doc.text(
-        "Document officiel - SmartChabeb",
-        pageWidth - 40,
-        pageHeight - 22,
-        {
-          align: "right",
-        },
-      );
+      doc.text("Document officiel - SmartChabeb", pageWidth - 40, pageHeight - 22, {
+        align: "right",
+      });
 
       const safeClubName = String(metadata?.club?.nom || club.nom || "club")
         .toLowerCase()
@@ -498,7 +544,6 @@ export default function PresencePage() {
       doc.save(`presence-${safeClubName || "club"}-${selectedDate}.pdf`);
       showAlert("Fichier PDF téléchargé avec succès.", "success");
     } catch (error: any) {
-      console.error(error);
       showAlert(
         error?.response?.data?.message ||
           error?.message ||
@@ -510,11 +555,22 @@ export default function PresencePage() {
     }
   };
 
+  // ── derived values ─────────────────────────────────────────────────────────
+
   const totals = stats?.totals || {};
-  const topMembers = useMemo(
-    () => (stats?.par_membre || []).slice(0, 8),
-    [stats],
-  );
+  const topMembers = useMemo(() => (stats?.par_membre || []).slice(0, 8), [stats]);
+
+  const presentCount = Object.values(localAttendance).filter(
+    (s) => s === "PRESENT",
+  ).length;
+  const absentCount = Object.values(localAttendance).filter(
+    (s) => s === "ABSENT",
+  ).length;
+  const unmarkedCount = Object.values(localAttendance).filter(
+    (s) => s === null,
+  ).length;
+
+  // ── access guard ──────────────────────────────────────────────────────────
 
   if (role !== "RESPONSABLE_CLUB") {
     return (
@@ -527,11 +583,17 @@ export default function PresencePage() {
     );
   }
 
+  // ── render ────────────────────────────────────────────────────────────────
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12 animate-in fade-in duration-500">
       {notification && (
         <div
-          className={`fixed top-5 right-5 z-[1000] px-5 py-4 rounded-2xl shadow-2xl border flex items-center gap-3 font-bold text-sm transition-all animate-in slide-in-from-right duration-300 ${notification.type === "error" ? "bg-red-50 text-red-600 border-red-100" : "bg-green-50 text-green-600 border-green-100"}`}
+          className={`fixed top-5 right-5 z-[1000] px-5 py-4 rounded-2xl shadow-2xl border flex items-center gap-3 font-bold text-sm transition-all animate-in slide-in-from-right duration-300 ${
+            notification.type === "error"
+              ? "bg-red-50 text-red-600 border-red-100"
+              : "bg-green-50 text-green-600 border-green-100"
+          }`}
         >
           {notification.type === "success" ? (
             <CheckCircle2 size={18} />
@@ -542,13 +604,14 @@ export default function PresencePage() {
         </div>
       )}
 
+      {/* Club selector header */}
       <div className="flex flex-col lg:flex-row justify-between gap-4 pb-6 border-b border-gray-100">
         <div>
           <h1 className="text-3xl font-black text-smart-teal tracking-tight">
             Gestion de Présence
           </h1>
           <p className="text-gray-400 text-sm font-medium mt-1">
-            Responsable club: sélectionnez d'abord le club à gérer.
+            Responsable club : sélectionnez d'abord le club à gérer.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -569,7 +632,7 @@ export default function PresencePage() {
           </div>
           {club && (
             <p className="text-xs font-bold text-smart-teal mt-2 uppercase tracking-wider">
-              Club sélectionné: {club.nom}
+              Club sélectionné : {club.nom}
             </p>
           )}
         </div>
@@ -594,6 +657,7 @@ export default function PresencePage() {
         </div>
       ) : (
         <>
+          {/* Stats row */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <StatCard
               icon={<Users size={18} />}
@@ -618,176 +682,299 @@ export default function PresencePage() {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            {/* ── Left column: marking panel ─────────────────────────── */}
             <div className="xl:col-span-2 bg-white rounded-3xl border border-gray-100 p-6">
-              <h2 className="text-lg font-black text-smart-teal mb-4">
-                Marquage du jour
-              </h2>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-gray-500">Séance:</p>
-                    {seances.length === 0 ? (
-                      <span className="text-xs text-gray-400">
-                        Aucune séance
-                      </span>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        {seances.map((s) => (
-                          <button
-                            key={s.id}
-                            onClick={() => setSelectedSeance(s)}
-                            className={`px-3 py-1 rounded-full text-xs font-black ${selectedSeance?.id === s.id ? "bg-smart-teal text-white" : "bg-gray-100 text-gray-700"}`}
-                          >
-                            {s.titre || s.date_seance?.slice(0, 10)}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    {!seanceJustCreated && (
-                      <button
-                        onClick={() => {
-                          setNewSeanceTitle(`Séance ${selectedDate}`);
-                          setIsCreateSeanceOpen(true);
-                        }}
-                        className="px-3 py-1 rounded-xl bg-[#436D75] text-white text-xs font-black"
-                      >
-                        Créer séance
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {members.length === 0 && (
-                  <p className="text-sm text-gray-500 font-medium">
-                    Aucun membre actif à afficher.
-                  </p>
-                )}
-
-                {isCreateSeanceOpen && (
-                  <div className="fixed inset-0 z-[700] flex items-center justify-center bg-black/45 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-md rounded-[32px] bg-[#F7F3E9] p-6 shadow-2xl border border-white animate-in scale-in duration-300">
-                      <div className="flex items-start justify-between gap-4 mb-4">
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                            Nouvelle séance
-                          </p>
-                          <h3 className="text-2xl font-black text-smart-teal mt-1">
-                            Choisir le nom de la séance
-                          </h3>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setIsCreateSeanceOpen(false)}
-                          className="w-10 h-10 rounded-full bg-white text-gray-500 hover:text-black shadow-sm flex items-center justify-center transition-colors"
-                        >
-                          <X size={18} />
-                        </button>
-                      </div>
-
-                      <div className="space-y-3">
-                        <label className="space-y-2 block">
-                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                            Titre
-                          </span>
-                          <input
-                            autoFocus
-                            value={newSeanceTitle}
-                            onChange={(e) => setNewSeanceTitle(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                void createSeance();
-                              }
-                            }}
-                            placeholder={`Séance ${selectedDate}`}
-                            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-smart-teal outline-none focus:ring-4 focus:ring-smart-sage/20"
-                          />
-                        </label>
-
-                        <div className="flex items-center justify-end gap-3 pt-2">
-                          <button
-                            type="button"
-                            onClick={() => setIsCreateSeanceOpen(false)}
-                            className="px-4 py-3 rounded-2xl bg-white text-gray-600 text-xs font-black uppercase tracking-[0.2em] shadow-sm transition-colors hover:bg-gray-50"
-                          >
-                            Annuler
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void createSeance()}
-                            className="px-4 py-3 rounded-2xl bg-[#436D75] text-white text-xs font-black uppercase tracking-[0.2em] shadow-sm hover:bg-[#35565d] transition-colors"
-                          >
-                            Créer
-                          </button>
-                        </div>
-                      </div>
+              {isNewSeanceMode ? (
+                /* ── NEW SEANCE MODE ──────────────────────────────────── */
+                <>
+                  <div className="flex items-start justify-between mb-5">
+                    <div>
+                      <h2 className="text-lg font-black text-smart-teal">
+                        Nouvelle Séance
+                      </h2>
+                      <p className="text-xs text-gray-400 font-medium mt-1">
+                        Marquez les présences puis enregistrez pour créer la séance.
+                      </p>
                     </div>
-                  </div>
-                )}
-
-                {members.map((member) => {
-                  const fullName =
-                    `${member.prenom || ""} ${member.nom || ""}`.trim();
-                  const status = member.statut_jour || "NON_MARQUE";
-                  const isMarked = status !== "NON_MARQUE";
-
-                  return (
-                    <div
-                      key={member.id_utilisateur}
-                      className="border border-gray-100 rounded-2xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                    <button
+                      onClick={cancelNewSeance}
+                      className="px-3 py-2 rounded-xl bg-gray-100 text-gray-500 text-xs font-black hover:bg-gray-200 transition"
                     >
-                      <div>
-                        <p className="font-black text-smart-teal text-sm">
-                          {fullName}
-                        </p>
-                        <p className="text-xs font-semibold text-gray-500 mt-1">
-                          Statut: {status}
-                        </p>
-                      </div>
+                      Annuler
+                    </button>
+                  </div>
 
-                      <div className="flex items-center gap-2">
-                        {isMarked ? (
-                          <>
-                            <span
-                              className={`px-3 py-2 rounded-xl text-xs font-black ${status === "PRESENT" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                  {/* Title input */}
+                  <div className="mb-5">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 block mb-2">
+                      Titre de la séance
+                    </label>
+                    <input
+                      autoFocus
+                      value={newSeanceTitle}
+                      onChange={(e) => setNewSeanceTitle(e.target.value)}
+                      placeholder={`Séance ${selectedDate}`}
+                      className="w-full rounded-2xl border border-gray-200 bg-[#F7F3E9] px-4 py-3 text-sm font-bold text-smart-teal outline-none focus:ring-4 focus:ring-smart-sage/20"
+                    />
+                  </div>
+
+                  {/* Member list */}
+                  <div className="space-y-2">
+                    {members.length === 0 && (
+                      <p className="text-sm text-gray-500 font-medium">
+                        Aucun membre actif à afficher.
+                      </p>
+                    )}
+                    {members.map((member) => {
+                      const fullName =
+                        `${member.prenom || ""} ${member.nom || ""}`.trim();
+                      const status =
+                        localAttendance[member.id_utilisateur] ?? null;
+                      return (
+                        <div
+                          key={member.id_utilisateur}
+                          className="border border-gray-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                        >
+                          <div>
+                            <p className="font-black text-smart-teal text-sm">
+                              {fullName}
+                            </p>
+                            <p
+                              className={`text-xs font-semibold mt-0.5 ${
+                                status === "PRESENT"
+                                  ? "text-green-600"
+                                  : status === "ABSENT"
+                                    ? "text-red-500"
+                                    : "text-gray-400"
+                              }`}
                             >
-                              {status}
-                            </span>
+                              {status ?? "Non marqué"}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
                             <button
-                              disabled={busyUserId === member.id_utilisateur}
-                              onClick={() => unmarkAttendance(member)}
-                              className="w-10 h-10 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 disabled:opacity-50 flex items-center justify-center"
-                              title="Annuler le marquage"
-                            >
-                              <X size={16} />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              disabled={busyUserId === member.id_utilisateur}
-                              onClick={() => markAttendance(member, "PRESENT")}
-                              className="px-3 py-2 rounded-xl bg-green-600 text-white text-xs font-black hover:bg-green-700 disabled:opacity-50"
+                              onClick={() =>
+                                toggleLocalAttendance(
+                                  member.id_utilisateur,
+                                  "PRESENT",
+                                )
+                              }
+                              className={`px-3 py-2 rounded-xl text-xs font-black border transition ${
+                                status === "PRESENT"
+                                  ? "bg-green-600 text-white border-green-600"
+                                  : "bg-white text-gray-500 border-gray-200 hover:border-green-400 hover:text-green-600"
+                              }`}
                             >
                               Présent
                             </button>
                             <button
-                              disabled={busyUserId === member.id_utilisateur}
-                              onClick={() => markAttendance(member, "ABSENT")}
-                              className="px-3 py-2 rounded-xl bg-red-600 text-white text-xs font-black hover:bg-red-700 disabled:opacity-50"
+                              onClick={() =>
+                                toggleLocalAttendance(
+                                  member.id_utilisateur,
+                                  "ABSENT",
+                                )
+                              }
+                              className={`px-3 py-2 rounded-xl text-xs font-black border transition ${
+                                status === "ABSENT"
+                                  ? "bg-red-500 text-white border-red-500"
+                                  : "bg-white text-gray-500 border-gray-200 hover:border-red-400 hover:text-red-500"
+                              }`}
                             >
                               Absent
                             </button>
-                          </>
-                        )}
-                      </div>
+                            {status !== null && (
+                              <button
+                                onClick={() =>
+                                  clearLocalAttendance(member.id_utilisateur)
+                                }
+                                className="w-9 h-9 rounded-xl bg-gray-100 text-gray-400 hover:bg-gray-200 flex items-center justify-center transition"
+                                title="Effacer"
+                              >
+                                <X size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Summary + submit */}
+                  <div className="mt-5 pt-5 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <p className="text-xs text-gray-400 font-bold">
+                      <span className="text-green-600">{presentCount} présents</span>
+                      {" · "}
+                      <span className="text-red-500">{absentCount} absents</span>
+                      {" · "}
+                      <span>{unmarkedCount} non marqués</span>
+                    </p>
+                    <button
+                      onClick={submitNewSeance}
+                      disabled={isSavingPresences || !newSeanceTitle.trim()}
+                      className="px-6 py-2.5 rounded-xl bg-smart-teal text-white text-xs font-black disabled:opacity-60 hover:bg-[#35565d] transition"
+                    >
+                      {isSavingPresences
+                        ? "Enregistrement..."
+                        : "Enregistrer la séance"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* ── EXISTING SEANCE / DAILY MARKING MODE ─────────────── */
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-black text-smart-teal">
+                      Marquage du jour
+                    </h2>
+                    <button
+                      onClick={startNewSeance}
+                      className="px-3 py-1.5 rounded-xl bg-smart-teal text-white text-xs font-black hover:bg-[#35565d] transition"
+                    >
+                      + Nouvelle séance
+                    </button>
+                  </div>
+
+                  {/* Seance selector */}
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <p className="text-sm font-bold text-gray-500 shrink-0">
+                      Séance :
+                    </p>
+                    {seances.length === 0 ? (
+                      <span className="text-xs text-gray-400">
+                        Aucune séance — créez-en une pour commencer.
+                      </span>
+                    ) : (
+                      seances.map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => {
+                            setSelectedSeance(s);
+                            void loadClubData(
+                              selectedClubId,
+                              selectedDate,
+                              s.id,
+                            );
+                          }}
+                          className={`px-3 py-1 rounded-full text-xs font-black transition ${
+                            selectedSeance?.id === s.id
+                              ? "bg-smart-teal text-white"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                        >
+                          {s.titre || s.date_seance?.slice(0, 10)}
+                        </button>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Member list */}
+                  <div className="space-y-2">
+                    {members.length === 0 && (
+                      <p className="text-sm text-gray-500 font-medium">
+                        Aucun membre actif à afficher.
+                      </p>
+                    )}
+                    {members.map((member) => {
+                      const fullName =
+                        `${member.prenom || ""} ${member.nom || ""}`.trim();
+                      const status =
+                        localAttendance[member.id_utilisateur] ?? null;
+                      return (
+                        <div
+                          key={member.id_utilisateur}
+                          className="border border-gray-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                        >
+                          <div>
+                            <p className="font-black text-smart-teal text-sm">
+                              {fullName}
+                            </p>
+                            <p
+                              className={`text-xs font-semibold mt-0.5 ${
+                                status === "PRESENT"
+                                  ? "text-green-600"
+                                  : status === "ABSENT"
+                                    ? "text-red-500"
+                                    : "text-gray-400"
+                              }`}
+                            >
+                              {status ?? "Non marqué"}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() =>
+                                toggleLocalAttendance(
+                                  member.id_utilisateur,
+                                  "PRESENT",
+                                )
+                              }
+                              className={`px-3 py-2 rounded-xl text-xs font-black border transition ${
+                                status === "PRESENT"
+                                  ? "bg-green-600 text-white border-green-600"
+                                  : "bg-white text-gray-500 border-gray-200 hover:border-green-400 hover:text-green-600"
+                              }`}
+                            >
+                              Présent
+                            </button>
+                            <button
+                              onClick={() =>
+                                toggleLocalAttendance(
+                                  member.id_utilisateur,
+                                  "ABSENT",
+                                )
+                              }
+                              className={`px-3 py-2 rounded-xl text-xs font-black border transition ${
+                                status === "ABSENT"
+                                  ? "bg-red-500 text-white border-red-500"
+                                  : "bg-white text-gray-500 border-gray-200 hover:border-red-400 hover:text-red-500"
+                              }`}
+                            >
+                              Absent
+                            </button>
+                            {status !== null && (
+                              <button
+                                onClick={() =>
+                                  clearLocalAttendance(member.id_utilisateur)
+                                }
+                                className="w-9 h-9 rounded-xl bg-gray-100 text-gray-400 hover:bg-gray-200 flex items-center justify-center transition"
+                                title="Effacer"
+                              >
+                                <X size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Submit button for existing seance */}
+                  {selectedSeance && members.length > 0 && (
+                    <div className="mt-5 pt-5 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <p className="text-xs text-gray-400 font-bold">
+                        <span className="text-green-600">{presentCount} présents</span>
+                        {" · "}
+                        <span className="text-red-500">{absentCount} absents</span>
+                        {" · "}
+                        <span>{unmarkedCount} non marqués</span>
+                      </p>
+                      <button
+                        onClick={submitExistingPresences}
+                        disabled={isSavingPresences}
+                        className="px-6 py-2.5 rounded-xl bg-smart-teal text-white text-xs font-black disabled:opacity-60 hover:bg-[#35565d] transition"
+                      >
+                        {isSavingPresences
+                          ? "Enregistrement..."
+                          : "Enregistrer les présences"}
+                      </button>
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+                </>
+              )}
             </div>
 
+            {/* ── Right column: top attendance ───────────────────────── */}
             <div className="bg-white rounded-3xl border border-gray-100 p-6">
               <h2 className="text-lg font-black text-smart-teal mb-4">
                 Top assiduité
@@ -807,7 +994,7 @@ export default function PresencePage() {
                       {item.nom_complet}
                     </p>
                     <p className="text-xs font-semibold text-gray-500 mt-1">
-                      Présents: {item.presents} | Absents: {item.absents}
+                      Présents : {item.presents} | Absents : {item.absents}
                     </p>
                     <p className="text-xs font-black text-smart-teal mt-1">
                       {item.taux_presence}%
@@ -818,6 +1005,7 @@ export default function PresencePage() {
             </div>
           </div>
 
+          {/* ── Seances history ────────────────────────────────────────── */}
           <div className="bg-white rounded-3xl border border-gray-100 p-6">
             <div className="flex items-center justify-between gap-3 mb-4">
               <div>
@@ -836,7 +1024,7 @@ export default function PresencePage() {
             <div className="space-y-3">
               {seances.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500 font-medium">
-                  Aucune séance créée pour ce club.
+                  Aucune séance enregistrée pour ce club.
                 </div>
               ) : (
                 seances.map((session: any) => {
@@ -844,7 +1032,11 @@ export default function PresencePage() {
                   return (
                     <div
                       key={session.id}
-                      className={`rounded-2xl border p-4 transition-all ${isActive ? "border-smart-teal bg-[#F7F3E9]" : "border-gray-100 bg-white hover:border-gray-200"}`}
+                      className={`rounded-2xl border p-4 transition-all ${
+                        isActive
+                          ? "border-smart-teal bg-[#F7F3E9]"
+                          : "border-gray-100 bg-white hover:border-gray-200"
+                      }`}
                     >
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                         <button
@@ -864,7 +1056,7 @@ export default function PresencePage() {
                               `Séance du ${String(session.date_seance || "").slice(0, 10)}`}
                           </p>
                           <p className="text-xs text-gray-500 font-medium mt-1">
-                            Date:{" "}
+                            Date :{" "}
                             {String(session.date_seance || "").slice(0, 10)}
                             {session.heure_debut
                               ? ` • ${String(session.heure_debut).slice(11, 16)}`
@@ -882,7 +1074,8 @@ export default function PresencePage() {
                               setSelectedSeance(session);
                               void exportDailyFile(session);
                             }}
-                            className="px-3 py-2 rounded-xl bg-smart-teal text-white text-xs font-black hover:bg-[#35565d] flex items-center gap-2"
+                            disabled={isExporting}
+                            className="px-3 py-2 rounded-xl bg-smart-teal text-white text-xs font-black hover:bg-[#35565d] flex items-center gap-2 disabled:opacity-60 transition"
                           >
                             <Download size={14} /> Exporter
                           </button>
@@ -892,7 +1085,8 @@ export default function PresencePage() {
                               setSelectedSeance(session);
                               void exportDailyPdf(session);
                             }}
-                            className="px-3 py-2 rounded-xl bg-[#E98A7D] text-white text-xs font-black hover:bg-[#d5766a] flex items-center gap-2"
+                            disabled={isExportingPdf}
+                            className="px-3 py-2 rounded-xl bg-[#E98A7D] text-white text-xs font-black hover:bg-[#d5766a] flex items-center gap-2 disabled:opacity-60 transition"
                           >
                             <FileText size={14} /> PDF
                           </button>
