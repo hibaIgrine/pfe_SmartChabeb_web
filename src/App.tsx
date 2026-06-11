@@ -388,7 +388,7 @@ function App() {
         <Route
           path={ROUTES.club.clubReservations}
           element={withAccess(
-            CLUB_ONLY,
+            ["RESPONSABLE_CLUB", "ADHERENT"],
             <Layout>
               <ClubReservationPage />
             </Layout>,
@@ -397,7 +397,7 @@ function App() {
         <Route
           path={ROUTES.club.clubMyReservations}
           element={withAccess(
-            CLUB_ONLY,
+            ["RESPONSABLE_CLUB", "ADHERENT"],
             <Layout>
               <ClubMyReservationsPage />
             </Layout>,

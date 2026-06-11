@@ -98,6 +98,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       location.pathname !== "/chatbot" &&
       location.pathname !== "/my-club-requests" &&
       location.pathname !== "/club-reservations" &&
+      location.pathname !== "/club-my-reservations" &&
       location.pathname !== "/adherent-my-reservations" &&
       location.pathname !== "/mes-seances" &&
       location.pathname !== "/certificats" &&
@@ -744,21 +745,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </>
           )}
 
-          {role === "RESPONSABLE_CLUB" && (
+          {(role === "RESPONSABLE_CLUB" || role === "ADHERENT") && (
             <SidebarItem
               to={ROUTES.club.clubMyReservations}
               icon={<ClipboardList size={18} />}
               label="Mes Réservations"
               active={location.pathname === ROUTES.club.clubMyReservations}
-            />
-          )}
-
-          {role === "ADHERENT" && (
-            <SidebarItem
-              to={ROUTES.adherent.myReservations}
-              icon={<ClipboardList size={18} />}
-              label="Mes Réservations"
-              active={location.pathname === ROUTES.adherent.myReservations}
             />
           )}
 
