@@ -669,6 +669,7 @@ export default function EventsPage() {
       <EventPresenceModal
         isOpen={Boolean(presenceEvent)}
         eventName={presenceEvent?.nom ?? ""}
+        eventEndTime={presenceEvent?.end_time ?? ""}
         isLoading={isPresenceLoading}
         isUpdating={isPresenceUpdating}
         participants={presenceParticipants}

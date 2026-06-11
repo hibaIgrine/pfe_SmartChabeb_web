@@ -4,6 +4,7 @@ import type { EventParticipant } from "../types";
 type Props = {
   isOpen: boolean;
   eventName: string;
+  eventEndTime: string;
   isLoading: boolean;
   isUpdating: boolean;
   participants: EventParticipant[];
@@ -21,6 +22,7 @@ const formatDateTime = (value?: string) => {
 export default function EventPresenceModal({
   isOpen,
   eventName,
+  eventEndTime,
   isLoading,
   isUpdating,
   participants,
@@ -28,6 +30,8 @@ export default function EventPresenceModal({
   onToggleCheckin,
 }: Props) {
   if (!isOpen) return null;
+
+  const isEventOver = eventEndTime ? new Date(eventEndTime) < new Date() : false;
 
   const confirmed = participants.filter((p) => p.status === "CONFIRME");
   const present = confirmed.filter((p) => p.checkin);
@@ -53,12 +57,15 @@ export default function EventPresenceModal({
         <p className="text-xs text-gray-500">{participant.user.email}</p>
       </div>
       <button
-        disabled={isUpdating}
-        onClick={() => onToggleCheckin(participant.id, !isPresentList)}
-        className={`px-3 py-2 rounded-xl text-[11px] font-black disabled:opacity-60 ${
-          isPresentList
-            ? "bg-[#FDE5E1] text-[#B23A2B] border border-[#E98A7D]/40"
-            : "bg-[#D9E8D1] text-[#436D75] border border-[#436D75]/25"
+        disabled={isUpdating || isEventOver}
+        onClick={() => !isEventOver && onToggleCheckin(participant.id, !isPresentList)}
+        title={isEventOver ? "L'événement est terminé" : undefined}
+        className={`px-3 py-2 rounded-xl text-[11px] font-black transition ${
+          isEventOver
+            ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60"
+            : isPresentList
+              ? "bg-[#FDE5E1] text-[#B23A2B] border border-[#E98A7D]/40 disabled:opacity-60"
+              : "bg-[#D9E8D1] text-[#436D75] border border-[#436D75]/25 disabled:opacity-60"
         }`}
       >
         {isPresentList ? "Marquer absent" : "Marquer présent"}
@@ -86,6 +93,14 @@ export default function EventPresenceModal({
             <X size={18} />
           </button>
         </div>
+
+        {isEventOver && (
+          <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
+            <p className="text-xs font-black uppercase tracking-wider text-gray-400 text-center">
+              Événement terminé — modification des présences désactivée
+            </p>
+          </div>
+        )}
 
         <div className="p-6 overflow-y-auto space-y-6">
           {isLoading ? (
