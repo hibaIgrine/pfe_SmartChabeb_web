@@ -259,15 +259,13 @@ export default function ClubTasksPage() {
             date_limite_time,
           ).toISOString(),
         },
-        {
-          headers,
-        },
+        { headers },
       );
       const createdTaskId = createResponse.data?.id;
 
       if (createdTaskId && utilisateurs.length > 0) {
-        await api.patch(
-          `/clubs/${clubId}/tasks/${createdTaskId}`,
+        await api.post(
+          `/clubs/${clubId}/tasks/${createdTaskId}/affecter`,
           { utilisateurs },
           { headers },
         );
@@ -290,6 +288,7 @@ export default function ClubTasksPage() {
       setError(null);
       const { utilisateurs, date_limite, date_limite_time, ...payload } =
         taskData;
+
       await api.patch(
         `/clubs/${clubId}/tasks/${taskId}`,
         {
@@ -299,10 +298,16 @@ export default function ClubTasksPage() {
             date_limite_time,
           ).toISOString(),
         },
-        {
-          headers,
-        },
+        { headers },
       );
+
+      // Always sync member assignments (replaces existing ones)
+      await api.post(
+        `/clubs/${clubId}/tasks/${taskId}/affecter`,
+        { utilisateurs },
+        { headers },
+      );
+
       await loadTasks();
       setEditingTask(null);
       setSuccess("Tache modifiee avec succes");

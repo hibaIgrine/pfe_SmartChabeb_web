@@ -316,7 +316,7 @@ function App() {
         <Route
           path={ROUTES.club.staffTasks}
           element={withAccess(
-            ADMIN_OR_CLUB,
+            ADMIN_OR_ANY_MEMBER,
             <Layout>
               <StaffClubTasksPage />
             </Layout>,

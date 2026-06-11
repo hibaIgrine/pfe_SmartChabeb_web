@@ -38,6 +38,7 @@ interface StaffTask {
   club?: {
     id: string;
     nom: string;
+    id_coach?: string;
   };
   createur?: StaffTaskUser;
   affectations?: Array<{
@@ -126,11 +127,13 @@ export default function StaffClubTasksPage() {
   })();
   const userRole =
     currentUser?.role === "ADHERANT" ? "ADHERENT" : currentUser?.role;
-  const canValidate = [
-    "RESPONSABLE_CLUB",
-    "RESPONSABLE_CENTRE",
-    "ADMIN",
-  ].includes(userRole);
+  const [clubResponsableId, setClubResponsableId] = useState<string | null>(
+    null,
+  );
+  // Seul le responsable principal (id_coach) du club peut valider ou refuser
+  const canValidate =
+    userRole === "ADMIN" ||
+    (currentUser?.id != null && clubResponsableId === currentUser.id);
 
   useEffect(() => {
     if (!clubId) {
@@ -138,6 +141,17 @@ export default function StaffClubTasksPage() {
     }
 
     void loadTasks();
+
+    // Charger l'id_coach du club pour déterminer si l'utilisateur peut valider
+    const loadClubInfo = async () => {
+      try {
+        const res = await api.get(`/clubs/${clubId}`, { headers });
+        setClubResponsableId(res.data?.id_coach ?? null);
+      } catch {
+        // ignoré — fallback sur les données des tâches
+      }
+    };
+    void loadClubInfo();
   }, [clubId]);
 
   useEffect(() => {
@@ -183,7 +197,21 @@ export default function StaffClubTasksPage() {
           Array.isArray(response.data) ? response.data.length : 0,
         );
       } catch (e) {}
-      setTasks(Array.isArray(response.data) ? response.data : []);
+      const allTasks: StaffTask[] = Array.isArray(response.data)
+        ? response.data
+        : [];
+      const myId = currentUser?.id;
+      // Keep only tasks where the current user is explicitly in the affectations
+      const myTasks = myId
+        ? allTasks.filter((t) =>
+            t.affectations?.some((a) => a.utilisateur?.id === myId),
+          )
+        : allTasks;
+      setTasks(myTasks);
+      // Extraire le responsable du club depuis n'importe quelle tâche (même club pour toutes)
+      const firstClubCoach =
+        allTasks.find((t) => t.club?.id_coach)?.club?.id_coach ?? null;
+      setClubResponsableId(firstClubCoach);
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
@@ -769,34 +797,41 @@ function TaskDetailsModal({
     }
   };
 
+  const hasSubmittedProofs =
+    Array.isArray((task as any).preuves) && (task as any).preuves.length > 0;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-0 sm:items-center sm:p-4">
-      <div className="w-full rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:max-w-3xl sm:rounded-3xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4">
+      <div className="w-full rounded-t-[32px] border border-gray-100 bg-white shadow-2xl sm:max-w-3xl sm:rounded-[32px]">
+
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 sm:px-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Details de la tache
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-smart-teal/60">
+              Détails de la tâche
             </p>
-            <h3 className="text-lg font-bold text-slate-800 sm:text-2xl">
+            <h3 className="text-xl font-black text-gray-900 sm:text-2xl">
               {task.titre}
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"
+            className="rounded-xl p-2 text-gray-400 transition hover:bg-gray-100"
             aria-label="Fermer"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="max-h-[82vh] overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
+        <div className="max-h-[82vh] overflow-y-auto px-5 py-5 sm:px-6">
+
+          {/* Badges */}
           <div className="flex flex-wrap gap-2">
             <Badge
               tone={priorityColors[task.priorite]}
               label={priorityLabel(task.priorite)}
-              icon={<Flag size={14} />}
+              icon={<Flag size={13} />}
             />
             <Badge
               tone={statusColors[status] || statusColors.A_FAIRE}
@@ -806,43 +841,52 @@ function TaskDetailsModal({
             <Badge
               tone="bg-sky-100 text-sky-700 border-sky-200"
               label={task.type_tache}
-              icon={<Layers3 size={14} />}
+              icon={<Layers3 size={13} />}
             />
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <InfoBlock
-              label="Echeance"
-              value={formatDateTime(task.date_limite)}
-              icon={<Calendar size={16} />}
-            />
-            <InfoBlock
-              label="Creee le"
-              value={formatDate(task.created_at)}
-              icon={<Hourglass size={16} />}
-            />
+          {/* Info grid */}
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl bg-[#F7F3E9] px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
+                Échéance
+              </p>
+              <p className="mt-0.5 text-sm font-bold text-gray-800">
+                {formatDateTime(task.date_limite)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-[#F7F3E9] px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
+                Créée le
+              </p>
+              <p className="mt-0.5 text-sm font-bold text-gray-800">
+                {formatDate(task.created_at)}
+              </p>
+            </div>
           </div>
 
+          {/* Description */}
           {task.description && (
-            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="mb-2 text-sm font-semibold text-slate-700">
+            <div className="mt-4 rounded-2xl bg-[#D9E8D1]/40 p-4">
+              <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-smart-teal/60">
                 Description
               </p>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
                 {task.description}
               </p>
             </div>
           )}
 
-          <div className="mt-5 rounded-2xl border border-slate-200 p-4">
-            <p className="mb-3 text-sm font-semibold text-slate-700">
+          {/* Affectations */}
+          <div className="mt-4 rounded-2xl border border-gray-100 p-4">
+            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
               Affectations
             </p>
             <div className="flex flex-wrap gap-2">
               {task.affectations?.map((affectation) => (
                 <span
                   key={affectation.id}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-smart-teal/10 px-3 py-1 text-xs font-bold text-smart-teal"
                 >
                   {affectation.utilisateur.prenom} {affectation.utilisateur.nom}
                 </span>
@@ -850,212 +894,214 @@ function TaskDetailsModal({
             </div>
           </div>
 
-          {Array.isArray((task as any).preuves) &&
-            (task as any).preuves.length > 0 && (
-              <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                <p className="mb-3 text-sm font-semibold text-emerald-800">
-                  {canValidate ? "Preuves soumises" : "Mes preuves"}
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {(task as any).preuves.map((preuve: ProofItem) => {
-                    const isImage = isImageProof(preuve);
-                    return (
-                      <button
-                        key={preuve.id}
-                        type="button"
-                        onClick={() => setViewerProof(preuve)}
-                        className="group flex overflow-hidden rounded-xl border border-emerald-200 bg-white text-left text-sm text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50"
-                      >
-                        <div className="flex h-full w-full min-h-[88px] items-stretch gap-3 p-2">
-                          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-                            {isImage ? (
-                              <img
-                                src={resolveProofUrl(preuve.url)}
-                                alt={preuve.filename || "Preuve"}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full flex-col items-center justify-center px-1 text-center text-[11px] text-slate-500">
-                                <span className="font-semibold uppercase tracking-wide text-emerald-700">
-                                  Document
-                                </span>
-                                <span className="mt-1 line-clamp-2 break-words">
-                                  Aperçu interne
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1 py-1 pr-1">
-                            <p className="line-clamp-2 font-medium text-slate-800">
-                              {preuve.filename || preuve.url}
-                            </p>
-                            <p className="mt-1 text-xs text-slate-500">
-                              Cliquez pour ouvrir l’aperçu dans la page
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-          <div className="mt-5 rounded-2xl border border-slate-200 p-4">
-            <p className="mb-3 text-sm font-semibold text-slate-700">
-              Actions disponibles
-            </p>
-
-            {/* Render non-TERMINE actions inline */}
-            <div className="flex flex-wrap gap-3">
-              {nonTerminateActions.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  Aucune action disponible pour ce statut.
-                </p>
-              ) : (
-                nonTerminateActions.map((action) => (
-                  <button
-                    key={action.nextStatus}
-                    type="button"
-                    disabled={submitting}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      void handleStatusChange(action.nextStatus);
-                    }}
-                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${action.tone}`}
-                  >
-                    {action.icon}
-                    {action.label}
-                  </button>
-                ))
-              )}
-            </div>
-
-            {/* Proof upload + Terminer area: render TERMINE action below proofs */}
-            <div className="mt-4">
-              <p className="mb-2 text-sm font-semibold text-slate-700">
-                Preuves
+          {/* Preuves soumises */}
+          {hasSubmittedProofs && (
+            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <p className="mb-3 text-[10px] font-black uppercase tracking-[0.15em] text-emerald-700">
+                {canValidate ? "Preuves soumises" : "Mes preuves"}
               </p>
-              <div className="flex items-start gap-3">
-                <input
-                  ref={proofInputRef}
-                  type="file"
-                  accept="image/*,application/pdf"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    const newOnes = files.map((f) => ({
-                      id: createProofId(f),
-                      file: f,
-                    }));
-                    setProofFiles((current) => [...current, ...newOnes]);
-                    // reset input so same file can be re-added if removed
-                    if (proofInputRef.current) proofInputRef.current.value = "";
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => proofInputRef.current?.click()}
-                  className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700"
-                >
-                  Ajouter des preuves
-                </button>
-                <div className="flex-1">
-                  {proofError && (
-                    <div className="mb-2 text-sm text-rose-600">
-                      {proofError}
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-2">
-                    {proofFiles.length === 0 ? (
-                      <p className="text-sm text-slate-500">
-                        Aucune preuve ajoutée.
-                      </p>
-                    ) : (
-                      proofFiles.map((p) => (
-                        <div
-                          key={p.id}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                        >
-                          <span className="min-w-0 truncate">
-                            {p.file.name}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setProofFiles((cur) =>
-                                  cur.filter((x) => x.id !== p.id),
-                                )
-                              }
-                              className="text-sm text-rose-600"
-                            >
-                              Retirer
-                            </button>
-                          </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {(task as any).preuves.map((preuve: ProofItem) => {
+                  const isImage = isImageProof(preuve);
+                  return (
+                    <button
+                      key={preuve.id}
+                      type="button"
+                      onClick={() => setViewerProof(preuve)}
+                      className="group flex overflow-hidden rounded-xl border border-emerald-200 bg-white text-left text-sm transition hover:border-emerald-300 hover:bg-emerald-50"
+                    >
+                      <div className="flex h-full w-full min-h-[80px] items-stretch gap-3 p-2">
+                        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
+                          {isImage ? (
+                            <img
+                              src={resolveProofUrl(preuve.url)}
+                              alt={preuve.filename || "Preuve"}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full flex-col items-center justify-center px-1 text-center text-[10px] text-slate-500">
+                              <span className="font-black uppercase tracking-wide text-emerald-700">
+                                Doc
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      ))
+                        <div className="min-w-0 flex-1 py-1 pr-1">
+                          <p className="line-clamp-2 text-sm font-bold text-gray-800">
+                            {preuve.filename || preuve.url}
+                          </p>
+                          <p className="mt-1 text-xs text-gray-400">
+                            Cliquez pour ouvrir l’aperçu
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Actions disponibles — cachées si preuves déjà soumises et pas validateur */}
+          {(!hasSubmittedProofs || canValidate) && (
+            <div className="mt-4 rounded-2xl bg-[#F7F3E9] p-4">
+              <p className="mb-3 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
+                Actions disponibles
+              </p>
+
+              <div className="flex flex-wrap gap-3">
+                {nonTerminateActions.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    Aucune action disponible pour ce statut.
+                  </p>
+                ) : (
+                  nonTerminateActions.map((action) => (
+                    <button
+                      key={action.nextStatus}
+                      type="button"
+                      disabled={submitting}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        void handleStatusChange(action.nextStatus);
+                      }}
+                      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${action.tone}`}
+                    >
+                      {action.icon}
+                      {action.label}
+                    </button>
+                  ))
+                )}
+              </div>
+
+              {/* Upload preuves — seulement si pas encore de preuves soumises */}
+              {!hasSubmittedProofs && (
+                <div className="mt-4">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
+                    Preuves
+                  </p>
+                  <div className="flex items-start gap-3">
+                    <input
+                      ref={proofInputRef}
+                      type="file"
+                      accept="image/*,application/pdf"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        const newOnes = files.map((f) => ({
+                          id: createProofId(f),
+                          file: f,
+                        }));
+                        setProofFiles((cur) => [...cur, ...newOnes]);
+                        if (proofInputRef.current)
+                          proofInputRef.current.value = "";
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => proofInputRef.current?.click()}
+                      className="rounded-xl border border-smart-teal/30 bg-white px-4 py-2 text-sm font-bold text-smart-teal transition hover:bg-smart-teal/5"
+                    >
+                      Ajouter des preuves
+                    </button>
+                    <div className="flex-1">
+                      {proofError && (
+                        <div className="mb-2 text-sm text-rose-600">
+                          {proofError}
+                        </div>
+                      )}
+                      <div className="flex flex-col gap-2">
+                        {proofFiles.length === 0 ? (
+                          <p className="text-sm text-gray-400">
+                            Aucune preuve ajoutée.
+                          </p>
+                        ) : (
+                          proofFiles.map((p) => (
+                            <div
+                              key={p.id}
+                              className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2 text-sm"
+                            >
+                              <span className="min-w-0 truncate text-gray-700">
+                                {p.file.name}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setProofFiles((cur) =>
+                                    cur.filter((x) => x.id !== p.id),
+                                  )
+                                }
+                                className="shrink-0 text-sm font-medium text-rose-500 hover:text-rose-700"
+                              >
+                                Retirer
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    {terminateAction && (
+                      <button
+                        type="button"
+                        disabled={
+                          submitting ||
+                          (!canValidate && proofFiles.length === 0)
+                        }
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (!canValidate && proofFiles.length === 0) {
+                            setProofError(
+                              "Ajoutez au moins une preuve avant de marquer la tâche comme terminée.",
+                            );
+                            return;
+                          }
+                          void handleStatusChange(terminateAction.nextStatus);
+                        }}
+                        title={
+                          !canValidate && proofFiles.length === 0
+                            ? "Ajoutez au moins une preuve"
+                            : undefined
+                        }
+                        className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${terminateAction.tone}`}
+                      >
+                        {terminateAction.icon}
+                        {terminateAction.label}
+                      </button>
                     )}
                   </div>
                 </div>
-              </div>
-
-              {/* Render the TERMINE button here */}
-              <div className="mt-4">
-                {terminateAction && (
-                  <button
-                    key={terminateAction.nextStatus}
-                    type="button"
-                    disabled={
-                      submitting || (!canValidate && proofFiles.length === 0)
-                    }
-                    onClick={(event) => {
-                      event.preventDefault();
-                      if (!canValidate && proofFiles.length === 0) {
-                        setProofError(
-                          "Ajoutez au moins une preuve avant de marquer la tache comme terminee.",
-                        );
-                        return;
-                      }
-                      void handleStatusChange(terminateAction.nextStatus);
-                    }}
-                    title={
-                      !canValidate && proofFiles.length === 0
-                        ? "Ajoutez au moins une preuve"
-                        : undefined
-                    }
-                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${terminateAction.tone}`}
-                  >
-                    {terminateAction.icon}
-                    {terminateAction.label}
-                  </button>
-                )}
-              </div>
+              )}
             </div>
-          </div>
+          )}
 
-          <div className="mt-5 rounded-2xl border border-slate-200 p-4">
-            <p className="mb-3 text-sm font-semibold text-slate-700">
+          {/* Commentaires */}
+          <div className="mt-4 rounded-2xl border border-gray-100 p-4">
+            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">
               Commentaires
             </p>
             <div className="max-h-48 space-y-3 overflow-y-auto">
               {loadingComments ? (
-                <p className="text-sm text-slate-500">Chargement...</p>
+                <p className="text-sm text-gray-400">Chargement...</p>
               ) : comments.length === 0 ? (
-                <p className="text-sm text-slate-500">Aucun commentaire.</p>
+                <p className="text-sm text-gray-400">Aucun commentaire.</p>
               ) : (
                 comments.map((c) => (
                   <div key={c.id} className="flex gap-3">
-                    <div className="h-8 w-8 rounded-full bg-slate-200" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#D9E8D1] text-[11px] font-black uppercase text-smart-teal">
+                      {(c.utilisateur?.prenom?.[0] ?? "") +
+                        (c.utilisateur?.nom?.[0] ?? "")}
+                    </div>
                     <div>
-                      <div className="text-sm font-medium text-slate-700">
+                      <div className="text-sm font-bold text-gray-800">
                         {c.utilisateur?.prenom} {c.utilisateur?.nom}
-                        <span className="ml-2 text-xs font-normal text-slate-400">
+                        <span className="ml-2 text-xs font-normal text-gray-400">
                           {new Date(c.created_at).toLocaleString()}
                         </span>
                       </div>
-                      <div className="text-sm text-slate-600 whitespace-pre-wrap">
+                      <div className="whitespace-pre-wrap text-sm text-gray-600">
                         {c.message}
                       </div>
                     </div>
@@ -1063,12 +1109,13 @@ function TaskDetailsModal({
                 ))
               )}
             </div>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-4 flex gap-2">
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none"
-                placeholder="Ecrire un commentaire..."
+                className="flex-1 resize-none rounded-2xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-smart-teal focus:ring-2 focus:ring-smart-teal/10"
+                placeholder="Écrire un commentaire..."
+                rows={2}
               />
               <button
                 type="button"
@@ -1077,13 +1124,10 @@ function TaskDetailsModal({
                   if (!clubId) return;
                   try {
                     setSendingComment(true);
-                    const created = await import("../../api/comments.api").then(
-                      (m) =>
-                        m.createTaskComment(
-                          clubId!,
-                          task.id,
-                          newComment.trim(),
-                        ),
+                    const created = await import(
+                      "../../api/comments.api"
+                    ).then((m) =>
+                      m.createTaskComment(clubId!, task.id, newComment.trim()),
                     );
                     setComments((cur) => [...cur, created]);
                     setNewComment("");
@@ -1092,7 +1136,7 @@ function TaskDetailsModal({
                     setSendingComment(false);
                   }
                 }}
-                className="rounded-xl bg-[#2E5A66] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className="self-end rounded-2xl bg-smart-teal px-4 py-2.5 text-sm font-black text-white transition hover:bg-black disabled:opacity-40"
               >
                 Envoyer
               </button>
@@ -1103,21 +1147,21 @@ function TaskDetailsModal({
 
       {viewerProof && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-4xl rounded-3xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-6">
+          <div className="w-full max-w-4xl rounded-[32px] bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3 sm:px-6">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-smart-teal/60">
                   Aperçu de la preuve
                 </p>
-                <h4 className="truncate text-base font-semibold text-slate-800">
+                <h4 className="truncate text-base font-black text-gray-900">
                   {viewerProof.filename || "Preuve"}
                 </h4>
               </div>
               <button
                 type="button"
                 onClick={() => setViewerProof(null)}
-                className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"
-                aria-label="Fermer l'aperçu"
+                className="rounded-xl p-2 text-gray-400 transition hover:bg-gray-100"
+                aria-label="Fermer l’aperçu"
               >
                 <X size={18} />
               </button>
@@ -1127,7 +1171,7 @@ function TaskDetailsModal({
                 <img
                   src={resolveProofUrl(viewerProof.url)}
                   alt={viewerProof.filename || "Preuve"}
-                  className="mx-auto max-h-[70vh] w-auto rounded-2xl border border-slate-200 object-contain"
+                  className="mx-auto max-h-[70vh] w-auto rounded-2xl border border-gray-100 object-contain"
                 />
               ) : viewerProof.type?.includes("pdf") ||
                 viewerProof.url.toLowerCase().endsWith(".pdf") ? (
@@ -1135,24 +1179,24 @@ function TaskDetailsModal({
                   <iframe
                     src={viewerBlobUrl}
                     title={viewerProof.filename || "Preuve PDF"}
-                    className="h-[70vh] w-full rounded-2xl border border-slate-200"
+                    className="h-[70vh] w-full rounded-2xl border border-gray-100"
                   />
                 ) : (
-                  <div className="flex items-center justify-center">
-                    <span className="text-sm text-slate-500">
+                  <div className="flex items-center justify-center py-8">
+                    <span className="text-sm text-gray-400">
                       Chargement du PDF…
                     </span>
                   </div>
                 )
               ) : (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-700">
-                  <p className="font-semibold text-slate-800">
+                <div className="rounded-2xl border border-gray-100 bg-[#F7F3E9] p-6 text-sm">
+                  <p className="font-black text-gray-800">
                     Aperçu non disponible
                   </p>
-                  <p className="mt-2 break-words">
+                  <p className="mt-2 break-words text-gray-600">
                     {viewerProof.filename || viewerProof.url}
                   </p>
-                  <p className="mt-2 text-slate-500">
+                  <p className="mt-2 text-gray-400">
                     Ce type de document ne peut pas être affiché directement
                     dans le navigateur.
                   </p>
@@ -1264,25 +1308,6 @@ function Badge({
   );
 }
 
-function InfoBlock({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {icon}
-        {label}
-      </div>
-      <p className="mt-2 text-sm font-medium text-slate-800">{value}</p>
-    </div>
-  );
-}
 
 function getTaskActions(
   status: string,
