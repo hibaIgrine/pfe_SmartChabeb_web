@@ -39,7 +39,14 @@ export default function ClubMyReservationsPage() {
     try {
       setIsLoading(true);
       const res = await api.get("/reservations");
-      setReservations(res.data || []);
+      const all: ReservationItem[] = res.data || [];
+      setReservations(
+        all.filter(
+          (r) =>
+            !r.objet?.startsWith("Réservation pour événement:") &&
+            !r.objet?.startsWith("Créneau club validé:"),
+        ),
+      );
     } catch {
       setFeedback({
         type: "error",
@@ -73,7 +80,11 @@ export default function ClubMyReservationsPage() {
       const checkPaymentStatus = async () => {
         try {
           const freshReservations = await api.get("/reservations");
-          const freshData = freshReservations.data || [];
+          const freshData: ReservationItem[] = (freshReservations.data || []).filter(
+            (r: ReservationItem) =>
+              !r.objet?.startsWith("Réservation pour événement:") &&
+              !r.objet?.startsWith("Créneau club validé:"),
+          );
           setReservations(freshData);
           retryCount++;
           

@@ -397,7 +397,7 @@ function App() {
         <Route
           path={ROUTES.shared.paymentHistory}
           element={withAccess(
-            ADMIN_OR_ADHERENT,
+            ["ADMIN", "ADHERENT", "RESPONSABLE_CLUB"],
             <Layout>
               <PaymentHistoryPage />
             </Layout>,

@@ -11,30 +11,30 @@ export default function PaymentHistoryPage() {
   const [dateFilter, setDateFilter] = useState("");
 
   const handleDownloadReceipt = (payment: PaymentItem) => {
-    // Récupérer les informations de l'utilisateur depuis localStorage
     const userStr = localStorage.getItem('user');
     let userInfo = undefined;
-    
+    let centreName: string | undefined = undefined;
+
     if (userStr) {
       try {
-        const user = JSON.parse(userStr);
+        const u = JSON.parse(userStr);
         userInfo = {
-          nom: user.nom || '',
-          prenom: user.prenom || '',
-          email: user.email || ''
+          nom: u.nom || '',
+          prenom: u.prenom || '',
+          email: u.email || '',
         };
-      } catch (error) {
-        console.error('Erreur lors de la lecture des infos utilisateur:', error);
+        // Try several places where the centre name could be stored
+        centreName =
+          u?.centre?.nom ||
+          u?.clubs_diriges?.[0]?.centre?.nom ||
+          payment.reservation?.local?.centre?.nom ||
+          undefined;
+      } catch {
+        // ignore parse errors
       }
     }
-    
-    // Ajouter les infos utilisateur au paiement
-    const paymentWithUser = {
-      ...payment,
-      user: userInfo
-    };
-    
-    generatePaymentReceipt(paymentWithUser);
+
+    generatePaymentReceipt({ ...payment, user: userInfo, centreName });
   };
 
   const loadPayments = async () => {
