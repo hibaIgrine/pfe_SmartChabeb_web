@@ -15,6 +15,7 @@ export const ROUTES = {
     roles: "/admin/roles",
     eventsManagement: "/admin/events-management",
     eventsStats: "/admin/events-stats",
+    eventDetail: "/admin/events/:id/detail",
   },
   centre: {
     home: "/centre/mon-centre",
@@ -24,6 +25,8 @@ export const ROUTES = {
     reservations: "/centre/reservations",
     reservationRevenues: "/centre/reservation-revenues",
     eventsManagement: "/centre/events-management",
+    eventsStats: "/centre/events-stats",
+    eventDetail: "/centre/events/:id/detail",
     centreEventsRequests: "/centre/centre-events-requests",
     eventRequests: "/centre/events-requests",
     eventParticipants: "/centre/events-participants",

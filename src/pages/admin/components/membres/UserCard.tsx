@@ -10,23 +10,15 @@ import {
   ShieldAlert,
   CheckCircle2,
 } from "lucide-react";
-import api from "../../../../api/axios";
 
-// 💡 LOGIQUE D'IMAGE SÉCURISÉE (Plus d'erreur src="")
-const getUserImageUrl = (user: any) => {
-  if (
-    !user ||
-    !user.photo_profil_url ||
-    user.photo_profil_url.trim() === "" ||
-    user.photo_profil_url === "null"
-  ) {
-    return null;
-  }
-  const url = user.photo_profil_url;
-  if (url.startsWith("http")) return url;
-  if (url.startsWith("assets/")) return null; // Les assets mobiles ne sont pas lisibles par le Web
-  const baseURL = api.defaults.baseURL || "http://192.168.1.17:3000";
-  return `${baseURL}${url.startsWith("/") ? "" : "/"}${url}`;
+const resolvePhotoUrl = (photo_profil_url: any): string | null => {
+  if (!photo_profil_url) return null;
+  const url = String(photo_profil_url).trim();
+  if (!url || url === "null" || url === "undefined") return null;
+  if (url.startsWith("assets/") || url.startsWith("file://")) return null;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  const base = (import.meta.env.VITE_API_URL || "http://localhost:3000").replace(/\/$/, "");
+  return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
 };
 
 const ROLES_INFO: any = {
@@ -79,7 +71,7 @@ export const UserCard = ({
 }: any) => {
   const role = user.role as keyof typeof ROLES_INFO;
   const info = ROLES_INFO[role] || ROLES_INFO.ADHERENT;
-  const imageUrl = getUserImageUrl(user);
+  const imageUrl = resolvePhotoUrl(user.photo_profil_url);
 
   return (
     <div className="bg-white p-6 rounded-[40px] border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500">
@@ -122,23 +114,38 @@ export const UserCard = ({
         </div>
       </div>
 
-      {/* 💡 LOGIQUE AJOUTÉE : Afficher le club rattaché */}
-      {user.role === "RESPONSABLE_CLUB" && user.clubs_diriges?.length > 0 && (
-        <span className="px-3 py-1 rounded-full text-[8px] font-black uppercase bg-smart-sage text-smart-teal border border-smart-teal/10 flex items-center gap-1">
-          <LayoutGrid size={10} /> Gère : {user.clubs_diriges[0].nom}
-        </span>
+      {/* Clubs dirigés : tous affichés + bouton d'édition */}
+      {user.role === "RESPONSABLE_CLUB" && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {user.clubs_diriges?.length > 0 ? (
+            <>
+              {user.clubs_diriges.map((club: any) => (
+                <span
+                  key={club.id}
+                  className="px-3 py-1 rounded-full text-[8px] font-black uppercase bg-smart-sage text-smart-teal border border-smart-teal/10 flex items-center gap-1"
+                >
+                  <LayoutGrid size={10} /> {club.nom}
+                </span>
+              ))}
+              <button
+                onClick={() => onAssignClub(user)}
+                className="px-3 py-1 rounded-full text-[8px] font-black uppercase bg-white text-smart-teal border border-smart-teal/20 hover:bg-smart-teal hover:text-white transition-all cursor-pointer"
+                title="Modifier les clubs assignés"
+              >
+                Modifier
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => onAssignClub(user)}
+              className="px-3 py-1 rounded-full text-[8px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-200 animate-pulse hover:bg-amber-500 hover:text-white transition-all cursor-pointer"
+              title="Cliquer pour assigner un club"
+            >
+              ⚠️ Aucun club assigné - Fixer
+            </button>
+          )}
+        </div>
       )}
-      {/* Si c'est un responsable mais sans club affecté */}
-      {user.role === "RESPONSABLE_CLUB" &&
-        (!user.clubs_diriges || user.clubs_diriges.length === 0) && (
-          <button
-            onClick={() => onAssignClub(user)} // 💡 Rend l'alerte cliquable
-            className="px-3 py-1 rounded-full text-[8px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-200 animate-pulse hover:bg-amber-500 hover:text-white transition-all cursor-pointer"
-            title="Cliquer pour assigner un club"
-          >
-            ⚠️ Aucun club assigné - Fixer
-          </button>
-        )}
 
       {showCentreSection && (
         <div className="flex flex-col items-center gap-2 md:flex-1">

@@ -1,10 +1,8 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { ROUTES } from "../../constants/routes";
 import api from "../../api/axios";
-import EventDetailsPanel from "./components/EventDetailsPanel";
-import EventsDashboardStats from "./components/EventsDashboardStats";
 import EventFormModal from "./components/EventFormModal";
 import EventHeader from "./components/EventHeader";
 import EventPresenceModal from "./components/EventPresenceModal";
@@ -13,12 +11,9 @@ import EventsList from "./components/EventsList";
 import type {
   AlertState,
   ClubLite,
-  EventDetail,
-  EventDashboardStats,
   EventForm,
   EventItem,
   LocalLite,
-  ParticipantStatus,
 } from "./types";
 import {
   getEmptyForm,
@@ -49,18 +44,11 @@ export default function EventsPage() {
   const [allCentres, setAllCentres] = useState<{ id: string; nom: string; gouvernorat: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [dashboardStats, setDashboardStats] =
-    useState<EventDashboardStats | null>(null);
 
   const [showInactive, setShowInactive] = useState(true);
   const [eventFilter, setEventFilter] = useState<"upcoming" | "past" | "all">(
     "upcoming",
   );
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [selectedDetail, setSelectedDetail] = useState<EventDetail | null>(
-    null,
-  );
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
   const [cancelTarget, setCancelTarget] = useState<EventItem | null>(null);
@@ -68,7 +56,6 @@ export default function EventsPage() {
   const [presenceParticipants, setPresenceParticipants] = useState<any[]>([]);
   const [isPresenceLoading, setIsPresenceLoading] = useState(false);
   const [isPresenceUpdating, setIsPresenceUpdating] = useState(false);
-  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [form, setForm] = useState<EventForm>(getEmptyForm());
   const [resolvedCentreId, setResolvedCentreId] = useState(
     user?.centre?.id ?? user?.id_centre ?? "",
@@ -146,23 +133,6 @@ export default function EventsPage() {
       return b.start_time.localeCompare(a.start_time);
     });
   }, [scopedEvents, eventFilter, today]);
-
-  const scopedDashboardStats = useMemo(() => {
-    if (!dashboardStats || !isResponsableCentre || !resolvedCentreId)
-      return dashboardStats;
-    const scopedEventIds = new Set(scopedEvents.map((e) => e.id));
-    const scopedClubIds = new Set(scopedClubs.map((c) => c.id));
-    return {
-      ...dashboardStats,
-      nombreEvenements: scopedEvents.length,
-      evenementsPopulaires: (dashboardStats.evenementsPopulaires || []).filter(
-        (e) => scopedEventIds.has(e.id),
-      ),
-      participationParClub: (dashboardStats.participationParClub || []).filter(
-        (c) => scopedClubIds.has(c.clubId),
-      ),
-    };
-  }, [dashboardStats, isResponsableCentre, resolvedCentreId, scopedClubs, scopedEvents]);
 
   const selectedClubContextId = form.club_id || form.club_ids[0] || "";
   const selectedClub = scopedClubs.find((c) => c.id === selectedClubContextId);
@@ -251,16 +221,14 @@ export default function EventsPage() {
         api.get(`/events?includeInactive=${showInactive}`, { headers }),
         api.get("/clubs", { headers }),
         api.get("/locaux", { headers }),
-        api.get(`/events/stats/dashboard?includeInactive=${showInactive}`, { headers }),
       ];
       if (isAdmin) requests.push(api.get("/centres", { headers }));
 
-      const [eventsRes, clubsRes, locauxRes, statsRes, centresRes] = await Promise.all(requests);
+      const [eventsRes, clubsRes, locauxRes, centresRes] = await Promise.all(requests);
 
       setEvents(Array.isArray(eventsRes.data) ? eventsRes.data : []);
       setClubs(Array.isArray(clubsRes.data) ? clubsRes.data : []);
       setLocaux(Array.isArray(locauxRes.data) ? locauxRes.data : []);
-      setDashboardStats(statsRes.data ?? null);
       if (isAdmin && centresRes) {
         setAllCentres(
           (Array.isArray(centresRes.data) ? centresRes.data : []).map((c: any) => ({
@@ -272,20 +240,19 @@ export default function EventsPage() {
       }
     } catch {
       showAlert("Erreur lors du chargement des événements.", "error");
-      setDashboardStats(null);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loadDetail = async (eventId: string) => {
-    try {
-      const response = await api.get(`/events/${eventId}`, { headers });
-      setSelectedDetail(response.data);
-      setSelectedEventId(eventId);
-    } catch {
-      showAlert("Impossible de charger le détail de l'événement.", "error");
-    }
+  const navigate = useNavigate();
+
+  const navigateToDetail = (eventId: string) => {
+    navigate(
+      isAdmin
+        ? `/admin/events/${eventId}/detail`
+        : `/centre/events/${eventId}/detail`,
+    );
   };
 
   useEffect(() => {
@@ -299,30 +266,6 @@ export default function EventsPage() {
       setForm((prev) => ({ ...prev, locaux_id: "" }));
     }
   }, [form.locaux_id, filteredLocaux]);
-
-  useEffect(() => {
-    if (!selectedEventId) return;
-
-    const stillVisible = scopedEvents.some(
-      (event) => event.id === selectedEventId,
-    );
-    if (!stillVisible) {
-      setSelectedEventId(null);
-      setSelectedDetail(null);
-    }
-  }, [selectedEventId, scopedEvents]);
-
-  useEffect(() => {
-    if (!selectedEventId) return;
-
-    const stillVisible = visibleEvents.some(
-      (event) => event.id === selectedEventId,
-    );
-    if (!stillVisible) {
-      setSelectedEventId(null);
-      setSelectedDetail(null);
-    }
-  }, [selectedEventId, visibleEvents]);
 
   useEffect(() => {
     if (!isAdmin || !selectedClubContextId) return;
@@ -470,10 +413,6 @@ export default function EventsPage() {
       setIsModalOpen(false);
       resetForm();
       await loadBaseData();
-
-      if (selectedEventId) {
-        await loadDetail(selectedEventId);
-      }
     } catch (error: any) {
       const apiMessage = error?.response?.data?.message;
       const detailedMessage = Array.isArray(apiMessage)
@@ -501,10 +440,6 @@ export default function EventsPage() {
       }
 
       await loadBaseData();
-
-      if (selectedEventId === event.id) {
-        await loadDetail(event.id);
-      }
     } catch {
       showAlert("Impossible de modifier le statut.", "error");
     }
@@ -526,11 +461,6 @@ export default function EventsPage() {
       await api.patch(`/events/${cancelTarget.id}/cancel`, {}, { headers });
       showAlert("Événement annulé et notifications envoyées.", "success");
       await loadBaseData();
-
-      if (selectedEventId === cancelTarget.id) {
-        await loadDetail(cancelTarget.id);
-      }
-
       setCancelTarget(null);
     } catch (error: any) {
       const apiMessage = error?.response?.data?.message;
@@ -543,51 +473,6 @@ export default function EventsPage() {
       );
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const updateParticipantStatus = async (
-    eventId: string,
-    participantId: string,
-    status: ParticipantStatus,
-  ) => {
-    try {
-      await api.patch(
-        `/events/${eventId}/participants/${participantId}/status`,
-        { status },
-        { headers },
-      );
-      showAlert("Statut participant mis à jour.", "success");
-      await loadDetail(eventId);
-      await loadBaseData();
-    } catch (error: any) {
-      const apiMessage = error?.response?.data?.message;
-      const detailedMessage = Array.isArray(apiMessage)
-        ? apiMessage.join(" | ")
-        : apiMessage;
-      showAlert(detailedMessage || "Mise à jour impossible.", "error");
-    }
-  };
-
-  const toggleParticipantCheckin = async (
-    eventId: string,
-    participantId: string,
-    checkin: boolean,
-  ) => {
-    try {
-      await api.patch(
-        `/events/${eventId}/participants/${participantId}/checkin`,
-        { checkin },
-        { headers },
-      );
-      showAlert("Check-in mis à jour.", "success");
-      await loadDetail(eventId);
-    } catch (error: any) {
-      const apiMessage = error?.response?.data?.message;
-      const detailedMessage = Array.isArray(apiMessage)
-        ? apiMessage.join(" | ")
-        : apiMessage;
-      showAlert(detailedMessage || "Check-in impossible.", "error");
     }
   };
 
@@ -627,7 +512,6 @@ export default function EventsPage() {
       );
       const all = Array.isArray(response.data?.all) ? response.data.all : [];
       setPresenceParticipants(all);
-      await loadDetail(presenceEvent.id);
       showAlert("Présence mise à jour.", "success");
     } catch (error: any) {
       const apiMessage = error?.response?.data?.message;
@@ -637,63 +521,6 @@ export default function EventsPage() {
       showAlert(detailedMessage || "Mise à jour présence impossible.", "error");
     } finally {
       setIsPresenceUpdating(false);
-    }
-  };
-
-  const selfCheckin = async (eventId: string) => {
-    setIsPresenceUpdating(true);
-    try {
-      await api.patch(
-        `/events/${eventId}/participants/me/checkin`,
-        {},
-        { headers },
-      );
-      await loadDetail(eventId);
-      await loadBaseData();
-      showAlert(
-        "Votre présence a été enregistrée! Vous avez gagné des points.",
-        "success",
-      );
-    } catch (error: any) {
-      const apiMessage = error?.response?.data?.message;
-      const detailedMessage = Array.isArray(apiMessage)
-        ? apiMessage.join(" | ")
-        : apiMessage;
-      showAlert(detailedMessage || "Check-in impossible.", "error");
-    } finally {
-      setIsPresenceUpdating(false);
-    }
-  };
-
-  const submitFeedback = async (
-    eventId: string,
-    note: number,
-    commentaire: string,
-  ) => {
-    setIsSubmittingFeedback(true);
-    try {
-      await api.post(
-        `/events/${eventId}/feedback`,
-        {
-          note,
-          commentaire,
-        },
-        { headers },
-      );
-
-      showAlert("Merci, votre feedback a ete enregistre.", "success");
-      await loadDetail(eventId);
-    } catch (error: any) {
-      const apiMessage = error?.response?.data?.message;
-      const detailedMessage = Array.isArray(apiMessage)
-        ? apiMessage.join(" | ")
-        : apiMessage;
-      showAlert(
-        detailedMessage || "Impossible d'envoyer votre feedback.",
-        "error",
-      );
-    } finally {
-      setIsSubmittingFeedback(false);
     }
   };
 
@@ -711,39 +538,21 @@ export default function EventsPage() {
         </div>
       )}
 
-      {canManageParticipants && !isAdmin && (
-        <div className="flex justify-end">
-          <Link
-            to="/events-requests"
-            className="px-4 py-2 rounded-xl bg-[#E98A7D] text-white text-xs font-black"
-          >
-            Gérer Les Demandes
-          </Link>
-        </div>
-      )}
-
       <EventHeader
         showInactive={showInactive}
         onToggleInactive={setShowInactive}
         onCreate={openCreateModal}
       />
 
-      {isAdmin && (
+      {(isAdmin || isResponsableCentre) && (
         <div className="flex justify-end">
           <Link
-            to={ROUTES.admin.eventsStats}
+            to={isAdmin ? ROUTES.admin.eventsStats : ROUTES.centre.eventsStats}
             className="inline-flex items-center gap-2 rounded-2xl bg-smart-teal px-5 py-2.5 text-xs font-black uppercase tracking-[0.15em] text-white hover:bg-black transition"
           >
             Voir les statistiques
           </Link>
         </div>
-      )}
-
-      {!isAdmin && (
-        <EventsDashboardStats
-          stats={scopedDashboardStats}
-          isLoading={isLoading}
-        />
       )}
 
       {isAdmin && (
@@ -813,34 +622,18 @@ export default function EventsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.85fr)] gap-6 items-start">
-        <div className="xl:sticky xl:top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto pr-1">
-          <EventsList
-            isLoading={isLoading}
-            events={visibleEvents}
-            selectedEventId={selectedEventId}
-            onView={loadDetail}
-            onPresence={openPresence}
-            onEdit={openEditModal}
-            onToggleActive={toggleActive}
-            onCancel={openCancelConfirmation}
-          />
-        </div>
+      <EventsList
+        isLoading={isLoading}
+        events={visibleEvents}
+        selectedEventId={null}
+        onView={navigateToDetail}
+        onPresence={openPresence}
+        onEdit={openEditModal}
+        onToggleActive={toggleActive}
+        onCancel={openCancelConfirmation}
+      />
 
-        <div className="xl:sticky xl:top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto pr-1">
-          <EventDetailsPanel
-            selectedDetail={selectedDetail}
-            canManageParticipants={canManageParticipants}
-            onUpdateParticipantStatus={updateParticipantStatus}
-            onToggleCheckin={toggleParticipantCheckin}
-            onSelfCheckin={selfCheckin}
-            onSubmitFeedback={submitFeedback}
-            isSubmittingFeedback={isSubmittingFeedback}
-          />
-        </div>
-      </div>
-
-      <EventsCalendar events={visibleEvents} onSelectEvent={loadDetail} />
+      <EventsCalendar events={visibleEvents} onSelectEvent={navigateToDetail} />
 
       <EventFormModal
         isOpen={isModalOpen}

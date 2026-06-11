@@ -22,6 +22,7 @@ import {
   Award,
   Star,
   Wallet,
+  BarChart2,
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { FavoritePostsBell } from "./FavoritePostsBell";
@@ -463,9 +464,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "ADHERENT" ||
-            
-            role === "RESPONSABLE_CENTRE") && (
+          {(role === "ADHERENT" || role === "RESPONSABLE_CENTRE") && (
             <SidebarItem
               to={ROUTES.club.creationRequests}
               icon={<ClipboardList size={18} />}
@@ -644,7 +643,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
+          {role === "RESPONSABLE_CENTRE" && (
+            <>
+              <SidebarItem
+                to={ROUTES.centre.eventsManagement}
+                icon={<CalendarDays size={18} />}
+                label="Gestion Événements"
+                active={location.pathname === ROUTES.centre.eventsManagement}
+              />
+              <SidebarItem
+                to={ROUTES.centre.eventsStats}
+                icon={<BarChart2 size={18} />}
+                label="Statistiques Événements"
+                active={location.pathname === ROUTES.centre.eventsStats}
+              />
+            </>
+          )}
+
+          {role === "RESPONSABLE_CLUB" && (
             <SidebarItem
               to={ROUTES.centre.eventsManagement}
               icon={<CalendarDays size={18} />}
@@ -678,14 +694,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               active={location.pathname === ROUTES.club.clubEventsRequests}
             />
           )}
-
-          <SidebarItem
-            to={ROUTES.shared.chatbot}
-            icon={<Bot size={18} />}
-            label="Assistant IA"
-            active={location.pathname === ROUTES.shared.chatbot}
-          />
-
           {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
               to={ROUTES.centre.eventsManager}
@@ -703,6 +711,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               active={location.pathname === ROUTES.centre.centreEventsRequests}
             />
           )}
+          <SidebarItem
+            to={ROUTES.shared.chatbot}
+            icon={<Bot size={18} />}
+            label="Assistant IA"
+            active={location.pathname === ROUTES.shared.chatbot}
+          />
 
           {(role === "ADHERENT" || role === "RESPONSABLE_CLUB") && (
             <>
@@ -747,8 +761,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               active={location.pathname === "/roles"}
             />
           )}*/}
-
-          
         </nav>
 
         {/* DÉCONNEXION RÉDUITE */}
@@ -826,11 +838,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {displayUser?.nom} {displayUser?.prenom}
                 </p>
                 <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest italic">
-                  {role === "ADMIN" ? "Admin"
-                    : role === "RESPONSABLE_CLUB" ? "Resp. Club"
-                    : role === "RESPONSABLE_CENTRE" ? "Resp. Centre"
-                    : role === "ADHERENT" ? "Membre"
-                    : role}
+                  {role === "ADMIN"
+                    ? "Admin"
+                    : role === "RESPONSABLE_CLUB"
+                      ? "Resp. Club"
+                      : role === "RESPONSABLE_CENTRE"
+                        ? "Resp. Centre"
+                        : role === "ADHERENT"
+                          ? "Membre"
+                          : role}
                 </p>
               </div>
             </Link>

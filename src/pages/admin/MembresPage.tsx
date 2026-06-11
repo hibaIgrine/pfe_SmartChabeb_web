@@ -449,7 +449,13 @@ export default function MembresPage() {
         onClose={closeAllModals}
         user={activeUser}
         availableRoles={availableRoles}
-        excludedRoles={isResponsableCentre ? ["RESPONSABLE_CENTRE"] : []}
+        excludedRoles={
+          isResponsableCentre
+            ? availableRoles
+                .map((r: any) => r.nom)
+                .filter((n: string) => !["ADHERENT", "RESPONSABLE_CLUB"].includes(n.toUpperCase()))
+            : []
+        }
         onSelect={handleRoleChange} // 💡 On appelle notre nouvelle fonction de gestion
       />
 
@@ -496,20 +502,25 @@ export default function MembresPage() {
         isOpen={modals.assignClub}
         onClose={() => setModals((prev) => ({ ...prev, assignClub: false }))}
         userName={`${activeUser?.nom} ${activeUser?.prenom}`}
-        userCentreId={activeUser?.id_centre}
+        userCentreId={activeUser?.id_centre ?? activeUser?.centre?.id}
         clubs={clubs}
-        onConfirm={async (clubId: string) => {
+        currentClubIds={(activeUser?.clubs_diriges ?? []).map((c: any) => c.id)}
+        onConfirm={async ({ toAdd, toRemove }: { toAdd: string[]; toRemove: string[] }) => {
+          const headers = getAuthHeaders();
           try {
-            await api.patch(
-              `/clubs/${clubId}`,
-              { id_coach: activeUser.id },
-              { headers: getAuthHeaders() },
-            );
+            await Promise.all([
+              ...toAdd.map((clubId: string) =>
+                api.patch(`/clubs/${clubId}/assign-coach`, { coachId: activeUser.id }, { headers }),
+              ),
+              ...toRemove.map((clubId: string) =>
+                api.patch(`/clubs/${clubId}/assign-coach`, { coachId: null }, { headers }),
+              ),
+            ]);
             setModals((prev) => ({ ...prev, assignClub: false }));
             await loadPageData();
-            showAlert("Responsable rattaché au club avec succès !", "success");
-          } catch (e) {
-            showAlert("Erreur lors de l'affectation du club", "error");
+            showAlert("Clubs mis à jour avec succès !", "success");
+          } catch {
+            showAlert("Erreur lors de la mise à jour des clubs", "error");
           }
         }}
       />
