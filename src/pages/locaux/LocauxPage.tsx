@@ -6,16 +6,8 @@ import { Loader2, Plus } from "lucide-react";
 import { LocalCard } from "./management/components/LocalCard";
 import { AddLocalModal } from "./management/components/AddLocalModal";
 import { EditLocalModal } from "./management/components/EditLocalModal";
-import { LocauxStats } from "./management/components/LocauxStats";
 import { LocalFilters } from "./management/components/LocalFilters";
 import { DeleteLocalModal } from "./management/components/DeleteLocalModal";
-
-type ReservationStats = {
-  reservationCount: number;
-  mostUsedRoom: { roomName: string; count: number };
-  occupancyRate: number;
-  revenueTotal: number;
-};
 
 export default function LocauxPage() {
   const [locaux, setLocaux] = useState<any[]>([]);
@@ -31,12 +23,6 @@ export default function LocauxPage() {
     msg: string;
     type: "error" | "success";
   } | null>(null);
-  const [reservationStats, setReservationStats] = useState<ReservationStats>({
-    reservationCount: 0,
-    mostUsedRoom: { roomName: "Aucune salle", count: 0 },
-    occupancyRate: 0,
-    revenueTotal: 0,
-  });
 
   const token = localStorage.getItem("token");
   const headers = useMemo(
@@ -74,14 +60,12 @@ export default function LocauxPage() {
         }
       }
 
-      const [resL, resC, resStats] = await Promise.all([
+      const [resL, resC] = await Promise.all([
         api.get("/locaux", { headers }),
         api.get("/centres", { headers }),
-        api.get("/reservations/stats/overview", { headers }),
       ]);
       setLocaux(resL.data);
       setCentres(resC.data);
-      setReservationStats(resStats.data);
     } catch (err) {
       console.error("Erreur de chargement des locaux", err);
     } finally {
@@ -166,11 +150,6 @@ export default function LocauxPage() {
         </button>
       </div>
 
-      <LocauxStats
-        locaux={locauxInScope}
-        reservationStats={reservationStats}
-        isAdmin={isAdmin}
-      />
 
       <LocalFilters
         search={search}

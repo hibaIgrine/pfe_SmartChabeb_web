@@ -142,11 +142,6 @@ export default function ResponsableCentrePage() {
       label: "Valider les demandes",
       icon: <CalendarCheck size={16} />,
     },
-    {
-      to: "/presences",
-      label: "Suivi présence",
-      icon: <ClipboardCheck size={16} />,
-    },
   ];
 
   return (
