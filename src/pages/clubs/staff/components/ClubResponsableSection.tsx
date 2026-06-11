@@ -1,6 +1,5 @@
-import { User, ListFilter, ShieldCheck, UserPlus } from "lucide-react";
+import { User, UserPlus } from "lucide-react";
 import { useState } from "react";
-import { formatRoleLabel } from "../utils";
 
 type Props = {
   responsable: any;
@@ -31,7 +30,6 @@ export function ClubResponsableSection({
   onSetRoleChange,
   onUpdateStaffRole,
 }: Props) {
-  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState("");
 
   if (!responsable) {
@@ -118,89 +116,6 @@ export function ClubResponsableSection({
             </div>
           </div>
 
-          {/* ADMIN / RESPONSABLE_CENTRE : changer le responsable */}
-          {canChangeResponsable && staffList.length > 0 && (
-            <div className="flex items-center gap-2 shrink-0">
-              <select
-                value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                className="rounded-xl border border-gray-200 bg-[#F7F3E9] px-3 py-2 text-xs font-bold text-smart-teal outline-none focus:ring-2 focus:ring-smart-teal/20 cursor-pointer"
-              >
-                <option value="">Changer de responsable…</option>
-                {staffList
-                  .filter((s: any) => s.utilisateur?.id !== responsableId)
-                  .map((s: any) => (
-                    <option key={s.utilisateur?.id} value={s.utilisateur?.id}>
-                      {s.utilisateur?.nom} {s.utilisateur?.prenom}
-                    </option>
-                  ))}
-              </select>
-              <button
-                type="button"
-                disabled={!selectedUserId}
-                onClick={() => {
-                  if (selectedUserId && onAssignResponsable) {
-                    onAssignResponsable(selectedUserId);
-                    setSelectedUserId("");
-                  }
-                }}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-smart-teal text-white transition hover:bg-black disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Confirmer le changement"
-              >
-                <UserPlus size={15} />
-              </button>
-            </div>
-          )}
-
-          {/* RESPONSABLE_CLUB : édition du rôle */}
-          {!readOnly && (
-            <div className="relative flex items-center justify-start gap-2 md:justify-end">
-              <button
-                type="button"
-                onClick={() => setRoleMenuOpen((prev) => !prev)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-smart-teal transition hover:border-smart-teal hover:bg-smart-teal/5"
-                title="Choisir un rôle"
-              >
-                <ListFilter size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => onUpdateStaffRole(responsableId, selectedRoleValue)}
-                disabled={updatingStaffRoleId === responsableId}
-                title="Mettre à jour le rôle"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-smart-teal text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {updatingStaffRoleId === responsableId ? (
-                  <span className="text-xs font-black">...</span>
-                ) : (
-                  <ShieldCheck size={15} />
-                )}
-              </button>
-              {roleMenuOpen && (
-                <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-[240px] rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
-                  {(availableRoles.length > 0 ? availableRoles : ["COACH", "ANIMATEUR"]).map((roleName) => {
-                    const isSelected = roleName === selectedRoleValue;
-                    return (
-                      <button
-                        key={roleName}
-                        type="button"
-                        onClick={() => {
-                          onSetRoleChange(responsableId, roleName);
-                          setRoleMenuOpen(false);
-                        }}
-                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${
-                          isSelected ? "bg-smart-teal/10 text-smart-teal font-black" : "text-gray-700 hover:bg-slate-50"
-                        }`}
-                      >
-                        <span>{formatRoleLabel(roleName)}</span>
-                        {isSelected && <span className="text-[10px] uppercase tracking-[0.16em]">Actuel</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </section>

@@ -16,6 +16,7 @@ export default function ClubStaffPage() {
     catch { return ""; }
   })();
   const isViewer = currentRole === "ADMIN" || currentRole === "RESPONSABLE_CENTRE";
+  const isAdmin = currentRole === "ADMIN";
 
   const {
     state,
@@ -86,7 +87,7 @@ export default function ClubStaffPage() {
               updatingStaffRoleId={state.updatingStaffRoleId}
               staffRoleChanges={state.staffRoleChanges}
               readOnly={isViewer}
-              canChangeResponsable={isViewer}
+              canChangeResponsable={isAdmin}
               staffList={state.filteredStaff}
               availableUsers={state.availableStaff}
               onAssignResponsable={handleChangeResponsable}

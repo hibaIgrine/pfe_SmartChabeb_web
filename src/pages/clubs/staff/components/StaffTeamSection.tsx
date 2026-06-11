@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ListFilter, Power, Search, ShieldCheck, Users } from "lucide-react";
+import { ListFilter, Power, Search, Users } from "lucide-react";
 import { formatRoleLabel } from "../utils";
 
 type Props = {
@@ -123,52 +123,23 @@ export function StaffTeamSection({
                     <div className="relative grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-start md:justify-end">
                       <button
                         type="button"
-                        disabled={isInactive || !utilisateurId}
+                        disabled={isInactive || !utilisateurId || updatingStaffRoleId === utilisateurId}
                         onClick={() =>
                           setRoleMenuOpenFor((prev) =>
                             prev === item.id ? null : item.id,
                           )
                         }
                         className="inline-flex h-9 w-9 items-center justify-center justify-self-start rounded-lg border border-gray-200 bg-white text-smart-teal transition hover:border-smart-teal hover:bg-smart-teal/5 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-                        title="Choisir un rôle"
-                        aria-label="Choisir un rôle"
-                      >
-                        <ListFilter size={16} />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onUpdateStaffRole(utilisateurId, selectedRoleValue)
-                        }
-                        disabled={
-                          updatingStaffRoleId === utilisateurId ||
-                          isInactive ||
-                          !utilisateurId
-                        }
-                        title="Mettre à jour le rôle"
-                        aria-label="Mettre à jour le rôle"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-smart-teal text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
+                        title="Changer le rôle"
+                        aria-label="Changer le rôle"
                       >
                         {updatingStaffRoleId === utilisateurId ? (
-                          <span className="text-xs font-black">...</span>
+                          <span className="text-xs font-black text-smart-teal">...</span>
                         ) : (
-                          <ShieldCheck size={15} />
+                          <ListFilter size={16} />
                         )}
                       </button>
 
-                      {utilisateurId && !isResponsable ? (
-                        <button
-                          type="button"
-                          onClick={() => onChangeResponsable(utilisateurId)}
-                          disabled={updatingClubResponsable || isInactive}
-                          title="Définir comme responsable"
-                          aria-label="Définir comme responsable"
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-smart-sage text-smart-teal transition hover:bg-black/5 disabled:opacity-40"
-                        >
-                          <Users size={15} />
-                        </button>
-                      ) : null}
 
                       {!isResponsable ? (
                         <button
@@ -208,6 +179,7 @@ export function StaffTeamSection({
                                 type="button"
                                 onClick={() => {
                                   onSetRoleChange(utilisateurId, roleName);
+                                  onUpdateStaffRole(utilisateurId, roleName);
                                   setRoleMenuOpenFor(null);
                                 }}
                                 className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${isSelected ? "bg-smart-teal/10 text-smart-teal font-black" : "text-gray-700 hover:bg-slate-50"}`}
