@@ -47,6 +47,7 @@ type PostCardProps = {
   canEdit: boolean;
   defaultCommentsOpen?: boolean;
   currentUserId?: string;
+  isAdmin?: boolean;
   onDelete: (postId: string) => void;
   onEdit: (post: Publication) => void;
   onReact?: (postId: string, reactionType: ReactionType) => void;
@@ -62,6 +63,7 @@ export function PostCard({
   canEdit,
   defaultCommentsOpen = false,
   currentUserId,
+  isAdmin,
   onDelete,
   onEdit,
   onReact,
@@ -598,7 +600,7 @@ export function PostCard({
 
   const renderCommentCard = (comment: CommentWithMeta, isReply = false) => {
     const canManageComment =
-      Boolean(currentUserId) && currentUserId === comment.user_id;
+      Boolean(isAdmin) || (Boolean(currentUserId) && currentUserId === comment.user_id);
     const nestedReplies = repliesByParent[comment.id] ?? [];
 
     return (

@@ -12,6 +12,7 @@ export type DraftMediaItem = {
 
 export type SocialFeedCurrentUser = {
   id?: string;
+  role?: string;
 };
 
 export const EMPTY_MEDIA: DraftMediaItem = {

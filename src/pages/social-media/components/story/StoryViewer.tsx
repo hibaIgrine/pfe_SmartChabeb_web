@@ -10,6 +10,7 @@ type StoryViewerProps = {
   stories: Story[];
   initialIndex: number;
   currentUserId?: string;
+  isAdmin?: boolean;
   onClose: () => void;
 };
 
@@ -17,6 +18,7 @@ export function StoryViewer({
   stories,
   initialIndex,
   currentUserId,
+  isAdmin,
   onClose,
 }: StoryViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -70,7 +72,9 @@ export function StoryViewer({
   };
 
   const handleDelete = async () => {
-    if (currentStory && currentStory.user_id === currentUserId) {
+    if (!currentStory) return;
+    const canDelete = isAdmin || currentStory.user_id === currentUserId;
+    if (canDelete) {
       try {
         await deleteStory(currentStory.id);
         setConfirmDeleteOpen(false);
@@ -117,7 +121,7 @@ export function StoryViewer({
     typeof mediaList[0]?.textY === "number"
       ? Math.max(-35, Math.min(35, mediaList[0].textY))
       : 0;
-  const isOwnStory = currentStory?.user_id === currentUserId;
+  const isOwnStory = Boolean(isAdmin || currentStory?.user_id === currentUserId);
   const progressPercent = ((duration - displayDuration) / duration) * 100;
   const viewers = currentStory?.views ?? [];
 

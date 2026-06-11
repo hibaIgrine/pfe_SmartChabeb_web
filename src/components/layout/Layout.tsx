@@ -739,14 +739,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}*/}
 
-          {role === "ADMIN" && (
-            <SidebarItem
-              to="/coaches"
-              icon={<GraduationCap size={18} />}
-              label="Gestion Staff"
-              active={location.pathname === "/coaches"}
-            />
-          )}
+          
         </nav>
 
         {/* DÉCONNEXION RÉDUITE */}

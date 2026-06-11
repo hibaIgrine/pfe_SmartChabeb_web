@@ -5,6 +5,7 @@ type FeedListProps = {
   posts: Publication[];
   loading: boolean;
   currentUserId?: string;
+  isAdmin?: boolean;
   onDelete: (postId: string) => void;
   onEdit: (post: Publication) => void;
   onReact?: (postId: string, reactionType: ReactionType) => void;
@@ -18,6 +19,7 @@ export function FeedList({
   posts,
   loading,
   currentUserId,
+  isAdmin,
   onDelete,
   onEdit,
   onReact,
@@ -45,12 +47,14 @@ export function FeedList({
           key={post.id}
           post={post}
           canDelete={Boolean(
-            currentUserId && post.user?.id && currentUserId === post.user.id,
+            isAdmin ||
+            (currentUserId && post.user?.id && currentUserId === post.user.id),
           )}
           canEdit={Boolean(
             currentUserId && post.user?.id && currentUserId === post.user.id,
           )}
           currentUserId={currentUserId}
+          isAdmin={isAdmin}
           onDelete={onDelete}
           onEdit={onEdit}
           onReact={onReact}

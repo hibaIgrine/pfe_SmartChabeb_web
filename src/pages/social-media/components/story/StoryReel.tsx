@@ -54,10 +54,11 @@ function formatStoryTime(value?: string) {
 
 type StoryReelProps = {
   currentUserId?: string;
+  isAdmin?: boolean;
   onStoryCreated?: () => void;
 };
 
-export function StoryReel({ currentUserId, onStoryCreated }: StoryReelProps) {
+export function StoryReel({ currentUserId, isAdmin, onStoryCreated }: StoryReelProps) {
   const [stories, setStories] = useState<Story[]>([]);
   const [myStories, setMyStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(false);
@@ -292,6 +293,7 @@ export function StoryReel({ currentUserId, onStoryCreated }: StoryReelProps) {
           }
           initialIndex={selectedStoryIndex}
           currentUserId={currentUserId}
+          isAdmin={isAdmin}
           onClose={handleCloseStory}
         />
       )}

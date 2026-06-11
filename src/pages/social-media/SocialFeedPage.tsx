@@ -59,6 +59,7 @@ export default function SocialFeedPage() {
   };
 
   const isEditingPost = Boolean(feed.editingPostId);
+  const isAdmin = feed.me?.role === "ADMIN";
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -68,7 +69,7 @@ export default function SocialFeedPage() {
         onUnhideUser={feed.unhideAuthorPosts}
       />
 
-      <StoryReel currentUserId={feed.me?.id} onStoryCreated={feed.loadFeed} />
+      <StoryReel currentUserId={feed.me?.id} isAdmin={isAdmin} onStoryCreated={feed.loadFeed} />
 
       {!isEditingPost ? (
         <PostComposer
@@ -169,6 +170,7 @@ export default function SocialFeedPage() {
         posts={feed.posts}
         loading={feed.loading}
         currentUserId={feed.me?.id}
+        isAdmin={isAdmin}
         onDelete={feed.removePost}
         onEdit={feed.startEditPost}
         onReact={feed.reactToPost}
