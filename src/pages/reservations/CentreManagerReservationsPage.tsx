@@ -344,22 +344,47 @@ export default function CentreManagerReservationsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           {item.statut === "EN_ATTENTE" && (
-                            <>
-                              <button
-                                onClick={() => handleAcceptReservation(item.id)}
-                                className="inline-flex items-center gap-1 rounded-lg bg-green-50 px-3 py-2 text-xs font-black text-green-600 hover:bg-green-100"
-                                title="Accepter la réservation"
-                              >
-                                <Check size={14} /> Accepter
-                              </button>
-                              <button
-                                onClick={() => handleRejectReservation(item.id)}
-                                className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-600 hover:bg-red-100"
-                                title="Refuser la réservation"
-                              >
-                                <X size={14} /> Refuser
-                              </button>
-                            </>
+                            (() => {
+                              const expired = new Date(item.heure_fin) < new Date();
+                              return expired ? (
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      disabled
+                                      className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-2 text-xs font-black text-gray-400 cursor-not-allowed"
+                                    >
+                                      <Check size={14} /> Accepter
+                                    </button>
+                                    <button
+                                      disabled
+                                      className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-2 text-xs font-black text-gray-400 cursor-not-allowed"
+                                    >
+                                      <X size={14} /> Refuser
+                                    </button>
+                                  </div>
+                                  <p className="text-[10px] font-bold text-amber-500 uppercase tracking-wide">
+                                    Date de demande dépassée
+                                  </p>
+                                </div>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleAcceptReservation(item.id)}
+                                    className="inline-flex items-center gap-1 rounded-lg bg-green-50 px-3 py-2 text-xs font-black text-green-600 hover:bg-green-100"
+                                    title="Accepter la réservation"
+                                  >
+                                    <Check size={14} /> Accepter
+                                  </button>
+                                  <button
+                                    onClick={() => handleRejectReservation(item.id)}
+                                    className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-3 py-2 text-xs font-black text-red-600 hover:bg-red-100"
+                                    title="Refuser la réservation"
+                                  >
+                                    <X size={14} /> Refuser
+                                  </button>
+                                </>
+                              );
+                            })()
                           )}
                           <button
                             onClick={() => handleViewOccupancy(item.local.id, item.local.nom, item.date_reservation)}
