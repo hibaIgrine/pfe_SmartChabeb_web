@@ -455,7 +455,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           )}
 
           {(role === "ADHERENT" ||
-            role === "ADMIN" ||
+            
             role === "RESPONSABLE_CENTRE") && (
             <SidebarItem
               to={ROUTES.club.creationRequests}

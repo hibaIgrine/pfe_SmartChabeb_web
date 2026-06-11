@@ -40,12 +40,13 @@ export default function MembresPage() {
   const [selectedClubId, setSelectedClubId] = useState("");
   const [selectedAgeRange, setSelectedAgeRange] = useState("");
   const [activeUser, setActiveUser] = useState<any>(null);
+  const [pendingRoleForCentre, setPendingRoleForCentre] = useState<string | null>(null);
   const [modals, setModals] = useState({
     role: false,
     ban: false,
     delete: false,
     assign: false,
-    assignClub: false, // 💡 Nouveau
+    assignClub: false,
   });
 
   const currentUser = useMemo(() => {
@@ -152,6 +153,16 @@ export default function MembresPage() {
     if (!resolvedCentreId) return [];
     return users.filter((u: any) => u.id_centre === resolvedCentreId);
   }, [isResponsableCentre, resolvedCentreId, users]);
+
+  const centreResponsableMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    users.forEach((u: any) => {
+      if (u.role === "RESPONSABLE_CENTRE" && u.id_centre) {
+        map[u.id_centre] = u;
+      }
+    });
+    return map;
+  }, [users]);
 
   const handleAction = async (url: string, data: any, msg: string) => {
     try {
@@ -266,42 +277,65 @@ export default function MembresPage() {
       );
     }
   };
-  // Dans MembresPage.tsx
-
   const handleRoleChange = async (roleName: string) => {
+    if (roleName === "RESPONSABLE_CENTRE") {
+      // On diffère la mise à jour du rôle jusqu'à ce qu'un centre soit confirmé
+      setPendingRoleForCentre("RESPONSABLE_CENTRE");
+      setModals((prev) => ({ ...prev, role: false, assign: true }));
+      return;
+    }
+
     try {
-      // 1. On met à jour le rôle via l'API
       await api.patch(
         `/users/${activeUser.id}/role`,
         { role: roleName },
         { headers: getAuthHeaders() },
       );
-
-      // 2. On recharge les données pour que la carte affiche le nouveau rôle
       await loadPageData();
 
-      // 3. LOGIQUE SMART : Branchement selon le rôle choisi
       if (roleName === "RESPONSABLE_CLUB") {
-        // On ferme la modale des rôles et on ouvre celle des clubs
         setModals((prev) => ({ ...prev, role: false, assignClub: true }));
-        showAlert(
-          "Grade mis à jour. Veuillez maintenant affecter le club.",
-          "success",
-        );
-      } else if (roleName === "RESPONSABLE_CENTRE") {
-        // On ferme la modale des rôles et on ouvre celle des centres
-        setModals((prev) => ({ ...prev, role: false, assign: true }));
-        showAlert(
-          "Grade mis à jour. Veuillez choisir le gouvernorat puis le centre.",
-          "success",
-        );
+        showAlert("Grade mis à jour. Veuillez maintenant affecter le club.", "success");
       } else {
-        // Pour les autres rôles, on ferme tout
         closeAllModals();
         showAlert("Grade mis à jour avec succès !", "success");
       }
     } catch (err) {
       showAlert("Erreur lors du changement de grade", "error");
+    }
+  };
+
+  const handleAssignCentre = async (centreId: string) => {
+    const headers = getAuthHeaders();
+    try {
+      if (pendingRoleForCentre === "RESPONSABLE_CENTRE") {
+        const existingResp = centreResponsableMap[centreId];
+        if (existingResp && existingResp.id !== activeUser.id) {
+          await api.patch(
+            `/users/${existingResp.id}/role`,
+            { role: "ADHERENT" },
+            { headers },
+          );
+        }
+        await api.patch(
+          `/users/${activeUser.id}/role`,
+          { role: "RESPONSABLE_CENTRE" },
+          { headers },
+        );
+        setPendingRoleForCentre(null);
+      }
+
+      await api.patch(
+        `/users/${activeUser.id}/assign-centre`,
+        { id_centre: centreId },
+        { headers },
+      );
+
+      await loadPageData();
+      showAlert("Responsable rattaché avec succès à l'institution", "success");
+      closeAllModals();
+    } catch (err) {
+      showAlert("Erreur lors de l'affectation du centre", "error");
     }
   };
 
@@ -432,18 +466,16 @@ export default function MembresPage() {
         }
       />
 
-      <AssignCentreModal // 💡 Nom mis à jour
+      <AssignCentreModal
         isOpen={modals.assign}
-        onClose={closeAllModals}
+        onClose={() => {
+          setPendingRoleForCentre(null);
+          closeAllModals();
+        }}
         user={activeUser}
-        centres={centres} // 💡 centres au lieu de salles
-        onAssign={(centreId) =>
-          handleAction(
-            `/users/${activeUser.id}/assign-centre`, // 💡 URL mise à jour
-            { id_centre: centreId }, // 💡 champ id_centre
-            "Adhérent rattaché avec succès à l'institution",
-          )
-        }
+        centres={centres}
+        centreResponsableMap={pendingRoleForCentre ? centreResponsableMap : {}}
+        onAssign={handleAssignCentre}
       />
 
       <DeleteUserModal

@@ -5,6 +5,7 @@ import {
   ChevronRight,
   CheckCircle,
   Clock3,
+  Ban,
 } from "lucide-react";
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { PlanningInput } from "./PlanningInput";
@@ -680,7 +681,7 @@ export const EditClubModal = ({
             <label className="text-[10px] font-black text-smart-teal/50 uppercase tracking-widest ml-1">
               Catégorie
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {categories.map((cat: any) => (
                 <button
                   key={cat.id}
@@ -743,7 +744,15 @@ export const EditClubModal = ({
                     disabled={!formData.id_salle || staffList.length === 0}
                     className={inputWithErrorCls()}
                     value={selectedResponsableId}
-                    onChange={(e) => setSelectedResponsableId(e.target.value)}
+                    onChange={(e) => {
+                      const newId = e.target.value;
+                      setSelectedResponsableId(newId);
+                      if (newId) {
+                        setSelectedStaff((prev) =>
+                          prev.filter((x) => x.id_utilisateur !== newId),
+                        );
+                      }
+                    }}
                   >
                     <option value="">Aucun responsable sélectionné</option>
                     {staffList.map((s: any) => (
@@ -770,20 +779,27 @@ export const EditClubModal = ({
                 </p>
               )}
               {staffList.map((s: any) => {
+                const isResponsable = s.id === selectedResponsableId;
                 const isSelected = selectedStaff.find(
                   (item) => item.id_utilisateur === s.id,
                 );
                 return (
                   <div
                     key={s.id}
-                    className="flex items-center justify-between p-3 bg-white rounded-2xl border border-gray-100 shadow-sm"
+                    className={`flex items-center justify-between p-3 rounded-2xl border shadow-sm transition-all ${
+                      isResponsable
+                        ? "bg-red-50/60 border-red-200"
+                        : "bg-white border-gray-100"
+                    }`}
                   >
-                    <span className="font-bold text-xs text-smart-teal ml-2">
+                    <span className={`font-bold text-xs ml-2 flex items-center gap-2 ${isResponsable ? "text-red-400" : "text-smart-teal"}`}>
+                      {isResponsable && <Ban size={13} className="text-red-400 shrink-0" />}
                       {s.nom} {s.prenom}{" "}
                       <small className="opacity-40 ml-1">({s.role})</small>
                     </span>
                     <button
                       type="button"
+                      disabled={isResponsable}
                       onClick={() =>
                         isSelected
                           ? setSelectedStaff(
@@ -796,9 +812,15 @@ export const EditClubModal = ({
                               { id_utilisateur: s.id, role_dans_club: s.role },
                             ])
                       }
-                      className={`text-[9px] font-black px-4 py-2 rounded-xl transition ${isSelected ? "bg-red-50 text-red-500" : "bg-smart-sage/20 text-smart-teal"}`}
+                      className={`text-[9px] font-black px-4 py-2 rounded-xl transition ${
+                        isResponsable
+                          ? "bg-red-100 text-red-300 cursor-not-allowed"
+                          : isSelected
+                          ? "bg-red-50 text-red-500"
+                          : "bg-smart-sage/20 text-smart-teal"
+                      }`}
                     >
-                      {isSelected ? "RETIRER" : "AFFECTER"}
+                      {isResponsable ? "RESPONSABLE" : isSelected ? "RETIRER" : "AFFECTER"}
                     </button>
                   </div>
                 );

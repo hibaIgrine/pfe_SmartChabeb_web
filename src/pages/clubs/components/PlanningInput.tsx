@@ -13,8 +13,94 @@ interface PlanningInputProps {
 }
 
 const DAYS = [
-  "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"
+  "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche",
 ];
+
+const START_HOURS = Array.from({ length: 14 }, (_, i) => 8 + i); // 8 → 21
+const END_HOURS   = Array.from({ length: 15 }, (_, i) => 8 + i); // 8 → 22
+
+function parseTime(t: any): { h: number; m: number } {
+  const str = typeof t === "string" ? t : "08:00";
+  const parts = str.split(":");
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  return { h: isNaN(h) ? 8 : h, m: isNaN(m) ? 0 : m };
+}
+
+function formatTime(h: number, m: number): string {
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+interface TimePickerProps {
+  value: string;
+  onChange: (val: string) => void;
+  hours: number[];
+}
+
+function TimePicker({ value, onChange, hours }: TimePickerProps) {
+  const { h, m } = parseTime(value);
+  const [minuteInput, setMinuteInput] = useState(String(m).padStart(2, "0"));
+
+  // Sync minuteInput when the value prop changes from outside (e.g. hour change)
+  useEffect(() => {
+    setMinuteInput(String(m).padStart(2, "0"));
+  }, [m]);
+
+  const handleHour = (newH: number) => {
+    const clampedM = newH === 22 ? 0 : m;
+    onChange(formatTime(newH, clampedM));
+  };
+
+  const handleMinuteChange = (raw: string) => {
+    // Allow only digits, max 2 chars
+    const digits = raw.replace(/\D/g, "").slice(0, 2);
+    setMinuteInput(digits);
+    const num = parseInt(digits, 10);
+    if (!isNaN(num) && num >= 0 && num <= 59) {
+      onChange(formatTime(h, num));
+    }
+  };
+
+  const handleMinuteBlur = () => {
+    const num = parseInt(minuteInput, 10);
+    const safe = isNaN(num) ? 0 : Math.max(0, Math.min(59, num));
+    setMinuteInput(String(safe).padStart(2, "0"));
+    onChange(formatTime(h, safe));
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      {/* Heure — liste 8 à 22 */}
+      <select
+        value={h}
+        onChange={(e) => handleHour(Number(e.target.value))}
+        className="w-[62px] px-2 py-2 bg-smart-sage/10 border-none rounded-xl text-[11px] font-black text-smart-teal outline-none focus:ring-2 focus:ring-smart-teal/20 cursor-pointer appearance-none text-center"
+      >
+        {hours.map((hr) => (
+          <option key={hr} value={hr}>
+            {String(hr).padStart(2, "0")}
+          </option>
+        ))}
+      </select>
+
+      <span className="text-[11px] font-black text-smart-teal/40">:</span>
+
+      {/* Minutes — saisie libre en texte */}
+      <input
+        type="text"
+        inputMode="numeric"
+        maxLength={2}
+        placeholder="00"
+        disabled={h === 22}
+        value={minuteInput}
+        onChange={(e) => handleMinuteChange(e.target.value)}
+        onBlur={handleMinuteBlur}
+        onFocus={(e) => e.target.select()}
+        className="w-[48px] px-2 py-2 bg-smart-sage/10 border-none rounded-xl text-[11px] font-black text-smart-teal outline-none focus:ring-2 focus:ring-smart-teal/20 text-center disabled:opacity-40"
+      />
+    </div>
+  );
+}
 
 export const PlanningInput = ({ value, onChange }: PlanningInputProps) => {
   const [slots, setSlots] = useState<PlanningSlot[]>([]);
@@ -24,22 +110,16 @@ export const PlanningInput = ({ value, onChange }: PlanningInputProps) => {
     return slot.endTime <= slot.startTime;
   };
 
-  // Parse initial value (could be JSON or string)
   useEffect(() => {
     try {
-      if (!value) {
-        setSlots([]);
-        return;
-      }
-      
+      if (!value) { setSlots([]); return; }
+
       let parsed;
       if (typeof value === "string") {
         if (value.startsWith("{") || value.startsWith("[")) {
           parsed = JSON.parse(value);
         } else {
-          // Legacy string format or fallback
-          const defaultSlot = { day: "Lundi", startTime: "14:00", endTime: "16:00" };
-          setSlots([defaultSlot]);
+          setSlots([{ day: "Lundi", startTime: "14:00", endTime: "16:00" }]);
           return;
         }
       } else {
@@ -51,8 +131,7 @@ export const PlanningInput = ({ value, onChange }: PlanningInputProps) => {
       } else if (Array.isArray(parsed)) {
         setSlots(parsed);
       }
-    } catch (e) {
-      console.error("Failed to parse planning", e);
+    } catch {
       setSlots([]);
     }
   }, [value]);
@@ -62,13 +141,11 @@ export const PlanningInput = ({ value, onChange }: PlanningInputProps) => {
     onChange(JSON.stringify({ slots: newSlots }));
   };
 
-  const addSlot = () => {
-    updateSlots([...slots, { day: "Lundi", startTime: "09:00", endTime: "11:00" }]);
-  };
+  const addSlot = () =>
+    updateSlots([...slots, { day: "Lundi", startTime: "08:00", endTime: "10:00" }]);
 
-  const removeSlot = (index: number) => {
+  const removeSlot = (index: number) =>
     updateSlots(slots.filter((_, i) => i !== index));
-  };
 
   const handleChange = (index: number, field: keyof PlanningSlot, val: string) => {
     const newSlots = [...slots];
@@ -108,8 +185,8 @@ export const PlanningInput = ({ value, onChange }: PlanningInputProps) => {
                   : "border-transparent hover:border-smart-teal/20"
               }`}
             >
-              {/* Day selection */}
-              <div className="flex-1 min-w-[120px] relative group">
+              {/* Jour */}
+              <div className="flex-1 min-w-[120px] relative">
                 <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-smart-teal/40 pointer-events-none" />
                 <select
                   value={slot.day}
@@ -122,26 +199,27 @@ export const PlanningInput = ({ value, onChange }: PlanningInputProps) => {
                 </select>
               </div>
 
-              {/* Start Time */}
+              {/* Heure début + fin */}
               <div className="flex items-center gap-2">
-                <div className="relative group">
-                  <Clock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-smart-teal/40 pointer-events-none" />
-                  <input
-                    type="time"
+                <div className="relative flex items-center gap-1">
+                  <Clock size={13} className="text-smart-teal/40 shrink-0" />
+                  <TimePicker
                     value={slot.startTime}
-                    onChange={(e) => handleChange(index, "startTime", e.target.value)}
-                    className="w-[100px] pl-9 pr-3 py-2 bg-smart-sage/10 border-none rounded-xl text-[11px] font-black text-smart-teal outline-none focus:ring-2 focus:ring-smart-teal/20"
+                    hours={START_HOURS}
+                    onChange={(val) => handleChange(index, "startTime", val)}
                   />
                 </div>
+
                 <span className="text-[10px] font-black text-smart-teal/30">à</span>
-                <div className="relative group">
-                  <Clock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-smart-teal/40 pointer-events-none" />
-                  <input
-                    type="time"
+
+                <div className="relative flex items-center gap-1">
+                  <Clock size={13} className="text-smart-teal/40 shrink-0" />
+                  <TimePicker
                     value={slot.endTime}
-                    onChange={(e) => handleChange(index, "endTime", e.target.value)}
-                    min={slot.startTime || undefined}
-                    className="w-[100px] pl-9 pr-3 py-2 bg-smart-sage/10 border-none rounded-xl text-[11px] font-black text-smart-teal outline-none focus:ring-2 focus:ring-smart-teal/20"
+                    hours={END_HOURS.filter(
+                      (hr) => hr >= parseTime(slot.startTime).h,
+                    )}
+                    onChange={(val) => handleChange(index, "endTime", val)}
                   />
                 </div>
               </div>
