@@ -14,6 +14,7 @@ import NotFound from "./pages/auth/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 import ClubsPage from "./pages/clubs/ClubsPage";
+import AdherentClubsPage from "./pages/clubs/AdherentClubsPage";
 import AdherentClubDetailsPage from "./pages/clubs/AdherentClubDetailsPage";
 import MyAllRequestsPage from "./pages/clubs/MyAllRequestsPage";
 import ClubStaffPage from "./pages/clubs/ClubStaffPage";
@@ -81,6 +82,14 @@ const ADHERENT_OR_CENTRE = ["ADHERENT", "RESPONSABLE_CENTRE"];
 
 function withAccess(allowedRoles: string[], element: React.ReactNode) {
   return <ProtectedRoute allowedRoles={allowedRoles}>{element}</ProtectedRoute>;
+}
+
+function ClubsPageRouter() {
+  const raw = localStorage.getItem("user");
+  const user = raw ? JSON.parse(raw) : null;
+  const role = user?.role === "ADHERANT" ? "ADHERENT" : user?.role;
+  if (role === "ADHERENT") return <AdherentClubsPage />;
+  return <ClubsPage />;
 }
 
 function LegacyLandingRedirect() {
@@ -237,7 +246,7 @@ function App() {
           element={withAccess(
             ["ADMIN", "RESPONSABLE_CENTRE", "RESPONSABLE_CLUB", "ADHERENT"],
             <Layout>
-              <ClubsPage />
+              <ClubsPageRouter />
             </Layout>,
           )}
         />
