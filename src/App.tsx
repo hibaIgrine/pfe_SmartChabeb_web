@@ -6,6 +6,7 @@ import ResponsableCentrePage from "./pages/centres/ResponsableCentrePage";
 import Dashboard from "./pages/admin/Dashboard";
 import MembresPage from "./pages/admin/MembresPage";
 import ReservationRevenuePage from "./pages/admin/reservations/ReservationRevenuePage";
+import CentreReservationRevenuePage from "./pages/reservations/CentreReservationRevenuePage";
 import AuthPage from "./pages/auth/AuthPage";
 import SignupPage from "./pages/auth/SignupPage";
 import GoogleCompleteProfile from "./pages/auth/GoogleCompleteProfile";
@@ -178,6 +179,15 @@ function App() {
             ADMIN_ONLY,
             <Layout>
               <ReservationRevenuePage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.centre.reservationRevenues}
+          element={withAccess(
+            CENTRE_ONLY,
+            <Layout>
+              <CentreReservationRevenuePage />
             </Layout>,
           )}
         />

@@ -22,6 +22,7 @@ export const ROUTES = {
     locaux: "/centre/locaux",
     locauxPlanning: "/centre/locaux-planning",
     reservations: "/centre/reservations",
+    reservationRevenues: "/centre/reservation-revenues",
     eventsManagement: "/centre/events-management",
     centreEventsRequests: "/centre/centre-events-requests",
     eventRequests: "/centre/events-requests",
