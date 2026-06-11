@@ -653,7 +653,6 @@ function TaskDetailsModal({
   >([]);
   const [proofError, setProofError] = useState<string | null>(null);
   const [viewerProof, setViewerProof] = useState<ProofItem | null>(null);
-  const [viewerBlobUrl, setViewerBlobUrl] = useState<string | null>(null);
   const proofInputRef = useRef<HTMLInputElement | null>(null);
 
   const createProofId = (file: File) => {
@@ -684,49 +683,6 @@ function TaskDetailsModal({
     };
   }, [clubId, task.id]);
 
-  useEffect(() => {
-    let mounted = true;
-    let objectUrl: string | null = null;
-    const loadBlob = async () => {
-      if (!viewerProof) return;
-      setViewerBlobUrl(null);
-      const isPdf =
-        (viewerProof.type || "").toLowerCase().includes("pdf") ||
-        viewerProof.url.toLowerCase().endsWith(".pdf");
-      if (!isPdf) return;
-      try {
-        const resolved = resolveProofUrl(viewerProof.url);
-        const baseUrl = (
-          import.meta.env.VITE_API_URL ||
-          api.defaults.baseURL ||
-          ""
-        ).replace(/\/$/, "");
-        const fetchUrl = resolved.startsWith("http")
-          ? resolved
-          : baseUrl
-            ? `${baseUrl}${resolved.startsWith("/") ? "" : "/"}${resolved}`
-            : resolved;
-        const resp = await fetch(fetchUrl, {
-          headers: {
-            ...(localStorage.getItem("token")
-              ? { Authorization: `Bearer ${localStorage.getItem("token")}` }
-              : {}),
-          },
-        });
-        if (!resp.ok) throw new Error("fetch_failed");
-        const blob = await resp.blob();
-        objectUrl = URL.createObjectURL(blob);
-        if (mounted) setViewerBlobUrl(objectUrl);
-      } catch (e) {
-        if (mounted) setViewerBlobUrl(null);
-      }
-    };
-    void loadBlob();
-    return () => {
-      mounted = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [viewerProof]);
   const status = normalizeStatus(task.statut);
   const currentUserId = (() => {
     try {
@@ -1185,19 +1141,11 @@ function TaskDetailsModal({
                 />
               ) : viewerProof.type?.includes("pdf") ||
                 viewerProof.url.toLowerCase().endsWith(".pdf") ? (
-                viewerBlobUrl ? (
-                  <iframe
-                    src={viewerBlobUrl}
-                    title={viewerProof.filename || "Preuve PDF"}
-                    className="h-[70vh] w-full rounded-2xl border border-gray-100"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center py-8">
-                    <span className="text-sm text-gray-400">
-                      Chargement du PDF…
-                    </span>
-                  </div>
-                )
+                <iframe
+                  src={resolveProofUrl(viewerProof.url)}
+                  title={viewerProof.filename || "Preuve PDF"}
+                  className="h-[70vh] w-full rounded-2xl border border-gray-100"
+                />
               ) : (
                 <div className="rounded-2xl border border-gray-100 bg-[#F7F3E9] p-6 text-sm">
                   <p className="font-black text-gray-800">
