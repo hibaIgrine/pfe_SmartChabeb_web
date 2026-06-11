@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import { getLandingPathForRole } from "../../constants/routes";
 
 export default function GoogleCompleteProfile() {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ export default function GoogleCompleteProfile() {
     }
 
     if (user.prenom && user.genre && user.date_naissance && user.id_centre) {
-      navigate("/dashboard", { replace: true });
+      navigate(getLandingPathForRole(user?.role), { replace: true });
       return;
     }
 
@@ -146,7 +147,7 @@ export default function GoogleCompleteProfile() {
 
       const me = await api.get("/users/me/profile");
       localStorage.setItem("user", JSON.stringify(me.data));
-      navigate("/dashboard");
+      navigate(getLandingPathForRole(me.data?.role));
     } catch (err: any) {
       console.error(err);
       alert(err.response?.data?.message || "Erreur lors de la mise à jour");

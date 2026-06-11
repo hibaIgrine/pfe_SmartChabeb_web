@@ -1,7 +1,22 @@
 export const AUTH_SESSION_INVALIDATED_EVENT = "auth-session-invalidated";
 export const AUTH_USER_UPDATED_EVENT = "user-updated";
 
-function parseStoredUser() {
+export type AppRole =
+  | "ADMIN"
+  | "RESPONSABLE_CENTRE"
+  | "RESPONSABLE_CLUB"
+  | "ADHERENT"
+  | "ADHERANT";
+
+export function normalizeRole(role?: string | null) {
+  if (role === "ADHERANT") {
+    return "ADHERENT";
+  }
+
+  return role ?? null;
+}
+
+export function getStoredUser() {
   const raw = localStorage.getItem("user");
   if (!raw) {
     return null;
@@ -11,12 +26,16 @@ function parseStoredUser() {
     const user = JSON.parse(raw);
     return {
       ...user,
-      role: user?.role === "ADHERANT" ? "ADHERENT" : user?.role,
+      role: normalizeRole(user?.role),
     };
   } catch {
     localStorage.removeItem("user");
     return null;
   }
+}
+
+export function getStoredRole() {
+  return normalizeRole(getStoredUser()?.role);
 }
 
 export function clearAuthSession() {
@@ -39,7 +58,7 @@ export function forceLogout(reason?: string) {
 }
 
 export function syncStoredUserFromProfile(profile: Record<string, any>) {
-  const currentUser = parseStoredUser();
+  const currentUser = getStoredUser();
   if (!profile) {
     return false;
   }

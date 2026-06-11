@@ -27,6 +27,7 @@ import { NotificationBell } from "./NotificationBell";
 import { FavoritePostsBell } from "./FavoritePostsBell";
 import { MessageBell } from "./MessageBell";
 import api from "../../api/axios";
+import { ROUTES } from "../../constants/routes";
 import {
   forceLogout,
   isAccountLockMessage,
@@ -384,55 +385,63 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 px-3 space-y-1 mt-4 overflow-y-auto custom-scrollbar scrollbar-hide">
           {role === "ADMIN" && (
             <SidebarItem
-              to="/dashboard"
+              to={ROUTES.admin.dashboard}
               icon={<LayoutDashboard size={18} />}
               label="Statistiques"
-              active={location.pathname === "/dashboard"}
+              active={location.pathname === ROUTES.admin.dashboard}
             />
           )}
 
           {role === "ADMIN" && (
             <SidebarItem
-              to="/reservation-revenues"
+              to={ROUTES.admin.reservationRevenues}
               icon={<Wallet size={18} />}
               label="Revenus Réservations"
-              active={location.pathname === "/reservation-revenues"}
+              active={location.pathname === ROUTES.admin.reservationRevenues}
             />
           )}
 
           {(role === "ADMIN" || role === "RESPONSABLE_CENTRE") && (
             <SidebarItem
-              to="/centres"
+              to={role === "ADMIN" ? ROUTES.admin.centres : ROUTES.centre.home}
               icon={<MapPin size={18} />}
               label={role === "ADMIN" ? "Gestion Centres" : "Mon Centre"}
-              active={location.pathname === "/centres"}
+              active={
+                location.pathname === ROUTES.admin.centres ||
+                location.pathname === ROUTES.centre.home
+              }
             />
           )}
 
           {role === "RESPONSABLE_CENTRE" && (
             <SidebarItem
-              to="/locaux"
+              to={ROUTES.centre.locaux}
               icon={<Building2 size={18} />}
               label="Locaux"
-              active={location.pathname === "/locaux"}
+              active={location.pathname === ROUTES.centre.locaux}
             />
           )}
 
           {role === "RESPONSABLE_CENTRE" && (
             <SidebarItem
-              to="/reservations"
+              to={ROUTES.centre.reservations}
               icon={<CalendarCheck size={18} />}
               label="Réservation du local"
-              active={location.pathname === "/reservations"}
+              active={location.pathname === ROUTES.centre.reservations}
             />
           )}
 
           {(role === "ADMIN" || role === "RESPONSABLE_CENTRE") && (
             <SidebarItem
-              to="/membres"
+              to={
+                role === "ADMIN" ? ROUTES.admin.membres : ROUTES.centre.membres
+              }
               icon={<Users size={18} />}
               label={role === "ADMIN" ? "Communauté" : "Membres Centre"}
-              active={location.pathname === "/membres"}
+              active={
+                location.pathname === ROUTES.admin.membres ||
+                location.pathname === ROUTES.centre.membres
+              }
             />
           )}
 
@@ -449,10 +458,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             role === "ADMIN" ||
             role === "RESPONSABLE_CENTRE") && (
             <SidebarItem
-              to="/club-creation-requests"
+              to={ROUTES.club.creationRequests}
               icon={<ClipboardList size={18} />}
               label="Demandes Clubs"
-              active={location.pathname === "/club-creation-requests"}
+              active={location.pathname === ROUTES.club.creationRequests}
             />
           )}
 
@@ -577,7 +586,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {staffClubs.length > 0 && (
             <div className="px-3 mt-3">
               <Link
-                to="/staff-calendar"
+                to={ROUTES.club.staffCalendar}
                 className={`flex items-center gap-2 py-1.5 px-3 rounded-md transition-all text-sm truncate ${
                   isStaffCalendarPage
                     ? "bg-white text-[#436D75]"
@@ -621,10 +630,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             role === "RESPONSABLE_CENTRE" ||
             role === "RESPONSABLE_CLUB") && (
             <SidebarItem
-              to="/events-management"
+              to={ROUTES.centre.eventsManagement}
               icon={<CalendarDays size={18} />}
               label="Gestion Événements"
-              active={location.pathname === "/events-management"}
+              active={location.pathname === ROUTES.centre.eventsManagement}
             />
           )}
 
@@ -647,70 +656,70 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {role === "RESPONSABLE_CLUB" && (
             <SidebarItem
-              to="/club-events-requests"
+              to={ROUTES.club.clubEventsRequests}
               icon={<CalendarDays size={18} />}
               label="Mes demandes événements"
-              active={location.pathname === "/club-events-requests"}
+              active={location.pathname === ROUTES.club.clubEventsRequests}
             />
           )}
 
           <SidebarItem
-            to="/chatbot"
+            to={ROUTES.shared.chatbot}
             icon={<Bot size={18} />}
             label="Assistant IA"
-            active={location.pathname === "/chatbot"}
+            active={location.pathname === ROUTES.shared.chatbot}
           />
 
           {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
             <SidebarItem
-              to="/events-manager"
+              to={ROUTES.centre.eventsManager}
               icon={<CalendarDays size={18} />}
               label="Gestion Participants"
-              active={location.pathname === "/events-manager"}
+              active={location.pathname === ROUTES.centre.eventsManager}
             />
           )}
 
           {role === "RESPONSABLE_CENTRE" && (
             <SidebarItem
-              to="/centre-events-requests"
+              to={ROUTES.centre.centreEventsRequests}
               icon={<CalendarCheck size={18} />}
               label="Valider événements"
-              active={location.pathname === "/centre-events-requests"}
+              active={location.pathname === ROUTES.centre.centreEventsRequests}
             />
           )}
 
           {(role === "ADHERENT" || role === "RESPONSABLE_CLUB") && (
             <>
               <SidebarItem
-                to="/club-reservations"
+                to={ROUTES.club.clubReservations}
                 icon={<CalendarPlus size={18} />}
                 label="Réserver un local"
-                active={location.pathname === "/club-reservations"}
+                active={location.pathname === ROUTES.club.clubReservations}
               />
               <SidebarItem
-                to="/payment-history"
+                to={ROUTES.shared.paymentHistory}
                 icon={<CreditCard size={18} />}
                 label="Historique Paiements"
-                active={location.pathname === "/payment-history"}
+                active={location.pathname === ROUTES.shared.paymentHistory}
               />
             </>
           )}
 
           {role === "RESPONSABLE_CLUB" && (
             <SidebarItem
-              to="/club-my-reservations"
+              to={ROUTES.club.clubMyReservations}
               icon={<ClipboardList size={18} />}
               label="Mes Réservations"
-              active={location.pathname === "/club-my-reservations"}
+              active={location.pathname === ROUTES.club.clubMyReservations}
             />
           )}
 
           {role === "ADHERENT" && (
             <SidebarItem
-              to="/adherent-my-reservations"
+              to={ROUTES.adherent.myReservations}
               icon={<ClipboardList size={18} />}
               label="Mes Réservations"
-              active={location.pathname === "/adherent-my-reservations"}
+              active={location.pathname === ROUTES.adherent.myReservations}
             />
           )}
 

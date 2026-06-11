@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Smartphone, Zap, ArrowRight } from "lucide-react";
+import { getCurrentRoleLandingPath, ROUTES } from "../../constants/routes";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -20,7 +21,11 @@ export default function Home() {
         </div>
 
         <button
-          onClick={() => navigate(isLoggedIn ? "/dashboard" : "/auth")}
+          onClick={() =>
+            navigate(
+              isLoggedIn ? getCurrentRoleLandingPath() : ROUTES.public.auth,
+            )
+          }
           className="bg-white px-8 py-3 rounded-full font-black shadow-sm border border-gray-100 hover:shadow-xl transition-all cursor-pointer flex items-center space-x-2 text-smart-teal"
         >
           <span>{isLoggedIn ? "Mon Espace Admin" : "Se connecter"}</span>

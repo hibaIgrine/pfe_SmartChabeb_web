@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getLandingPathForRole } from "../../constants/routes";
 import { GoogleLogin } from "@react-oauth/google";
 import api from "../../api/axios";
 import { Mail, Lock, ChevronLeft, Eye, EyeOff } from "lucide-react";
@@ -152,7 +153,7 @@ export default function AuthPage() {
       const user = res.data.user;
       localStorage.setItem("token", res.data.access_token);
       localStorage.setItem("user", JSON.stringify(user));
-      navigate("/dashboard");
+      navigate(getLandingPathForRole(user?.role));
     } catch (err: any) {
       console.error(err);
       handleAuthError(err, "Identifiants incorrects");
@@ -272,14 +273,14 @@ export default function AuthPage() {
         // Otherwise treat as successful signup -> store token and go dashboard
         localStorage.setItem("token", res.data.access_token);
         localStorage.setItem("user", JSON.stringify(user));
-        navigate("/dashboard");
+        navigate(getLandingPathForRole(user?.role));
         return;
       }
 
       // Signin flow: store token and go dashboard
       localStorage.setItem("token", res.data.access_token);
       localStorage.setItem("user", JSON.stringify(user));
-      navigate("/dashboard");
+      navigate(getLandingPathForRole(user?.role));
     } catch (err: any) {
       console.error(err);
       handleAuthError(err, "Erreur Google");

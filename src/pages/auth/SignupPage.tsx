@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getLandingPathForRole } from "../../constants/routes";
 import api from "../../api/axios";
 import { ChevronLeft, Mail } from "lucide-react";
 
@@ -250,7 +251,7 @@ export default function SignupPage() {
       });
       localStorage.setItem("token", loginRes.data.access_token);
       localStorage.setItem("user", JSON.stringify(loginRes.data.user));
-      navigate("/dashboard");
+      navigate(getLandingPathForRole(loginRes.data.user?.role));
     } catch (err: any) {
       console.error(err);
       setErrors({

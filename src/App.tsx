@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import Home from "./pages/auth/Home";
 import Layout from "./components/layout/Layout";
 import CentresPage from "./pages/admin/centres/CentresPage";
@@ -10,9 +10,9 @@ import AuthPage from "./pages/auth/AuthPage";
 import SignupPage from "./pages/auth/SignupPage";
 import GoogleCompleteProfile from "./pages/auth/GoogleCompleteProfile";
 import NotFound from "./pages/auth/NotFound";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 import ClubsPage from "./pages/clubs/ClubsPage";
-import AdherentClubsPage from "./pages/clubs/AdherentClubsPage";
 import AdherentClubDetailsPage from "./pages/clubs/AdherentClubDetailsPage";
 import MyAllRequestsPage from "./pages/clubs/MyAllRequestsPage";
 import ClubStaffPage from "./pages/clubs/ClubStaffPage";
@@ -53,10 +53,54 @@ import MessageriePage from "./pages/messagerie/MessageriePage";
 import Chat from "./pages/chatbot/chat";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ROUTES, getLandingPathForRole } from "./constants/routes";
 import {
   AUTH_SESSION_INVALIDATED_EVENT,
   AUTH_USER_UPDATED_EVENT,
+  getStoredRole,
 } from "./utils/authSession";
+
+const ADMIN_ONLY = ["ADMIN"];
+const ADMIN_OR_CLUB = ["ADMIN", "RESPONSABLE_CLUB"];
+const ADMIN_OR_ANY_MEMBER = [
+  "ADMIN",
+  "RESPONSABLE_CENTRE",
+  "RESPONSABLE_CLUB",
+  "ADHERENT",
+];
+const ADMIN_OR_ADHERENT = ["ADMIN", "ADHERENT"];
+const CENTRE_ONLY = ["RESPONSABLE_CENTRE"];
+const CLUB_ONLY = ["RESPONSABLE_CLUB"];
+const ADHERENT_ONLY = ["ADHERENT"];
+const ADHERENT_OR_CENTRE = ["ADHERENT", "RESPONSABLE_CENTRE"];
+
+function withAccess(allowedRoles: string[], element: React.ReactNode) {
+  return <ProtectedRoute allowedRoles={allowedRoles}>{element}</ProtectedRoute>;
+}
+
+function LegacyLandingRedirect() {
+  return <Navigate to={getLandingPathForRole(getStoredRole())} replace />;
+}
+
+function LegacyCentreRedirect() {
+  const role = getStoredRole();
+
+  if (role === "ADMIN") {
+    return <Navigate to={ROUTES.admin.centres} replace />;
+  }
+
+  return <Navigate to={ROUTES.centre.home} replace />;
+}
+
+function LegacyMembresRedirect() {
+  const role = getStoredRole();
+
+  if (role === "RESPONSABLE_CENTRE") {
+    return <Navigate to={ROUTES.centre.membres} replace />;
+  }
+
+  return <Navigate to={ROUTES.admin.membres} replace />;
+}
 
 function SessionRedirectListener() {
   const navigate = useNavigate();
@@ -101,394 +145,471 @@ function App() {
     };
   }, []);
 
-  const getCentrePage = () => {
-    const userStr = localStorage.getItem("user");
-    let user = null;
-
-    try {
-      user = userStr ? JSON.parse(userStr) : null;
-    } catch {
-      localStorage.removeItem("user");
-    }
-
-    return user?.role === "RESPONSABLE_CENTRE" ? (
-      <ResponsableCentrePage />
-    ) : (
-      <CentresPage />
-    );
-  };
-
-  const getClubsPage = () => {
-    const userStr = localStorage.getItem("user");
-    let user = null;
-
-    try {
-      user = userStr ? JSON.parse(userStr) : null;
-    } catch {
-      localStorage.removeItem("user");
-    }
-
-    return user?.role === "ADHERENT" || user?.role === "ADHERANT" ? (
-      <AdherentClubsPage />
-    ) : (
-      <ClubsPage />
-    );
-  };
-
-  const getClubDetailsPage = () => {
-    const userStr = localStorage.getItem("user");
-    let user = null;
-
-    try {
-      user = userStr ? JSON.parse(userStr) : null;
-    } catch {
-      localStorage.removeItem("user");
-    }
-
-    return user?.role === "ADHERENT" || user?.role === "ADHERANT" ? (
-      <AdherentClubDetailsPage />
-    ) : (
-      <NotFound />
-    );
-  };
-
   return (
     <BrowserRouter>
       <SessionRedirectListener />
       <Routes>
         {/* Page d'accueil publique */}
-        <Route path="/" element={<Home />} />
+        <Route path={ROUTES.public.home} element={<Home />} />
 
         {/* Page d'authentification (Login + Register) */}
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/auth/signup" element={<SignupPage />} />
+        <Route path={ROUTES.public.auth} element={<AuthPage />} />
+        <Route path={ROUTES.public.signup} element={<SignupPage />} />
         <Route
-          path="/auth/complete-google"
+          path={ROUTES.public.completeGoogleProfile}
           element={<GoogleCompleteProfile />}
         />
 
         {/* Espace Privé Admin/Coach */}
         <Route
-          path="/dashboard"
-          element={
+          path={ROUTES.admin.dashboard}
+          element={withAccess(
+            ADMIN_ONLY,
             <Layout>
               <Dashboard />
-            </Layout>
-          }
+            </Layout>,
+          )}
         />
         <Route
-          path="/reservation-revenues"
-          element={
+          path={ROUTES.admin.reservationRevenues}
+          element={withAccess(
+            ADMIN_ONLY,
             <Layout>
               <ReservationRevenuePage />
-            </Layout>
-          }
+            </Layout>,
+          )}
         />
-        <Route path="/centres" element={<Layout>{getCentrePage()}</Layout>} />
         <Route
-          path="/membres"
-          element={
+          path={ROUTES.admin.centres}
+          element={withAccess(
+            ADMIN_ONLY,
+            <Layout>
+              <CentresPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.centre.home}
+          element={withAccess(
+            CENTRE_ONLY,
+            <Layout>
+              <ResponsableCentrePage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.admin.membres}
+          element={withAccess(
+            ADMIN_ONLY,
             <Layout>
               <MembresPage />
-            </Layout>
-          }
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.centre.membres}
+          element={withAccess(
+            CENTRE_ONLY,
+            <Layout>
+              <MembresPage />
+            </Layout>,
+          )}
         />
 
         {/* NOUVELLE ROUTE : Création de programme */}
 
-        <Route path="/clubs" element={<Layout>{getClubsPage()}</Layout>} />
         <Route
-          path="/clubs/:clubId/requests"
-          element={
+          path={ROUTES.club.home}
+          element={withAccess(
+            ["ADMIN", "RESPONSABLE_CENTRE", "RESPONSABLE_CLUB", "ADHERENT"],
+            <Layout>
+              <ClubsPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.club.requests}
+          element={withAccess(
+            ADMIN_OR_CLUB,
             <Layout>
               <ClubRequestsPage />
-            </Layout>
-          }
+            </Layout>,
+          )}
         />
         <Route
-          path="/clubs/:clubId"
-          element={<Layout>{getClubDetailsPage()}</Layout>}
+          path={ROUTES.club.details}
+          element={withAccess(
+            ["ADMIN", "ADHERENT"],
+            <Layout>
+              <AdherentClubDetailsPage />
+            </Layout>,
+          )}
         />
         <Route
-          path="/my-club-requests"
-          element={
+          path={ROUTES.adherent.myClubRequests}
+          element={withAccess(
+            ADHERENT_ONLY,
             <Layout>
               <MyAllRequestsPage />
-            </Layout>
-          }
+            </Layout>,
+          )}
         />
         <Route
-          path="/club-creation-requests"
-          element={
+          path={ROUTES.club.creationRequests}
+          element={withAccess(
+            ADHERENT_OR_CENTRE,
             <Layout>
               <ClubCreationRequestsPage />
-            </Layout>
-          }
+            </Layout>,
+          )}
         />
         <Route
-          path="/clubs/:clubId/staff"
-          element={
+          path={ROUTES.club.staff}
+          element={withAccess(
+            ADMIN_OR_CLUB,
             <Layout>
               <ClubStaffPage />
-            </Layout>
-          }
+            </Layout>,
+          )}
         />
         <Route
-          path="/my-clubs/:clubId"
-          element={
+          path={ROUTES.club.managedDetails}
+          element={withAccess(
+            ADMIN_OR_CLUB,
             <Layout>
               <ManagedClubDetailsPage />
-            </Layout>
-          }
+            </Layout>,
+          )}
         />
         <Route
-          path="/my-clubs/:clubId/tasks"
-          element={
+          path={ROUTES.club.tasks}
+          element={withAccess(
+            ADMIN_OR_CLUB,
             <Layout>
               <ClubTasksPage />
-            </Layout>
-          }
+            </Layout>,
+          )}
         />
         <Route
-          path="/my-clubs/:clubId/feedbacks"
-          element={
+          path={ROUTES.club.feedbacks}
+          element={withAccess(
+            ADMIN_OR_CLUB,
             <Layout>
               <ClubFeedbacksPage />
-            </Layout>
-          }
+            </Layout>,
+          )}
         />
         <Route
-          path="/my-clubs/:clubId/staff-tasks"
-          element={
+          path={ROUTES.club.staffTasks}
+          element={withAccess(
+            ADMIN_OR_CLUB,
             <Layout>
               <StaffClubTasksPage />
-            </Layout>
-          }
+            </Layout>,
+          )}
         />
         <Route
-          path="/staff-calendar"
-          element={
+          path={ROUTES.club.staffCalendar}
+          element={withAccess(
+            CLUB_ONLY,
             <Layout>
               <StaffCalendarPage />
-            </Layout>
-          }
+            </Layout>,
+          )}
         />
         <Route
-          path="/club-recommendations"
-          element={
+          path={ROUTES.club.recommendations}
+          element={withAccess(
+            ADHERENT_ONLY,
             <Layout>
               <ClubRecommendationPage />
-            </Layout>
-          }
+            </Layout>,
+          )}
         />
         <Route
-          path="/roles"
-          element={
+          path={ROUTES.admin.roles}
+          element={withAccess(
+            ADMIN_ONLY,
             <Layout>
               <RolesPage />
-            </Layout>
-          }
+            </Layout>,
+          )}
         />
         <Route
-          path="/locaux"
-          element={
+          path={ROUTES.centre.locaux}
+          element={withAccess(
+            CENTRE_ONLY,
             <Layout>
               <LocauxPage />
-            </Layout>
-          }
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.centre.locauxPlanning}
+          element={withAccess(
+            CENTRE_ONLY,
+            <Layout>
+              <LocauxPlanningPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.centre.reservations}
+          element={withAccess(
+            CENTRE_ONLY,
+            <Layout>
+              <ReservationsPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.club.clubReservations}
+          element={withAccess(
+            CLUB_ONLY,
+            <Layout>
+              <ClubReservationPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.club.clubMyReservations}
+          element={withAccess(
+            CLUB_ONLY,
+            <Layout>
+              <ClubMyReservationsPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.shared.paymentHistory}
+          element={withAccess(
+            ADMIN_OR_ADHERENT,
+            <Layout>
+              <PaymentHistoryPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.shared.paymentSuccess}
+          element={<PaymentSuccessPage />}
+        />
+        <Route
+          path={ROUTES.adherent.myReservations}
+          element={withAccess(
+            ADMIN_OR_ADHERENT,
+            <Layout>
+              <AdherentMyReservationsPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.adherent.certificates}
+          element={withAccess(
+            ADMIN_OR_ADHERENT,
+            <Layout>
+              <AdherentCertificatesPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.adherent.presences}
+          element={withAccess(
+            ADMIN_OR_ADHERENT,
+            <Layout>
+              <PresencePage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.adherent.events}
+          element={withAccess(
+            ADMIN_OR_ADHERENT,
+            <Layout>
+              <AdherentEventsPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.adherent.eventDetails}
+          element={withAccess(
+            ADMIN_OR_ADHERENT,
+            <Layout>
+              <EventDetailsPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.adherent.seances}
+          element={withAccess(
+            ADMIN_OR_ADHERENT,
+            <Layout>
+              <AdherentSeancesPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.centre.eventsManagement}
+          element={withAccess(
+            CENTRE_ONLY,
+            <Layout>
+              <EventsPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.club.clubEventsRequests}
+          element={withAccess(
+            CLUB_ONLY,
+            <Layout>
+              <ClubEventsRequestsPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.centre.centreEventsRequests}
+          element={withAccess(
+            CENTRE_ONLY,
+            <Layout>
+              <CentreEventsRequestsPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.centre.eventRequests}
+          element={withAccess(
+            CENTRE_ONLY,
+            <Layout>
+              <EventRequestsPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.centre.eventParticipants}
+          element={withAccess(
+            CENTRE_ONLY,
+            <Layout>
+              <EventParticipantsPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.centre.eventWaitingList}
+          element={withAccess(
+            CENTRE_ONLY,
+            <Layout>
+              <EventWaitingListPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.centre.eventsManager}
+          element={withAccess(
+            CENTRE_ONLY,
+            <Layout>
+              <EventsManagerPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.shared.profile}
+          element={withAccess(
+            ADMIN_OR_ANY_MEMBER,
+            <Layout>
+              <MyProfilePage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.shared.userProfile}
+          element={withAccess(
+            ADMIN_OR_ANY_MEMBER,
+            <Layout>
+              <UserProfilePage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.shared.gamification}
+          element={withAccess(
+            ADMIN_OR_ANY_MEMBER,
+            <Layout>
+              <ProfileGamificationPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.shared.feed}
+          element={withAccess(
+            ADMIN_OR_ANY_MEMBER,
+            <Layout>
+              <SocialFeedPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.shared.messaging}
+          element={withAccess(
+            ADMIN_OR_ANY_MEMBER,
+            <Layout>
+              <MessageriePage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.shared.chatbot}
+          element={withAccess(
+            ADMIN_OR_ANY_MEMBER,
+            <Layout>
+              <Chat />
+            </Layout>,
+          )}
+        />
+        <Route path="/membres" element={<LegacyMembresRedirect />} />
+        <Route path="/dashboard" element={<LegacyLandingRedirect />} />
+        <Route
+          path="/reservation-revenues"
+          element={<Navigate to={ROUTES.admin.reservationRevenues} replace />}
+        />
+        <Route path="/centres" element={<LegacyCentreRedirect />} />
+        <Route
+          path="/locaux"
+          element={<Navigate to={ROUTES.centre.locaux} replace />}
         />
         <Route
           path="/locaux-planning"
-          element={
-            <Layout>
-              <LocauxPlanningPage />
-            </Layout>
-          }
+          element={<Navigate to={ROUTES.centre.locauxPlanning} replace />}
         />
         <Route
           path="/reservations"
-          element={
-            <Layout>
-              <ReservationsPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/club-reservations"
-          element={
-            <Layout>
-              <ClubReservationPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/club-my-reservations"
-          element={
-            <Layout>
-              <ClubMyReservationsPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/payment-history"
-          element={
-            <Layout>
-              <PaymentHistoryPage />
-            </Layout>
-          }
-        />
-        <Route path="/payment-success" element={<PaymentSuccessPage />} />
-        <Route
-          path="/adherent-my-reservations"
-          element={
-            <Layout>
-              <AdherentMyReservationsPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/certificats"
-          element={
-            <Layout>
-              <AdherentCertificatesPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/presences"
-          element={
-            <Layout>
-              <PresencePage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/events"
-          element={
-            <Layout>
-              <AdherentEventsPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/events/:id"
-          element={
-            <Layout>
-              <EventDetailsPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/mes-seances"
-          element={
-            <Layout>
-              <AdherentSeancesPage />
-            </Layout>
-          }
+          element={<Navigate to={ROUTES.centre.reservations} replace />}
         />
         <Route
           path="/events-management"
-          element={
-            <Layout>
-              <EventsPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/club-events-requests"
-          element={
-            <Layout>
-              <ClubEventsRequestsPage />
-            </Layout>
-          }
+          element={<Navigate to={ROUTES.centre.eventsManagement} replace />}
         />
         <Route
           path="/centre-events-requests"
-          element={
-            <Layout>
-              <CentreEventsRequestsPage />
-            </Layout>
-          }
+          element={<Navigate to={ROUTES.centre.centreEventsRequests} replace />}
         />
         <Route
           path="/events-requests"
-          element={
-            <Layout>
-              <EventRequestsPage />
-            </Layout>
-          }
+          element={<Navigate to={ROUTES.centre.eventRequests} replace />}
         />
         <Route
           path="/events-participants"
-          element={
-            <Layout>
-              <EventParticipantsPage />
-            </Layout>
-          }
+          element={<Navigate to={ROUTES.centre.eventParticipants} replace />}
         />
         <Route
           path="/events-waiting-list"
-          element={
-            <Layout>
-              <EventWaitingListPage />
-            </Layout>
-          }
+          element={<Navigate to={ROUTES.centre.eventWaitingList} replace />}
         />
         <Route
           path="/events-manager"
-          element={
-            <Layout>
-              <EventsManagerPage />
-            </Layout>
-          }
+          element={<Navigate to={ROUTES.centre.eventsManager} replace />}
         />
         <Route
-          path="/mon-profil"
-          element={
-            <Layout>
-              <MyProfilePage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/utilisateurs/:id"
-          element={
-            <Layout>
-              <UserProfilePage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <Layout>
-              <ProfileGamificationPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/fil-actualite"
-          element={
-            <Layout>
-              <SocialFeedPage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/messagerie"
-          element={
-            <Layout>
-              <MessageriePage />
-            </Layout>
-          }
-        />
-        <Route
-          path="/chatbot"
-          element={
-            <Layout>
-              <Chat />
-            </Layout>
-          }
+          path="/payment-success"
+          element={<Navigate to={ROUTES.shared.paymentSuccess} replace />}
         />
         {/* Redirection si l'URL est fausse */}
         {/* 🏆 LA ROUTE MAGIQUE (Toujours en dernier) */}
