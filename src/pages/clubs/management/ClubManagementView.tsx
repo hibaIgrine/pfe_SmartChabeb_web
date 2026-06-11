@@ -12,6 +12,12 @@ export const ClubManagementView = ({
 }: any) => {
   const [activeTab, setActiveTab] = useState("PENDING");
 
+  const currentRole = (() => {
+    try { return JSON.parse(localStorage.getItem("user") || "{}").role ?? ""; }
+    catch { return ""; }
+  })();
+  const isViewer = currentRole === "ADMIN" || currentRole === "RESPONSABLE_CENTRE";
+
   // Filtrage intelligent
   const pending =
     club.inscriptions?.filter((i: any) => i.statut === "EN_ATTENTE") || [];
@@ -46,6 +52,7 @@ export const ClubManagementView = ({
             <InscriptionTable
               data={pending}
               type="PENDING"
+              readOnly={isViewer}
               onAction={onUpdateStatus}
             />
           )}
@@ -53,6 +60,7 @@ export const ClubManagementView = ({
             <InscriptionTable
               data={waitlist}
               type="WAITLIST"
+              readOnly={isViewer}
               onAction={onUpdateStatus}
             />
           )}
@@ -60,6 +68,7 @@ export const ClubManagementView = ({
             <InscriptionTable
               data={members}
               type="MEMBERS"
+              readOnly={isViewer}
               onAction={onMemberAction}
             />
           )}
@@ -67,6 +76,7 @@ export const ClubManagementView = ({
             <InscriptionTable
               data={rejected}
               type="REJECTED"
+              readOnly={isViewer}
               onAction={onUpdateStatus}
             />
           )}

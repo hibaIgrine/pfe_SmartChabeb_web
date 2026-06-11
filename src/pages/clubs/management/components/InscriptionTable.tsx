@@ -1,6 +1,6 @@
 import { Check, X, Trash2, User, Calendar, Mail, ShieldAlert, UserSearch } from "lucide-react";
 
-export const InscriptionTable = ({ data, type, onAction }: any) => {
+export const InscriptionTable = ({ data, type, readOnly = false, onAction }: any) => {
   if (data.length === 0)
     return (
       <div className="py-24 text-center bg-white rounded-[40px] border-4 border-dashed border-gray-50 flex flex-col items-center">
@@ -8,7 +8,7 @@ export const InscriptionTable = ({ data, type, onAction }: any) => {
           <User size={32} />
         </div>
         <p className="text-gray-300 font-bold italic">
-          Aucun adhérent trouvé dans cette section.
+          Aucun membre trouvé dans cette section.
         </p>
       </div>
     );
@@ -21,7 +21,7 @@ export const InscriptionTable = ({ data, type, onAction }: any) => {
             <th className="p-8">Adhérent</th>
             <th className="p-8">Contact</th>
             <th className="p-8">Date de demande</th>
-            <th className="p-8 text-right">Actions</th>
+            {!readOnly && <th className="p-8 text-right">Actions</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
@@ -94,73 +94,74 @@ export const InscriptionTable = ({ data, type, onAction }: any) => {
                 </td>
               )}
               {/* Colonne 4 : Actions dynamiques */}
-              <td className="p-8 text-right">
-                <div className="flex justify-end gap-2">
-                  {/* CAS 1 : Déjà membre (Bouton Supprimer) */}
-                  {type === "MEMBERS" ? (
-                    <>
-                      {/* 1. VUE PROFIL (Quick View) */}
-                      <button
-                        onClick={() =>
-                          alert(`Bio: ${ins.utilisateur.bio || "Pas de bio"}`)
-                        } // Tu peux remplacer par un Drawer plus tard
-                        className="p-3 bg-smart-sage/20 text-smart-teal rounded-2xl hover:bg-smart-teal hover:text-white transition-all"
-                        title="Voir le profil"
-                      >
-                        <UserSearch size={18} />
-                      </button>
-                      {/* 2. SUSPENDRE / RÉACTIVER (Local au club) */}
-                     
-                      <button
-                        onClick={() =>
-                          onAction(
-                            ins.id,
-                            ins.est_suspendu
-                              ? "REACTIVATE"
-                              : "OPEN_SUSPEND_MODAL",
-                          )
-                        }
-                        className={`p-3 rounded-2xl transition-all ${ins.est_suspendu ? "bg-red-500 text-white" : "bg-gray-50 text-gray-400"}`}
-                      >
-                        <ShieldAlert size={20} />
-                      </button>
-                      {/* 3. SUPPRIMER DÉFINITIVEMENT */}
-                      <button
-                        onClick={() => onAction(ins.id, "DELETE")}
-                        className="p-3 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
-                      >
-                        <Trash2 size={20} />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      {/* CAS 2 : Demande, File d'attente ou Refusé (Bouton Accepter toujours visible) */}
-                      <button
-                        onClick={() => onAction(ins.id, "ACCEPTE")}
-                        className="p-3 bg-green-50 text-green-600 rounded-2xl hover:bg-green-600 hover:text-white transition-all shadow-sm active:scale-90"
-                        title={
-                          type === "REJECTED"
-                            ? "Accepter finalement"
-                            : "Accepter l'adhésion"
-                        }
-                      >
-                        <Check size={20} />
-                      </button>
-
-                      {/* CAS 3 : Uniquement pour Demandes et File d'attente (Bouton Refuser) */}
-                      {type !== "REJECTED" && (
+              {!readOnly && (
+                <td className="p-8 text-right">
+                  <div className="flex justify-end gap-2">
+                    {/* CAS 1 : Déjà membre (Bouton Supprimer) */}
+                    {type === "MEMBERS" ? (
+                      <>
+                        {/* 1. VUE PROFIL (Quick View) */}
                         <button
-                          onClick={() => onAction(ins.id, "REFUSE")}
-                          className="p-3 bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-90"
-                          title="Refuser la demande"
+                          onClick={() =>
+                            alert(`Bio: ${ins.utilisateur.bio || "Pas de bio"}`)
+                          }
+                          className="p-3 bg-smart-sage/20 text-smart-teal rounded-2xl hover:bg-smart-teal hover:text-white transition-all"
+                          title="Voir le profil"
                         >
-                          <X size={20} />
+                          <UserSearch size={18} />
                         </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </td>
+                        {/* 2. SUSPENDRE / RÉACTIVER (Local au club) */}
+                        <button
+                          onClick={() =>
+                            onAction(
+                              ins.id,
+                              ins.est_suspendu
+                                ? "REACTIVATE"
+                                : "OPEN_SUSPEND_MODAL",
+                            )
+                          }
+                          className={`p-3 rounded-2xl transition-all ${ins.est_suspendu ? "bg-red-500 text-white" : "bg-gray-50 text-gray-400"}`}
+                        >
+                          <ShieldAlert size={20} />
+                        </button>
+                        {/* 3. SUPPRIMER DÉFINITIVEMENT */}
+                        <button
+                          onClick={() => onAction(ins.id, "DELETE")}
+                          className="p-3 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {/* CAS 2 : Demande, File d'attente ou Refusé (Bouton Accepter toujours visible) */}
+                        <button
+                          onClick={() => onAction(ins.id, "ACCEPTE")}
+                          className="p-3 bg-green-50 text-green-600 rounded-2xl hover:bg-green-600 hover:text-white transition-all shadow-sm active:scale-90"
+                          title={
+                            type === "REJECTED"
+                              ? "Accepter finalement"
+                              : "Accepter l'adhésion"
+                          }
+                        >
+                          <Check size={20} />
+                        </button>
+
+                        {/* CAS 3 : Uniquement pour Demandes et File d'attente (Bouton Refuser) */}
+                        {type !== "REJECTED" && (
+                          <button
+                            onClick={() => onAction(ins.id, "REFUSE")}
+                            className="p-3 bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-90"
+                            title="Refuser la demande"
+                          >
+                            <X size={20} />
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

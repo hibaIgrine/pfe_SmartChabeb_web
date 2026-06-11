@@ -113,6 +113,12 @@ export const ClubCard = ({
   const planningText = safePlanning(club.planning);
   const imageUrl = getFullImageUrl(club.logo_url, club.nom);
   const startStatus = club.start_status ?? {};
+  const currentRole = (() => {
+    try { return JSON.parse(localStorage.getItem("user") || "{}").role ?? ""; }
+    catch { return ""; }
+  })();
+  const isResponsableClub = currentRole === "RESPONSABLE_CLUB";
+  const isViewer = currentRole === "ADMIN" || currentRole === "RESPONSABLE_CENTRE";
   const isStarted = Boolean(startStatus.is_started);
   const readyForValidation = Boolean(startStatus.ready_for_validation);
   const minimumReached = Boolean(startStatus.minimum_reached);
@@ -244,13 +250,23 @@ export const ClubCard = ({
               )}
             </button>
           )}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <button
-              onClick={() => onViewRequests(club)}
-              className="px-4 py-3 bg-smart-teal text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition hover:bg-black"
-            >
-              Gérer les demandes
-            </button>
+          <div className={`grid gap-3 ${(isResponsableClub || isViewer) ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
+            {isResponsableClub && (
+              <button
+                onClick={() => onViewRequests(club)}
+                className="px-4 py-3 bg-smart-teal text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition hover:bg-black"
+              >
+                Gérer les demandes
+              </button>
+            )}
+            {isViewer && (
+              <button
+                onClick={() => onViewRequests(club)}
+                className="px-4 py-3 bg-smart-teal text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition hover:bg-black"
+              >
+                Voir les membres
+              </button>
+            )}
             <button
               onClick={() => onViewStaff(club)}
               className="px-4 py-3 bg-white text-smart-teal rounded-2xl text-xs font-black uppercase tracking-[0.2em] border border-smart-teal transition hover:bg-smart-teal hover:text-white"

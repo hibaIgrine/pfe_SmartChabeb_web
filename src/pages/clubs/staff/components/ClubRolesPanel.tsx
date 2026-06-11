@@ -5,6 +5,7 @@ import { normalizeRoleKey } from "../utils";
 type Props = {
   roles: ClubRoleItem[];
   blockedStaffRole: string;
+  readOnly?: boolean;
   onCreateRole: () => void;
   onEditRole: (role: ClubRoleItem) => void;
   onToggleRoleActive: (role: ClubRoleItem) => void;
@@ -13,6 +14,7 @@ type Props = {
 export function ClubRolesPanel({
   roles,
   blockedStaffRole,
+  readOnly = false,
   onCreateRole,
   onEditRole,
   onToggleRoleActive,
@@ -28,13 +30,15 @@ export function ClubRolesPanel({
             Modifier, désactiver ou réactiver les rôles du club.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onCreateRole}
-          className="rounded-2xl bg-smart-teal px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-white transition hover:bg-black"
-        >
-          Nouveau
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={onCreateRole}
+            className="rounded-2xl bg-smart-teal px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-white transition hover:bg-black"
+          >
+            Nouveau
+          </button>
+        )}
       </div>
 
       <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
@@ -69,24 +73,26 @@ export function ClubRolesPanel({
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => onEditRole(role)}
-                      className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.15em] text-smart-teal border border-gray-200 transition hover:bg-smart-teal hover:text-white"
-                    >
-                      <PencilLine size={14} />
-                    </button>
-                    {!isBlocked && (
+                  {!readOnly && (
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
-                        onClick={() => onToggleRoleActive(role)}
-                        className={`inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-[0.15em] transition ${isInactive ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}
+                        onClick={() => onEditRole(role)}
+                        className="inline-flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.15em] text-smart-teal border border-gray-200 transition hover:bg-smart-teal hover:text-white"
                       >
-                        <Power size={14} />
+                        <PencilLine size={14} />
                       </button>
-                    )}
-                  </div>
+                      {!isBlocked && (
+                        <button
+                          type="button"
+                          onClick={() => onToggleRoleActive(role)}
+                          className={`inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-[0.15em] transition ${isInactive ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}
+                        >
+                          <Power size={14} />
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );

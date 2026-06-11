@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/axios";
 import { ClubManagementView } from "./management/ClubManagementView";
+import { ClubMembersReadOnlyView } from "./management/ClubMembersReadOnlyView";
 import { SuspensionModal } from "./management/components/members/SuspensionModal";
 import { ClubPageShell } from "./components/ClubPageShell";
 import { getAuthHeaders } from "./clubUtils";
@@ -9,6 +10,12 @@ import { getAuthHeaders } from "./clubUtils";
 export default function ClubRequestsPage() {
   const { clubId } = useParams<{ clubId: string }>();
   const navigate = useNavigate();
+
+  const currentRole = (() => {
+    try { return JSON.parse(localStorage.getItem("user") || "{}").role ?? ""; }
+    catch { return ""; }
+  })();
+  const isViewer = currentRole === "ADMIN" || currentRole === "RESPONSABLE_CENTRE";
   const [club, setClub] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -119,21 +126,28 @@ export default function ClubRequestsPage() {
   return (
     <>
       <ClubPageShell
-        title="Gestion des inscriptions"
+        title={isViewer ? "Membres du club" : "Gestion des inscriptions"}
         subtitle={club?.nom ?? "Chargement..."}
         loading={loading}
         error={error}
         notification={notification}
       >
-        <ClubManagementView
-          club={club}
-          onBack={() => navigate(-1)}
-          onUpdateStatus={handleUpdateStatus}
-          onMemberAction={handleMemberAction}
-        />
+        {isViewer ? (
+          <ClubMembersReadOnlyView
+            club={club}
+            onBack={() => navigate(-1)}
+          />
+        ) : (
+          <ClubManagementView
+            club={club}
+            onBack={() => navigate(-1)}
+            onUpdateStatus={handleUpdateStatus}
+            onMemberAction={handleMemberAction}
+          />
+        )}
       </ClubPageShell>
 
-      {isSuspensionModalOpen && memberToSuspend && (
+      {!isViewer && isSuspensionModalOpen && memberToSuspend && (
         <SuspensionModal
           isOpen={isSuspensionModalOpen}
           onClose={() => setIsSuspensionModalOpen(false)}

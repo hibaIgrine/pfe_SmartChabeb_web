@@ -759,48 +759,48 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* --- 🏛️ ZONE DE DROITE --- */}
       <main className="flex-1 flex flex-col overflow-hidden p-3 md:p-4">
-        <header className="relative z-0 mb-3 flex min-h-16 flex-col gap-3 rounded-3xl border border-white bg-white/60 px-4 py-3 shadow-sm backdrop-blur-md overflow-visible md:mb-4 md:h-16 md:flex-row md:items-center md:justify-between md:px-6 md:py-0">
-          <div className="flex items-center gap-3">
+        <header className="relative z-0 mb-3 flex h-14 flex-row items-center justify-between rounded-3xl border border-white bg-white/60 px-4 shadow-sm backdrop-blur-md overflow-visible md:mb-4 md:h-16 md:px-6">
+          <div className="flex items-center gap-2 min-w-0">
             <button
               type="button"
               onClick={() => setMobileSidebarOpen(true)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-gray-200 bg-white text-[#436D75] shadow-sm md:hidden"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-white text-[#436D75] shadow-sm md:hidden"
               aria-label="Ouvrir le menu"
             >
-              <LayoutGrid size={18} />
+              <LayoutGrid size={16} />
             </button>
             <img
               src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Flag_of_Tunisia.svg"
-              className="h-6 shadow-sm rounded-sm"
+              className="h-5 shadow-sm rounded-sm shrink-0"
               alt="TN"
             />
-            <div className="leading-tight border-l pl-3 border-gray-200">
-              <p className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400">
+            <div className="leading-tight border-l pl-2 border-gray-200 min-w-0 hidden sm:block">
+              <p className="text-[7px] font-black uppercase tracking-[0.2em] text-gray-400 truncate">
                 République Tunisienne
               </p>
-              <h2 className="text-[10px] font-black text-[#436D75] uppercase tracking-tighter">
+              <h2 className="text-[9px] font-black text-[#436D75] uppercase tracking-tighter truncate">
                 Ministère de la Jeunesse et des Sports
               </h2>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-1.5 shrink-0 md:gap-2">
             <MessageBell />
             <Link
               to="/fil-actualite"
-              className="w-10 h-10 rounded-full border border-gray-200 bg-white text-[#436D75] flex items-center justify-center hover:bg-[#F7F3E9] hover:border-[#cfdad3] transition-colors"
+              className="w-9 h-9 rounded-full border border-gray-200 bg-white text-[#436D75] flex items-center justify-center hover:bg-[#F7F3E9] hover:border-[#cfdad3] transition-colors"
               title="Fil d'actualité"
             >
-              <Newspaper size={18} />
+              <Newspaper size={16} />
             </Link>
             <FavoritePostsBell />
             <NotificationBell />
             <Link
               to="/mon-profil"
-              className="flex items-center gap-2 rounded-full border border-gray-100 bg-white p-1 pr-3 shadow-sm transition-colors hover:border-[#436D75]/30 hover:bg-[#F8FBFA] md:space-x-3 md:pr-4"
+              className="flex items-center gap-2 rounded-full border border-gray-100 bg-white p-1 pr-2 shadow-sm transition-colors hover:border-[#436D75]/30 hover:bg-[#F8FBFA] md:pr-3"
               title="Mon profil"
             >
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-[#ECEFF3] flex items-center justify-center text-[#9AA3AF] shadow-inner">
+              <div className="w-7 h-7 rounded-full overflow-hidden bg-[#ECEFF3] flex items-center justify-center text-[#9AA3AF] shadow-inner shrink-0 md:w-8 md:h-8">
                 {showTopBarImage ? (
                   <img
                     src={displayUser.photo_profil_url}
@@ -809,7 +809,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     onError={() => setTopBarImageError(true)}
                   />
                 ) : (
-                  <UserCircle size={20} />
+                  <UserCircle size={18} />
                 )}
               </div>
               <div className="hidden text-left md:block">
@@ -817,7 +817,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {displayUser?.nom} {displayUser?.prenom}
                 </p>
                 <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest italic">
-                  {role}
+                  {role === "ADMIN" ? "Admin"
+                    : role === "RESPONSABLE_CLUB" ? "Resp. Club"
+                    : role === "RESPONSABLE_CENTRE" ? "Resp. Centre"
+                    : role === "ADHERENT" ? "Membre"
+                    : role}
                 </p>
               </div>
             </Link>
@@ -854,7 +858,7 @@ function SidebarItem({ to, icon, label, active }: any) {
       className={`flex items-center space-x-3 py-2.5 px-4 rounded-xl transition-all duration-300 group ${
         active
           ? "bg-white text-[#436D75] shadow-md italic scale-[1.02]"
-          : "text-white/40 hover:text-white hover:bg-white/5"
+          : "text-[#D9E8D1] hover:text-white hover:bg-white/10"
       }`}
     >
       <span
@@ -862,7 +866,7 @@ function SidebarItem({ to, icon, label, active }: any) {
       >
         {icon}
       </span>
-      <span className="text-xs font-bold tracking-tight">{label}</span>
+      <span className="text-sm font-bold tracking-tight">{label}</span>
     </Link>
   );
 }

@@ -8,6 +8,7 @@ interface ClubPageShellProps {
   loading: boolean;
   error?: string;
   notification?: { msg: string; type: "success" | "error" } | null;
+  hideLabel?: boolean;
   children: ReactNode;
 }
 
@@ -17,12 +18,13 @@ export const ClubPageShell = ({
   loading,
   error,
   notification,
+  hideLabel = false,
   children,
 }: ClubPageShellProps) => {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-16 px-4 sm:px-6 lg:px-8">
+    <div className="h-full flex flex-col">
       {notification && (
         <div
           className={`fixed top-6 right-6 z-[1000] rounded-2xl border px-5 py-4 font-black text-sm shadow-2xl ${
@@ -42,15 +44,7 @@ export const ClubPageShell = ({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.35em] text-smart-teal"
-      >
-        <ArrowLeft size={16} /> Retour
-      </button>
-
-      <div className="bg-white border border-gray-100 rounded-[40px] shadow-sm p-8">
+      <div className="flex-1 bg-white border border-gray-100 rounded-[40px] shadow-sm p-6 overflow-y-auto custom-scrollbar">
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <Loader2 className="animate-spin text-smart-teal" size={36} />
@@ -59,13 +53,24 @@ export const ClubPageShell = ({
           <div className="text-center py-24 text-sm text-red-500">{error}</div>
         ) : (
           <>
-            <div className="mb-8">
-              <p className="text-sm uppercase tracking-[0.45em] text-gray-400 font-black">
-                {title}
-              </p>
-              <h1 className="text-4xl font-black text-smart-teal tracking-tight mt-3">
-                {subtitle}
-              </h1>
+            <div className="mb-8 flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-gray-200 bg-[#F7F3E9] text-smart-teal hover:bg-smart-teal hover:text-white transition-all"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div>
+                {!hideLabel && (
+                  <p className="text-sm uppercase tracking-[0.45em] text-gray-400 font-black">
+                    {title}
+                  </p>
+                )}
+                <h1 className={`text-4xl font-black text-smart-teal tracking-tight ${!hideLabel ? "mt-3" : ""}`}>
+                  {subtitle}
+                </h1>
+              </div>
             </div>
             {children}
           </>

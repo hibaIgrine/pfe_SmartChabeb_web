@@ -94,9 +94,13 @@ export function useClubStaffPage() {
         }))
         .filter((role: ClubRoleItem) => Boolean(role.nom));
 
-      setClubRoles(allRoles);
+      const EXCLUDED_ROLES = new Set(["RESPONSABLE_CENTRE", "RESPONSABLE_CLUB", "ADHERENT", "ADHERANT", "COACH"]);
+      const filteredRoles = allRoles.filter(
+        (role: ClubRoleItem) => !EXCLUDED_ROLES.has(normalizeRoleKey(role.nom)),
+      );
+      setClubRoles(filteredRoles);
 
-      const roleNames = allRoles
+      const roleNames = filteredRoles
         .map((role: any) => (role.is_active ? role.nom : ""))
         .filter((role: string) => Boolean(role));
 

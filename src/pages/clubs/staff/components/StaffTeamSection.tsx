@@ -13,6 +13,7 @@ type Props = {
   updatingClubResponsable: boolean;
   updatingStaffRoleId: string | null;
   updatingStaffActiveId: string | null;
+  readOnly?: boolean;
   onSetRoleChange: (userId: string, role: string) => void;
   onUpdateStaffRole: (userId: string, role: string) => void;
   onChangeResponsable: (userId: string) => void;
@@ -30,6 +31,7 @@ export function StaffTeamSection({
   updatingClubResponsable,
   updatingStaffRoleId,
   updatingStaffActiveId,
+  readOnly = false,
   onSetRoleChange,
   onUpdateStaffRole,
   onChangeResponsable,
@@ -70,9 +72,11 @@ export function StaffTeamSection({
             <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">
               Staff
             </div>
-            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">
-              Actions
-            </div>
+            {!readOnly && (
+              <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">
+                Actions
+              </div>
+            )}
           </div>
 
           {filteredStaff.map((item: any) => {
@@ -115,110 +119,112 @@ export function StaffTeamSection({
                     </div>
                   </div>
 
-                  <div className="relative grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-start md:justify-end">
-                    <button
-                      type="button"
-                      disabled={isInactive || !utilisateurId}
-                      onClick={() =>
-                        setRoleMenuOpenFor((prev) =>
-                          prev === item.id ? null : item.id,
-                        )
-                      }
-                      className="inline-flex h-9 w-9 items-center justify-center justify-self-start rounded-lg border border-gray-200 bg-white text-smart-teal transition hover:border-smart-teal hover:bg-smart-teal/5 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-                      title="Choisir un rôle"
-                      aria-label="Choisir un rôle"
-                    >
-                      <ListFilter size={16} />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onUpdateStaffRole(utilisateurId, selectedRoleValue)
-                      }
-                      disabled={
-                        updatingStaffRoleId === utilisateurId ||
-                        isInactive ||
-                        !utilisateurId
-                      }
-                      title="Mettre à jour le rôle"
-                      aria-label="Mettre à jour le rôle"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-smart-teal text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {updatingStaffRoleId === utilisateurId ? (
-                        <span className="text-xs font-black">...</span>
-                      ) : (
-                        <ShieldCheck size={15} />
-                      )}
-                    </button>
-
-                    {utilisateurId && !isResponsable ? (
+                  {!readOnly && (
+                    <div className="relative grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-start md:justify-end">
                       <button
                         type="button"
-                        onClick={() => onChangeResponsable(utilisateurId)}
-                        disabled={updatingClubResponsable || isInactive}
-                        title="Définir comme responsable"
-                        aria-label="Définir comme responsable"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-smart-sage text-smart-teal transition hover:bg-black/5 disabled:opacity-40"
+                        disabled={isInactive || !utilisateurId}
+                        onClick={() =>
+                          setRoleMenuOpenFor((prev) =>
+                            prev === item.id ? null : item.id,
+                          )
+                        }
+                        className="inline-flex h-9 w-9 items-center justify-center justify-self-start rounded-lg border border-gray-200 bg-white text-smart-teal transition hover:border-smart-teal hover:bg-smart-teal/5 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                        title="Choisir un rôle"
+                        aria-label="Choisir un rôle"
                       >
-                        <Users size={15} />
+                        <ListFilter size={16} />
                       </button>
-                    ) : null}
 
-                    {!isResponsable ? (
                       <button
                         type="button"
-                        onClick={() => onToggleStaffActive(item.id, isInactive)}
-                        disabled={updatingStaffActiveId === item.id}
-                        title={
-                          isInactive
-                            ? "Activer le staff"
-                            : "Désactiver le staff"
+                        onClick={() =>
+                          onUpdateStaffRole(utilisateurId, selectedRoleValue)
                         }
-                        aria-label={
-                          isInactive
-                            ? "Activer le staff"
-                            : "Désactiver le staff"
+                        disabled={
+                          updatingStaffRoleId === utilisateurId ||
+                          isInactive ||
+                          !utilisateurId
                         }
-                        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg transition disabled:opacity-40 ${isInactive ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-700 hover:bg-red-200"}`}
+                        title="Mettre à jour le rôle"
+                        aria-label="Mettre à jour le rôle"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-smart-teal text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        {updatingStaffActiveId === item.id ? (
+                        {updatingStaffRoleId === utilisateurId ? (
                           <span className="text-xs font-black">...</span>
                         ) : (
-                          <Power size={15} />
+                          <ShieldCheck size={15} />
                         )}
                       </button>
-                    ) : null}
 
-                    {roleMenuOpenFor === item.id && !isInactive ? (
-                      <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-[240px] rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
-                        {(availableRoles.length > 0
-                          ? availableRoles
-                          : ["COACH", "ANIMATEUR"]
-                        ).map((roleName) => {
-                          const isSelected = roleName === selectedRoleValue;
-                          return (
-                            <button
-                              key={roleName}
-                              type="button"
-                              onClick={() => {
-                                onSetRoleChange(utilisateurId, roleName);
-                                setRoleMenuOpenFor(null);
-                              }}
-                              className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${isSelected ? "bg-smart-teal/10 text-smart-teal font-black" : "text-gray-700 hover:bg-slate-50"}`}
-                            >
-                              <span>{formatRoleLabel(roleName)}</span>
-                              {isSelected ? (
-                                <span className="text-[10px] uppercase tracking-[0.16em]">
-                                  Actuel
-                                </span>
-                              ) : null}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-                  </div>
+                      {utilisateurId && !isResponsable ? (
+                        <button
+                          type="button"
+                          onClick={() => onChangeResponsable(utilisateurId)}
+                          disabled={updatingClubResponsable || isInactive}
+                          title="Définir comme responsable"
+                          aria-label="Définir comme responsable"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-smart-sage text-smart-teal transition hover:bg-black/5 disabled:opacity-40"
+                        >
+                          <Users size={15} />
+                        </button>
+                      ) : null}
+
+                      {!isResponsable ? (
+                        <button
+                          type="button"
+                          onClick={() => onToggleStaffActive(item.id, isInactive)}
+                          disabled={updatingStaffActiveId === item.id}
+                          title={
+                            isInactive
+                              ? "Activer le staff"
+                              : "Désactiver le staff"
+                          }
+                          aria-label={
+                            isInactive
+                              ? "Activer le staff"
+                              : "Désactiver le staff"
+                          }
+                          className={`inline-flex h-9 w-9 items-center justify-center rounded-lg transition disabled:opacity-40 ${isInactive ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-700 hover:bg-red-200"}`}
+                        >
+                          {updatingStaffActiveId === item.id ? (
+                            <span className="text-xs font-black">...</span>
+                          ) : (
+                            <Power size={15} />
+                          )}
+                        </button>
+                      ) : null}
+
+                      {roleMenuOpenFor === item.id && !isInactive ? (
+                        <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-[240px] rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
+                          {(availableRoles.length > 0
+                            ? availableRoles
+                            : ["COACH", "ANIMATEUR"]
+                          ).map((roleName) => {
+                            const isSelected = roleName === selectedRoleValue;
+                            return (
+                              <button
+                                key={roleName}
+                                type="button"
+                                onClick={() => {
+                                  onSetRoleChange(utilisateurId, roleName);
+                                  setRoleMenuOpenFor(null);
+                                }}
+                                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${isSelected ? "bg-smart-teal/10 text-smart-teal font-black" : "text-gray-700 hover:bg-slate-50"}`}
+                              >
+                                <span>{formatRoleLabel(roleName)}</span>
+                                {isSelected ? (
+                                  <span className="text-[10px] uppercase tracking-[0.16em]">
+                                    Actuel
+                                  </span>
+                                ) : null}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               </div>
             );

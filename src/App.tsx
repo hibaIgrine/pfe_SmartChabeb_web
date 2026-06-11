@@ -62,6 +62,7 @@ import {
 
 const ADMIN_ONLY = ["ADMIN"];
 const ADMIN_OR_CLUB = ["ADMIN", "RESPONSABLE_CLUB"];
+const ADMIN_OR_CLUB_OR_CENTRE = ["ADMIN", "RESPONSABLE_CLUB", "RESPONSABLE_CENTRE"];
 const ADMIN_OR_ANY_MEMBER = [
   "ADMIN",
   "RESPONSABLE_CENTRE",
@@ -230,7 +231,7 @@ function App() {
         <Route
           path={ROUTES.club.requests}
           element={withAccess(
-            ADMIN_OR_CLUB,
+            ADMIN_OR_CLUB_OR_CENTRE,
             <Layout>
               <ClubRequestsPage />
             </Layout>,
@@ -266,7 +267,7 @@ function App() {
         <Route
           path={ROUTES.club.staff}
           element={withAccess(
-            ADMIN_OR_CLUB,
+            ADMIN_OR_CLUB_OR_CENTRE,
             <Layout>
               <ClubStaffPage />
             </Layout>,

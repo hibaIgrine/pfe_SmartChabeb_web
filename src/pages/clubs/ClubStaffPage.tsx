@@ -11,6 +11,12 @@ import { AddRoleModal } from "./staff/components/AddRoleModal";
 import { DeactivateRoleModal } from "./staff/components/DeactivateRoleModal";
 
 export default function ClubStaffPage() {
+  const currentRole = (() => {
+    try { return JSON.parse(localStorage.getItem("user") || "{}").role ?? ""; }
+    catch { return ""; }
+  })();
+  const isViewer = currentRole === "ADMIN" || currentRole === "RESPONSABLE_CENTRE";
+
   const {
     state,
     blockedStaffRole,
@@ -55,16 +61,19 @@ export default function ClubStaffPage() {
         loading={state.loading}
         error={state.error}
         notification={state.notification}
+        hideLabel={true}
       >
         <StaffOverviewCards
           personnelCount={state.personnelCount}
           totalMembers={state.totalMembers}
         />
-        <StaffQuickActionsCard
-          onAddStaff={() => setIsAddStaffModalOpen(true)}
-          onAddRole={() => openRoleModal(null)}
-          hasAvailableStaff={state.availableStaff.length > 0}
-        />
+        {!isViewer && (
+          <StaffQuickActionsCard
+            onAddStaff={() => setIsAddStaffModalOpen(true)}
+            onAddRole={() => openRoleModal(null)}
+            hasAvailableStaff={state.availableStaff.length > 0}
+          />
+        )}
 
         <div className="mt-12 grid gap-8 lg:grid-cols-[2.1fr_1fr]">
           <div className="space-y-8">
@@ -76,6 +85,11 @@ export default function ClubStaffPage() {
               availableRoles={state.availableRoles}
               updatingStaffRoleId={state.updatingStaffRoleId}
               staffRoleChanges={state.staffRoleChanges}
+              readOnly={isViewer}
+              canChangeResponsable={isViewer}
+              staffList={state.filteredStaff}
+              availableUsers={state.availableStaff}
+              onAssignResponsable={handleChangeResponsable}
               onSetRoleChange={(userId, role) =>
                 setStaffRoleChanges((prev) => ({ ...prev, [userId]: role }))
               }
@@ -92,6 +106,7 @@ export default function ClubStaffPage() {
               updatingClubResponsable={state.updatingClubResponsable}
               updatingStaffRoleId={state.updatingStaffRoleId}
               updatingStaffActiveId={state.updatingStaffActiveId}
+              readOnly={isViewer}
               onSetRoleChange={(userId, role) =>
                 setStaffRoleChanges((prev) => ({ ...prev, [userId]: role }))
               }
@@ -110,6 +125,7 @@ export default function ClubStaffPage() {
             <ClubRolesPanel
               roles={state.clubRoles}
               blockedStaffRole={blockedStaffRole}
+              readOnly={isViewer}
               onCreateRole={() => openRoleModal(null)}
               onEditRole={(role) => openRoleModal(role)}
               onToggleRoleActive={toggleRoleActiveState}
