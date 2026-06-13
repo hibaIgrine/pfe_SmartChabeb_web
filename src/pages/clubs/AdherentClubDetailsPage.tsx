@@ -8,6 +8,7 @@ import {
   Clock3,
   Flag,
   Loader2,
+  LogOut,
   MapPin,
   Send,
   Sparkles,
@@ -100,6 +101,7 @@ export default function AdherentClubDetailsPage() {
   const [centre, setCentre] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [notice, setNotice] = useState<{
     type: "success" | "error";
     message: string;
@@ -174,6 +176,30 @@ export default function AdherentClubDetailsPage() {
     } catch (error: any) {
       const message =
         error?.response?.data?.message || "Impossible d'annuler la demande.";
+      setNotice({
+        type: "error",
+        message: Array.isArray(message) ? message[0] : message,
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const leaveClub = async () => {
+    if (!club?.id) return;
+
+    setActionLoading(true);
+    try {
+      await api.delete(`/clubs/${club.id}/leave`, { headers });
+      setConfirmLeave(false);
+      await loadClub();
+      setNotice({
+        type: "success",
+        message: "Vous avez quitte ce club.",
+      });
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message || "Impossible de quitter ce club.";
       setNotice({
         type: "error",
         message: Array.isArray(message) ? message[0] : message,
@@ -408,10 +434,48 @@ export default function AdherentClubDetailsPage() {
                 )}
 
                 {inscription?.statut === "ACCEPTE" && (
-                  <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
-                    <CheckCircle2 size={17} />
-                    Vous faites partie de ce club.
-                  </div>
+                  <>
+                    <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
+                      <CheckCircle2 size={17} />
+                      Vous faites partie de ce club.
+                    </div>
+
+                    {confirmLeave ? (
+                      <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
+                        <p className="mb-3 text-center text-xs font-bold text-rose-700">
+                          Quitter ce club ? Votre inscription sera supprimee.
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setConfirmLeave(false)}
+                            disabled={actionLoading}
+                            className="flex-1 rounded-xl border border-gray-200 bg-white py-2 text-xs font-black uppercase tracking-[0.15em] text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+                          >
+                            Annuler
+                          </button>
+                          <button
+                            onClick={leaveClub}
+                            disabled={actionLoading}
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-rose-600 py-2 text-xs font-black uppercase tracking-[0.15em] text-white hover:bg-rose-700 disabled:opacity-60"
+                          >
+                            {actionLoading ? (
+                              <Loader2 className="animate-spin" size={14} />
+                            ) : (
+                              "Confirmer"
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmLeave(true)}
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-rose-100 bg-rose-50 text-xs font-black uppercase tracking-[0.18em] text-rose-700 hover:bg-rose-100 transition-colors"
+                      >
+                        <LogOut size={15} />
+                        Quitter le club
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
