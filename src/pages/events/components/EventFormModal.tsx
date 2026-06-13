@@ -8,8 +8,7 @@ import type {
   EventItem,
   LocalLite,
 } from "../types";
-import { getCurrentTimeHHMM } from "../utils";
-import { Input, Select } from "./FormFields";
+import { Input, Select, TimePicker } from "./FormFields";
 import api from "../../../api/axios";
 
 type Props = {
@@ -18,6 +17,7 @@ type Props = {
   isAdmin: boolean;
   form: EventForm;
   clubs: ClubLite[];
+  ownedClubs?: ClubLite[];
   filteredLocaux: LocalLite[];
   gouvernorats: string[];
   centresByGouvernorat: Array<{ id: string; nom: string }>;
@@ -39,6 +39,7 @@ export default function EventFormModal({
   isAdmin,
   form,
   clubs,
+  ownedClubs,
   filteredLocaux,
   gouvernorats,
   centresByGouvernorat,
@@ -54,6 +55,8 @@ export default function EventFormModal({
   onChangeForm,
 }: Props) {
   if (!isOpen) return null;
+
+  const principalClubs = ownedClubs ?? clubs;
 
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [availabilityMessage, setAvailabilityMessage] =
@@ -258,35 +261,52 @@ export default function EventFormModal({
                 min={today}
                 onChange={(v) => onChangeForm({ date_event: v })}
               />
-              <Input
+              <TimePicker
                 label="Heure début"
-                type="time"
                 value={form.start_time}
-                min={
-                  form.date_event === today ? getCurrentTimeHHMM() : undefined
+                minHour={
+                  form.date_event === today
+                    ? Math.min(21, Math.max(8, new Date().getHours() + 1))
+                    : 8
                 }
+                maxHour={21}
                 onChange={(v) => onChangeForm({ start_time: v })}
               />
-              <Input
+              <TimePicker
                 label="Heure fin"
-                type="time"
                 value={form.end_time}
-                min={form.start_time || undefined}
+                minHour={
+                  form.start_time
+                    ? parseInt(form.start_time.split(":")[0], 10)
+                    : 8
+                }
                 onChange={(v) => onChangeForm({ end_time: v })}
               />
 
-              <Select
-                label="Club principal (optionnel)"
-                value={form.club_id}
-                onChange={(v) =>
-                  onChangeForm({
-                    club_id: v,
-                    club_ids: form.club_ids.filter((clubId) => clubId !== v),
-                    locaux_id: "",
-                  })
-                }
-                options={clubs.map((c) => ({ value: c.id, label: c.nom }))}
-              />
+              {!isAdmin && principalClubs.length === 1 ? (
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest text-gray-500">
+                    Club principal
+                  </label>
+                  <div className="mt-1.5 w-full rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                    {principalClubs[0].nom}
+                  </div>
+                </div>
+              ) : (
+                <Select
+                  label={isAdmin ? "Club principal (optionnel)" : "Club principal"}
+                  value={form.club_id}
+                  required={!isAdmin}
+                  onChange={(v) =>
+                    onChangeForm({
+                      club_id: v,
+                      club_ids: form.club_ids.filter((clubId) => clubId !== v),
+                      locaux_id: "",
+                    })
+                  }
+                  options={principalClubs.map((c) => ({ value: c.id, label: c.nom }))}
+                />
+              )}
 
               <div className="md:col-span-2">
                 <label className="text-xs font-black uppercase tracking-widest text-gray-500">
@@ -491,37 +511,145 @@ export default function EventFormModal({
                             />
                           </div>
 
-                          <div>
-                            <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">
-                              Début
-                            </label>
-                            <input
-                              type="time"
-                              value={step.start_time}
-                              onChange={(e) =>
-                                updateTimelineStep(originalIndex, {
-                                  start_time: e.target.value,
-                                })
-                              }
-                              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                            />
-                          </div>
+                          {(() => {
+                              // event boundaries
+                              const evEndH = form.end_time
+                                ? parseInt(form.end_time.split(":")[0], 10)
+                                : 22;
+                              const evEndM = form.end_time
+                                ? parseInt(form.end_time.split(":")[1], 10)
+                                : 0;
 
-                          <div>
-                            <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">
-                              Fin
-                            </label>
-                            <input
-                              type="time"
-                              value={step.end_time}
-                              onChange={(e) =>
-                                updateTimelineStep(originalIndex, {
-                                  end_time: e.target.value,
-                                })
-                              }
-                              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                            />
-                          </div>
+                              // previous step's end time = lower bound for this step's start
+                              const prevEnd =
+                                index > 0
+                                  ? (timelineView[index - 1].step.end_time || form.start_time || "")
+                                  : (form.start_time || "");
+                              const prevEndH = prevEnd
+                                ? parseInt(prevEnd.split(":")[0], 10)
+                                : 8;
+                              const prevEndM = prevEnd
+                                ? parseInt(prevEnd.split(":")[1], 10)
+                                : 0;
+
+                              // current step's start (for constraining end field)
+                              const stepStartH = step.start_time
+                                ? parseInt(step.start_time.split(":")[0], 10)
+                                : prevEndH;
+                              const stepStartM = step.start_time
+                                ? parseInt(step.start_time.split(":")[1], 10)
+                                : prevEndM;
+
+                              // step start max hour: evEndH only if evEndM > 0
+                              const stepStartMaxH =
+                                evEndM > 0
+                                  ? evEndH
+                                  : Math.max(prevEndH, evEndH - 1);
+
+                              const cls =
+                                "rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#436D75]/40";
+
+                              return (["start_time", "end_time"] as const).map(
+                                (field) => {
+                                  const fieldVal = step[field];
+                                  const [hVal, mVal] = fieldVal
+                                    ? fieldVal.split(":")
+                                    : ["", ""];
+                                  const hNum = hVal ? parseInt(hVal, 10) : null;
+
+                                  // hour range
+                                  const minH =
+                                    field === "start_time"
+                                      ? prevEndH
+                                      : stepStartH;
+                                  const maxH =
+                                    field === "start_time"
+                                      ? stepStartMaxH
+                                      : evEndH;
+                                  const hours = Array.from(
+                                    { length: Math.max(0, maxH - minH + 1) },
+                                    (_, i) => i + minH,
+                                  );
+
+                                  // minute constraints
+                                  const minM =
+                                    field === "start_time"
+                                      ? hNum === prevEndH ? prevEndM : 0
+                                      : hNum === stepStartH ? stepStartM : 0;
+                                  const maxM =
+                                    field === "end_time" && hNum === evEndH
+                                      ? evEndM
+                                      : 59;
+
+                                  const emit = (h: string, m: string) => {
+                                    updateTimelineStep(originalIndex, {
+                                      [field]: h ? `${h}:${m || "00"}` : "",
+                                    });
+                                  };
+
+                                  return (
+                                    <div key={field}>
+                                      <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">
+                                        {field === "start_time"
+                                          ? "Début"
+                                          : "Fin"}
+                                      </label>
+                                      <div className="mt-1 flex gap-1.5">
+                                        <select
+                                          value={hVal}
+                                          onChange={(e) =>
+                                            emit(e.target.value, mVal)
+                                          }
+                                          className={`flex-1 ${cls}`}
+                                        >
+                                          <option value="">H</option>
+                                          {hours.map((hr) => {
+                                            const v = String(hr).padStart(
+                                              2,
+                                              "0",
+                                            );
+                                            return (
+                                              <option key={v} value={v}>
+                                                {v}h
+                                              </option>
+                                            );
+                                          })}
+                                        </select>
+                                        <input
+                                          type="number"
+                                          min={minM}
+                                          max={maxM}
+                                          placeholder="min"
+                                          value={
+                                            mVal
+                                              ? String(parseInt(mVal, 10))
+                                              : ""
+                                          }
+                                          onChange={(e) => {
+                                            const raw = e.target.value;
+                                            const n = parseInt(raw, 10);
+                                            if (
+                                              raw === "" ||
+                                              (!isNaN(n) &&
+                                                n >= 0 &&
+                                                n <= 59)
+                                            ) {
+                                              emit(
+                                                hVal,
+                                                raw === ""
+                                                  ? "00"
+                                                  : String(n).padStart(2, "0"),
+                                              );
+                                            }
+                                          }}
+                                          className={`flex-1 ${cls}`}
+                                        />
+                                      </div>
+                                    </div>
+                                  );
+                                },
+                              );
+                            })()}
 
                           <div className="md:col-span-4">
                             <label className="text-[10px] font-black uppercase tracking-wider text-gray-500">

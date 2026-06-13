@@ -662,6 +662,7 @@ export default function ClubEventsRequestsPage() {
           isAdmin={false}
           form={form}
           clubs={centreClubs.length > 0 ? centreClubs : managedClubs}
+          ownedClubs={managedClubs}
           filteredLocaux={filteredLocaux}
           gouvernorats={[]}
           centresByGouvernorat={[]}

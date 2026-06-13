@@ -79,6 +79,14 @@ export function validateEventForm(form: EventForm, today: string) {
     return "La date de l'événement doit être à partir d'aujourd'hui.";
   }
 
+  if (form.start_time < "08:00") {
+    return "L'heure de début ne peut pas être avant 08h00.";
+  }
+
+  if (form.end_time > "22:00") {
+    return "L'heure de fin ne peut pas dépasser 22h00.";
+  }
+
   if (form.end_time <= form.start_time) {
     return "L'heure de fin doit être strictement supérieure à l'heure de début.";
   }
