@@ -11,6 +11,7 @@ import {
   LogOut,
   MapPin,
   Send,
+  ShieldAlert,
   Sparkles,
   Target,
   Trophy,
@@ -401,6 +402,29 @@ export default function AdherentClubDetailsPage() {
                   ? status.label
                   : "Vous n'avez pas encore envoye de demande pour ce club."}
               </p>
+
+              {inscription?.est_suspendu && (
+                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 space-y-2">
+                  <p className="flex items-center gap-2 text-sm font-black text-red-700">
+                    <ShieldAlert size={16} />
+                    Votre accès à ce club est suspendu
+                  </p>
+                  {inscription?.motif_suspension && (
+                    <p className="text-sm font-medium text-red-600 leading-snug">
+                      Motif : {inscription.motif_suspension}
+                    </p>
+                  )}
+                  {inscription?.date_fin_suspension && (
+                    <p className="text-xs text-red-400 flex items-center gap-1">
+                      <CalendarDays size={12} />
+                      Réactivation prévue le{" "}
+                      {new Date(
+                        inscription.date_fin_suspension,
+                      ).toLocaleDateString("fr-TN")}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="mt-5 space-y-3">
                 {canApply && (

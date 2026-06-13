@@ -19,6 +19,7 @@ import AdherentClubDetailsPage from "./pages/clubs/AdherentClubDetailsPage";
 import MyAllRequestsPage from "./pages/clubs/MyAllRequestsPage";
 import ClubStaffPage from "./pages/clubs/ClubStaffPage";
 import ManagedClubDetailsPage from "./pages/clubs/ManagedClubDetailsPage";
+import MyClubLandingPage from "./pages/clubs/MyClubLandingPage";
 import ClubRequestsPage from "./pages/clubs/ClubRequestsPage";
 import ClubCreationRequestsPage from "./pages/clubs/ClubCreationRequestsPage";
 import ClubTasksPage from "./pages/clubs/ClubTasksPage";
@@ -292,6 +293,15 @@ function App() {
             ADMIN_OR_CLUB_OR_CENTRE,
             <Layout>
               <ClubStaffPage />
+            </Layout>,
+          )}
+        />
+        <Route
+          path={ROUTES.club.myClubLanding}
+          element={withAccess(
+            CLUB_ONLY,
+            <Layout>
+              <MyClubLandingPage />
             </Layout>,
           )}
         />

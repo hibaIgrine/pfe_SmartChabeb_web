@@ -35,6 +35,7 @@ export const ROUTES = {
   },
   club: {
     home: "/clubs",
+    myClubLanding: "/mon-club",
     staff: "/clubs/:clubId/staff",
     requests: "/clubs/:clubId/requests",
     details: "/clubs/:clubId",
@@ -82,7 +83,7 @@ export function getLandingPathForRole(role?: string | null) {
   }
 
   if (normalizedRole === "RESPONSABLE_CLUB") {
-    return ROUTES.club.home;
+    return ROUTES.club.myClubLanding;
   }
 
   return ROUTES.club.home;

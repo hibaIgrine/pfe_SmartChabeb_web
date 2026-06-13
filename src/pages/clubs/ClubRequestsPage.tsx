@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Trash2, X } from "lucide-react";
 import api from "../../api/axios";
 import { ClubManagementView } from "./management/ClubManagementView";
 import { ClubMembersReadOnlyView } from "./management/ClubMembersReadOnlyView";
@@ -25,6 +26,8 @@ export default function ClubRequestsPage() {
   } | null>(null);
   const [memberToSuspend, setMemberToSuspend] = useState<any>(null);
   const [isSuspensionModalOpen, setIsSuspensionModalOpen] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const loadClub = async () => {
     if (!clubId) return;
@@ -57,6 +60,24 @@ export default function ClubRequestsPage() {
 
   const refreshClub = async () => {
     await loadClub();
+  };
+
+  const confirmDelete = async () => {
+    if (!memberToDelete) return;
+    setDeleteLoading(true);
+    try {
+      await api.delete(`/clubs/inscription/${memberToDelete}`, {
+        headers: getAuthHeaders(),
+      });
+      setMemberToDelete(null);
+      showNotification("Membre retiré du club.", "success");
+      await refreshClub();
+    } catch (err) {
+      console.error(err);
+      showNotification("Erreur lors de la suppression.", "error");
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const handleUpdateStatus = async (
@@ -92,6 +113,11 @@ export default function ClubRequestsPage() {
       return;
     }
 
+    if (type === "DELETE") {
+      setMemberToDelete(inscriptionId);
+      return;
+    }
+
     try {
       if (type === "SUSPEND") {
         await api.patch(`/clubs/inscription/${inscriptionId}/suspend`, data, {
@@ -104,17 +130,9 @@ export default function ClubRequestsPage() {
         await api.patch(
           `/clubs/inscription/${inscriptionId}/reactivate`,
           {},
-          {
-            headers: getAuthHeaders(),
-          },
+          { headers: getAuthHeaders() },
         );
         showNotification("Membre réactivé avec succès.", "success");
-      } else if (type === "DELETE") {
-        if (!window.confirm("Supprimer ce membre ?")) return;
-        await api.delete(`/clubs/inscription/${inscriptionId}`, {
-          headers: getAuthHeaders(),
-        });
-        showNotification("Membre retiré du club.", "success");
       }
       await refreshClub();
     } catch (err) {
@@ -156,6 +174,47 @@ export default function ClubRequestsPage() {
             handleMemberAction(memberToSuspend.id, "SUSPEND", data)
           }
         />
+      )}
+
+      {memberToDelete && (
+        <div className="fixed inset-0 z-[900] flex items-center justify-center pointer-events-none">
+          <div className="pointer-events-auto bg-white rounded-[32px] p-8 max-w-sm w-full mx-4 shadow-2xl border border-gray-100">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center">
+                <Trash2 className="text-red-500" size={28} />
+              </div>
+              <h3 className="text-xl font-black text-gray-800">
+                Retirer ce membre ?
+              </h3>
+              <p className="text-sm font-medium text-gray-500 leading-relaxed">
+                Cette action supprimera définitivement l'inscription de ce
+                membre du club. Il devra refaire une demande pour rejoindre.
+              </p>
+              <div className="flex gap-3 w-full mt-2">
+                <button
+                  onClick={() => setMemberToDelete(null)}
+                  disabled={deleteLoading}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-gray-200 text-sm font-black text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-all"
+                >
+                  <X size={16} />
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleteLoading}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-500 text-sm font-black text-white hover:bg-red-600 disabled:opacity-50 transition-all"
+                >
+                  {deleteLoading ? (
+                    <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                  ) : (
+                    <Trash2 size={16} />
+                  )}
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
