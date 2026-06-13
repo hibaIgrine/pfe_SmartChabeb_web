@@ -18,6 +18,7 @@ const DAYS = [
 
 const START_HOURS = Array.from({ length: 14 }, (_, i) => 8 + i); // 8 → 21
 const END_HOURS   = Array.from({ length: 15 }, (_, i) => 8 + i); // 8 → 22
+const MINUTES     = [0, 15, 30, 45];
 
 function parseTime(t: any): { h: number; m: number } {
   const str = typeof t === "string" ? t : "08:00";
@@ -39,38 +40,20 @@ interface TimePickerProps {
 
 function TimePicker({ value, onChange, hours }: TimePickerProps) {
   const { h, m } = parseTime(value);
-  const [minuteInput, setMinuteInput] = useState(String(m).padStart(2, "0"));
+  // Snap stored minute to nearest valid option
+  const snappedM = MINUTES.reduce((prev, curr) =>
+    Math.abs(curr - m) < Math.abs(prev - m) ? curr : prev,
+  );
+  const activeM = h === 22 ? 0 : snappedM;
 
-  // Sync minuteInput when the value prop changes from outside (e.g. hour change)
-  useEffect(() => {
-    setMinuteInput(String(m).padStart(2, "0"));
-  }, [m]);
+  const handleHour = (newH: number) =>
+    onChange(formatTime(newH, newH === 22 ? 0 : activeM));
 
-  const handleHour = (newH: number) => {
-    const clampedM = newH === 22 ? 0 : m;
-    onChange(formatTime(newH, clampedM));
-  };
-
-  const handleMinuteChange = (raw: string) => {
-    // Allow only digits, max 2 chars
-    const digits = raw.replace(/\D/g, "").slice(0, 2);
-    setMinuteInput(digits);
-    const num = parseInt(digits, 10);
-    if (!isNaN(num) && num >= 0 && num <= 59) {
-      onChange(formatTime(h, num));
-    }
-  };
-
-  const handleMinuteBlur = () => {
-    const num = parseInt(minuteInput, 10);
-    const safe = isNaN(num) ? 0 : Math.max(0, Math.min(59, num));
-    setMinuteInput(String(safe).padStart(2, "0"));
-    onChange(formatTime(h, safe));
-  };
+  const handleMinute = (newM: number) => onChange(formatTime(h, newM));
 
   return (
     <div className="flex items-center gap-1">
-      {/* Heure — liste 8 à 22 */}
+      {/* Heure — 08 à 22 */}
       <select
         value={h}
         onChange={(e) => handleHour(Number(e.target.value))}
@@ -85,19 +68,19 @@ function TimePicker({ value, onChange, hours }: TimePickerProps) {
 
       <span className="text-[11px] font-black text-smart-teal/40">:</span>
 
-      {/* Minutes — saisie libre en texte */}
-      <input
-        type="text"
-        inputMode="numeric"
-        maxLength={2}
-        placeholder="00"
+      {/* Minutes — 00 / 15 / 30 / 45 */}
+      <select
+        value={activeM}
         disabled={h === 22}
-        value={minuteInput}
-        onChange={(e) => handleMinuteChange(e.target.value)}
-        onBlur={handleMinuteBlur}
-        onFocus={(e) => e.target.select()}
-        className="w-[48px] px-2 py-2 bg-smart-sage/10 border-none rounded-xl text-[11px] font-black text-smart-teal outline-none focus:ring-2 focus:ring-smart-teal/20 text-center disabled:opacity-40"
-      />
+        onChange={(e) => handleMinute(Number(e.target.value))}
+        className="w-[58px] px-2 py-2 bg-smart-sage/10 border-none rounded-xl text-[11px] font-black text-smart-teal outline-none focus:ring-2 focus:ring-smart-teal/20 cursor-pointer appearance-none text-center disabled:opacity-40"
+      >
+        {(h === 22 ? [0] : MINUTES).map((min) => (
+          <option key={min} value={min}>
+            {String(min).padStart(2, "0")}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

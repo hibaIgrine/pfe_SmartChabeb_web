@@ -892,36 +892,82 @@ export default function ClubCreationRequestsPage() {
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                     Heure début
                   </label>
-                  <input
-                    type="time"
-                    value={form.heure_debut_souhaitee}
-                    onChange={(e) => {
-                      setForm((prev) => ({
-                        ...prev,
-                        heure_debut_souhaitee: e.target.value,
-                      }));
-                      setFieldErrors((prev) => ({ ...prev, heure: "" }));
-                    }}
-                    className={`w-full rounded-2xl border bg-white px-4 py-3 text-sm font-semibold outline-none ${fieldErrors.heure ? "border-red-300 ring-2 ring-red-100" : "border-gray-200"}`}
-                  />
+                  <div className={`flex items-center gap-1 w-full rounded-2xl border bg-white px-4 py-2.5 ${fieldErrors.heure ? "border-red-300 ring-2 ring-red-100" : "border-gray-200"}`}>
+                    <select
+                      value={(form.heure_debut_souhaitee || "08:00").split(":")[0]}
+                      onChange={(e) => {
+                        const m = (form.heure_debut_souhaitee || "08:00").split(":")[1] || "00";
+                        setForm((prev) => ({ ...prev, heure_debut_souhaitee: `${e.target.value}:${m}` }));
+                        setFieldErrors((prev) => ({ ...prev, heure: "" }));
+                      }}
+                      className="outline-none bg-transparent text-sm font-semibold text-gray-800 cursor-pointer"
+                    >
+                      {Array.from({ length: 14 }, (_, i) => 8 + i).map((hr) => (
+                        <option key={hr} value={String(hr).padStart(2, "0")}>
+                          {String(hr).padStart(2, "0")}h
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-gray-400 font-bold px-0.5">:</span>
+                    <select
+                      value={(form.heure_debut_souhaitee || "08:00").split(":")[1] || "00"}
+                      onChange={(e) => {
+                        const h = (form.heure_debut_souhaitee || "08:00").split(":")[0] || "08";
+                        setForm((prev) => ({ ...prev, heure_debut_souhaitee: `${h}:${e.target.value}` }));
+                        setFieldErrors((prev) => ({ ...prev, heure: "" }));
+                      }}
+                      className="outline-none bg-transparent text-sm font-semibold text-gray-800 cursor-pointer w-14"
+                    >
+                      {Array.from({ length: 60 }, (_, i) => i).map((min) => (
+                        <option key={min} value={String(min).padStart(2, "0")}>
+                          {String(min).padStart(2, "0")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                     Heure fin
                   </label>
-                  <input
-                    type="time"
-                    value={form.heure_fin_souhaitee}
-                    onChange={(e) => {
-                      setForm((prev) => ({
-                        ...prev,
-                        heure_fin_souhaitee: e.target.value,
-                      }));
-                      setFieldErrors((prev) => ({ ...prev, heure: "" }));
-                    }}
-                    className={`w-full rounded-2xl border bg-white px-4 py-3 text-sm font-semibold outline-none ${fieldErrors.heure ? "border-red-300 ring-2 ring-red-100" : "border-gray-200"}`}
-                  />
+                  <div className={`flex items-center gap-1 w-full rounded-2xl border bg-white px-4 py-2.5 ${fieldErrors.heure ? "border-red-300 ring-2 ring-red-100" : "border-gray-200"}`}>
+                    <select
+                      value={(form.heure_fin_souhaitee || "10:00").split(":")[0]}
+                      onChange={(e) => {
+                        const newH = e.target.value;
+                        const m = newH === "22"
+                          ? "00"
+                          : (form.heure_fin_souhaitee || "10:00").split(":")[1] || "00";
+                        setForm((prev) => ({ ...prev, heure_fin_souhaitee: `${newH}:${m}` }));
+                        setFieldErrors((prev) => ({ ...prev, heure: "" }));
+                      }}
+                      className="outline-none bg-transparent text-sm font-semibold text-gray-800 cursor-pointer"
+                    >
+                      {Array.from({ length: 15 }, (_, i) => 8 + i).map((hr) => (
+                        <option key={hr} value={String(hr).padStart(2, "0")}>
+                          {String(hr).padStart(2, "0")}h
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-gray-400 font-bold px-0.5">:</span>
+                    <select
+                      value={(form.heure_fin_souhaitee || "10:00").split(":")[1] || "00"}
+                      disabled={(form.heure_fin_souhaitee || "10:00").split(":")[0] === "22"}
+                      onChange={(e) => {
+                        const h = (form.heure_fin_souhaitee || "10:00").split(":")[0] || "10";
+                        setForm((prev) => ({ ...prev, heure_fin_souhaitee: `${h}:${e.target.value}` }));
+                        setFieldErrors((prev) => ({ ...prev, heure: "" }));
+                      }}
+                      className="outline-none bg-transparent text-sm font-semibold text-gray-800 cursor-pointer w-14 disabled:opacity-40"
+                    >
+                      {Array.from({ length: 60 }, (_, i) => i).map((min) => (
+                        <option key={min} value={String(min).padStart(2, "0")}>
+                          {String(min).padStart(2, "0")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
