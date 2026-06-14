@@ -1,3 +1,12 @@
+/**
+ * ReactivateCentreModal.tsx — Modal de réactivation d'un centre inactif.
+ *
+ * RÔLE :
+ *   Popup de confirmation pour remettre un centre INACTIF → ACTIF.
+ *   Symétrique de DeleteCentreModal.
+ *
+ * API : PATCH /centres/:id/reactivate
+ */
 import { X, RefreshCw, ShieldCheck } from "lucide-react";
 
 export const ReactivateCentreModal = ({

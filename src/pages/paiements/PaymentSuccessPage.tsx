@@ -1,3 +1,20 @@
+/**
+ * PaymentSuccessPage.tsx — Page de confirmation de paiement Stripe.
+ *
+ * RÔLE :
+ *   Page de retour après une session de paiement Stripe réussie.
+ *   Stripe redirige vers cette URL après la complétion du checkout.
+ *
+ * FLUX :
+ *   1. Stripe redirige vers /payment-success?session_id=<stripe_session_id>
+ *   2. Un timer de 2s simule le "traitement" (animation spinner)
+ *   3. isProcessing = false → affiche le message de succès avec CheckCircle
+ *   4. L'utilisateur peut naviguer vers ses réservations ou l'historique
+ *
+ * PAGE PUBLIQUE :
+ *   Accessible sans Layout (pas de sidebar/topbar) car Stripe redirige sur cette URL
+ *   directement depuis son domaine.
+ */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle, CreditCard, ArrowRight } from "lucide-react";

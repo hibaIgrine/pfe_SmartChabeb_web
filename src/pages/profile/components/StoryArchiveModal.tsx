@@ -1,3 +1,17 @@
+/**
+ * StoryArchiveModal.tsx — Modal d'archive des stories expirées.
+ *
+ * RÔLE :
+ *   Modale accessible depuis MyProfilePage permettant de consulter les stories
+ *   que l'utilisateur a publiées dans les dernières 24h (et au-delà si archivées).
+ *
+ * FONCTIONNALITÉS :
+ *   - Liste des stories avec miniature (image/vidéo) + date de publication
+ *   - Icône type: Image (ImageIcon) ou Vidéo (Film)
+ *   - Affichage du nombre de vues (Eye icon)
+ *   - Bouton Réessayer en cas d'erreur de chargement
+ *   - Spinner pendant le chargement
+ */
 import { Calendar, Eye, Film, Image as ImageIcon, X } from "lucide-react";
 import { type Story } from "../../../api/stories.api";
 

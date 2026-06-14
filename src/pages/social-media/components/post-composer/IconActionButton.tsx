@@ -1,3 +1,17 @@
+/**
+ * IconActionButton.tsx — Bouton icône réutilisable dans PostComposer.
+ *
+ * RÔLE :
+ *   Petit bouton avec icône + label utilisé pour les actions du compositeur :
+ *   Ajouter une image, une vidéo, un fichier, etc.
+ *
+ * PROPS :
+ *   label  — Texte affiché sous l'icône
+ *   icon   — Composant icône React (Lucide)
+ *   color  — Couleur du texte (classe Tailwind)
+ *   bg     — Couleur de fond (classe Tailwind)
+ *   onClick— Callback d'action
+ */
 import type { ReactNode } from "react";
 
 type IconActionButtonProps = {

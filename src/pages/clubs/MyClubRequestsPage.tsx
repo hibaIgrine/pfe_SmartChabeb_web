@@ -1,3 +1,19 @@
+/**
+ * MyClubRequestsPage.tsx — Page de suivi des demandes d'inscription envoyées par l'adhérent.
+ *
+ * RÔLE :
+ *   Vue adhérent listant toutes les demandes d'inscription aux clubs.
+ *   Accessible via /adherent/my-requests.
+ *
+ * FONCTIONNALITÉS :
+ *   - Liste des demandes avec statut: EN_ATTENTE, ACCEPTE, REFUSE, LISTE_ATTENTE
+ *   - Badges colorés par statut
+ *   - Date de demande et nom du club
+ *   - Lien vers les détails du club (Link → /adherent/clubs/:id)
+ *   - Filtre par statut via useMemo
+ *
+ * ACCÈS : ADHERENT uniquement
+ */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {

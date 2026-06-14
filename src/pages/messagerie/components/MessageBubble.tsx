@@ -1,3 +1,20 @@
+/**
+ * MessageBubble.tsx — Bulle de message individuel dans la conversation.
+ *
+ * RÔLE :
+ *   Rendu visuel d'un message : texte, image, fichier, audio.
+ *   Affiche les métadonnées (heure, nom expéditeur, lu/non-lu, épinglé).
+ *
+ * FONCTIONNALITÉS :
+ *   - Alignement gauche (autres) / droite (moi) selon isMine
+ *   - Types de messages: TEXT, IMAGE, FILE, AUDIO
+ *   - Menu contextuel (⋮) : épingler, modifier, supprimer, imprimer
+ *   - Badge "épinglé" (📌) pour les messages pinnés
+ *   - Double coche bleue (✓✓) pour les messages lus
+ *   - Mode édition inline avec textarea + confirm/cancel
+ *   - Téléchargement des fichiers/images via <a download>
+ *   - Lecteur audio HTML5 natif pour les messages vocaux
+ */
 import { useEffect, useState } from "react";
 import {
   Check,

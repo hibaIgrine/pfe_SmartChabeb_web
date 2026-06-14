@@ -1,3 +1,15 @@
+/**
+ * ClubStats.tsx — Cartes KPI résumant les statistiques des clubs.
+ *
+ * RÔLE :
+ *   Bande de 3 indicateurs affichée en haut de la page des clubs (admin/centre).
+ *
+ * MÉTRIQUES :
+ *   Total clubs    — Nombre total de clubs (LayoutGrid)
+ *   Total membres  — Somme des membres actifs de tous les clubs (Users2)
+ *   Couverture     — Nombre de salles / espaces couverts (Building2)
+ *                    Masquable via hideCoverageStat prop
+ */
 import { LayoutGrid, Users2, Building2 } from "lucide-react";
 
 interface ClubStatsProps {

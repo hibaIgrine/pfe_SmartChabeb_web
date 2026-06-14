@@ -1,3 +1,20 @@
+/**
+ * MyClubLandingPage.tsx — Page d'atterrissage du RESPONSABLE_CLUB.
+ *
+ * RÔLE :
+ *   Redirige automatiquement le RESPONSABLE_CLUB vers le détail de son premier club.
+ *   Accessible via /mon-club (ROUTES.club.myClubLanding).
+ *
+ * LOGIQUE :
+ *   GET /presences/my-clubs → liste des clubs gérés par l'utilisateur courant
+ *   Si clubs.length > 0 → navigate('/my-clubs/:firstClubId')
+ *   Si vide → affiche un message "Aucun club géré"
+ *   Si erreur → affiche AlertCircle avec message d'erreur
+ *
+ * NOTE :
+ *   Cette page ne s'affiche jamais visuellement (redirecton immédiate).
+ *   Le Loader2 est visible ~200ms max.
+ */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertCircle, Loader2 } from "lucide-react";

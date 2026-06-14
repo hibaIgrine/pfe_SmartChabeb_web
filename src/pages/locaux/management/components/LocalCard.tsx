@@ -1,3 +1,17 @@
+/**
+ * LocalCard.tsx — Carte d'affichage d'un local/salle dans la liste des locaux.
+ *
+ * RÔLE :
+ *   Présente les informations d'un local avec actions de gestion.
+ *
+ * INFORMATIONS :
+ *   Nom, type (salle, terrain, gymnase...), capacité (Users), tarif horaire (DollarSign),
+ *   localisation (MapPin), équipements disponibles (Monitor, Theater...)
+ *
+ * ACTIONS :
+ *   Edit3  → Modifier le local (EditLocalModal)
+ *   Trash2 → Supprimer le local (DeleteLocalModal)
+ */
 import {
   Users,
   MapPin,

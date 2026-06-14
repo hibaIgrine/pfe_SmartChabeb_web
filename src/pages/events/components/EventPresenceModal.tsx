@@ -1,9 +1,24 @@
+/**
+ * EventPresenceModal.tsx — Modale de validation de présence à un événement.
+ *
+ * RÔLE :
+ *   Affiche la liste des participants confirmés et permet au responsable
+ *   de marquer individuellement les présences après l'événement.
+ *
+ * COMPORTEMENT :
+ *   • Disponible uniquement si l'événement est terminé (eventEndTime passée)
+ *   • Coche/décoche chaque participant (PRESENT / ABSENT)
+ *   • Sauvegarde en batch via API
+ *
+ * API : PATCH /events/:id/presences
+ */
 import { Loader2, X } from "lucide-react";
 import type { EventParticipant } from "../types";
 
 type Props = {
   isOpen: boolean;
   eventName: string;
+  eventStartTime: string;
   eventEndTime: string;
   isLoading: boolean;
   isUpdating: boolean;
@@ -22,6 +37,7 @@ const formatDateTime = (value?: string) => {
 export default function EventPresenceModal({
   isOpen,
   eventName,
+  eventStartTime,
   eventEndTime,
   isLoading,
   isUpdating,
@@ -31,7 +47,11 @@ export default function EventPresenceModal({
 }: Props) {
   if (!isOpen) return null;
 
-  const isEventOver = eventEndTime ? new Date(eventEndTime) < new Date() : false;
+  const now = new Date();
+  const start = eventStartTime ? new Date(eventStartTime) : null;
+  const end = eventEndTime ? new Date(eventEndTime) : null;
+  const isEventOngoing = start && end && now >= start && now <= end;
+  const isEventOver = end ? now > end : false;
 
   const confirmed = participants.filter((p) => p.status === "CONFIRME");
   const present = confirmed.filter((p) => p.checkin);
@@ -57,11 +77,11 @@ export default function EventPresenceModal({
         <p className="text-xs text-gray-500">{participant.user.email}</p>
       </div>
       <button
-        disabled={isUpdating || isEventOver}
-        onClick={() => !isEventOver && onToggleCheckin(participant.id, !isPresentList)}
-        title={isEventOver ? "L'événement est terminé" : undefined}
+        disabled={isUpdating || !isEventOngoing}
+        onClick={() => isEventOngoing && onToggleCheckin(participant.id, !isPresentList)}
+        title={!isEventOngoing ? (isEventOver ? "L'événement est terminé" : "L'événement n'a pas encore commencé") : undefined}
         className={`px-3 py-2 rounded-xl text-[11px] font-black transition ${
-          isEventOver
+          !isEventOngoing
             ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60"
             : isPresentList
               ? "bg-[#FDE5E1] text-[#B23A2B] border border-[#E98A7D]/40 disabled:opacity-60"
@@ -94,10 +114,12 @@ export default function EventPresenceModal({
           </button>
         </div>
 
-        {isEventOver && (
+        {!isEventOngoing && (
           <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
             <p className="text-xs font-black uppercase tracking-wider text-gray-400 text-center">
-              Événement terminé — modification des présences désactivée
+              {isEventOver
+                ? "Événement terminé — enregistrement des présences désactivé"
+                : "Événement pas encore commencé — enregistrement des présences désactivé"}
             </p>
           </div>
         )}

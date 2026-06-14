@@ -1,3 +1,17 @@
+/**
+ * RoleModals.tsx — Modales de création, modification et suppression d'un grade.
+ *
+ * RÔLE :
+ *   Composant modal multi-mode pour la gestion des grades de club.
+ *
+ * MODES (prop `type`) :
+ *   'create' — Formulaire de création d'un nouveau grade
+ *   'edit'   — Formulaire pré-rempli de modification
+ *   'delete' — Popup de confirmation de suppression
+ *
+ * API :
+ *   POST /roles (create) | PATCH /roles/:id (edit) | DELETE /roles/:id (delete)
+ */
 import { X, ShieldAlert, Save } from "lucide-react";
 import { useState, useEffect } from "react";
 import api from "../../../../api/axios";

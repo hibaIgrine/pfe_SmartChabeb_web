@@ -1,3 +1,24 @@
+/**
+ * ClubTasksPage.tsx — Gestion des tâches d'un club (vue responsable).
+ *
+ * RÔLE :
+ *   Interface Kanban/liste pour gérer les tâches assignées aux membres du staff.
+ *   Accessible via /my-clubs/:clubId/tasks.
+ *
+ * FONCTIONNALITÉS :
+ *   - Création de tâches (titre, description, date limite, assigné à, priorité)
+ *   - Modification et suppression de tâches
+ *   - Changement de statut : EN_COURS → TERMINEE → VALIDEE / REFUSEE
+ *   - Upload de preuves de réalisation (fichier/photo via uploads.api.ts)
+ *   - Commentaires sur les tâches (comments.api.ts)
+ *   - Filtres : par statut, par membre assigné, par priorité
+ *   - Deep link : ?taskId=<id> → ouvre directement une tâche (depuis NotificationBell)
+ *
+ * STATUTS DE TÂCHE :
+ *   EN_ATTENTE → EN_COURS → TERMINEE → VALIDEE (coach valide) / REFUSEE (coach refuse)
+ *
+ * ACCÈS : ADMIN + RESPONSABLE_CLUB
+ */
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import api from "../../api/axios";

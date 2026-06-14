@@ -1,3 +1,15 @@
+/**
+ * DeleteConfirmModal.tsx — Modal de confirmation de suppression/désactivation d'un club.
+ *
+ * RÔLE :
+ *   Popup de confirmation (double-clic protection) avant une action destructive.
+ *   Affiche le nom du club et demande confirmation explicite.
+ *
+ * PROPS :
+ *   club      — Club concerné (affichage du nom)
+ *   onClose() — Ferme la modal sans action
+ *   onConfirm()— Exécute l'action destructive (désactiver ou supprimer)
+ */
 import { Power, X, AlertTriangle } from "lucide-react";
 
 interface DeleteConfirmModalProps {

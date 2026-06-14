@@ -1,3 +1,18 @@
+/**
+ * AdherentMyReservationsPage.tsx — Mes réservations de locaux (vue adhérent).
+ *
+ * RÔLE :
+ *   Historique des demandes de réservation soumises par l'adhérent connecté.
+ *   Accessible via /adherent-my-reservations.
+ *
+ * CONTENU :
+ *   - Liste des réservations avec statut : EN_ATTENTE / APPROUVEE / REFUSEE / PAYEE
+ *   - Local réservé, date, objet, prix
+ *   - Bouton de paiement Stripe si statut APPROUVEE (lien de paiement disponible)
+ *   - Option d'annulation si EN_ATTENTE
+ *
+ * ACCÈS : ADMIN + ADHERENT
+ */
 import { useEffect, useState } from "react";
 import {
   XCircle,

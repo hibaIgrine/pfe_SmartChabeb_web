@@ -1,3 +1,11 @@
+/**
+ * StaffOverviewCards.tsx — Cartes KPI de la page gestion du staff.
+ *
+ * RÔLE :
+ *   2 cartes métriques en haut de ClubStaffPage :
+ *   • Nombre de membres du personnel (personnelCount)
+ *   • Nombre total de membres du club (totalMembers)
+ */
 type Props = {
   personnelCount: number;
   totalMembers: number;

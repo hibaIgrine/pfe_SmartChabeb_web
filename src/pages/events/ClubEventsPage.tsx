@@ -1,3 +1,18 @@
+/**
+ * ClubEventsPage.tsx — Gestion des événements du club (vue responsable de club).
+ *
+ * RÔLE :
+ *   Interface de gestion des événements spécifique au RESPONSABLE_CLUB.
+ *   Accessible via /club-events-management.
+ *
+ * FONCTIONNALITÉS :
+ *   - Même fonctionnalités que EventsPage mais limitées aux événements du club
+ *   - Création de nouvelles demandes d'événement (soumises au centre pour validation)
+ *   - Suivi du statut : EN_ATTENTE → APPROUVE / REFUSE
+ *   - Navigation vers EventManagementDetailPage pour le détail
+ *
+ * ACCÈS : RESPONSABLE_CLUB uniquement
+ */
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
@@ -331,6 +346,7 @@ export default function ClubEventsPage() {
       <EventPresenceModal
         isOpen={Boolean(presenceEvent)}
         eventName={presenceEvent?.nom ?? ""}
+        eventStartTime={presenceEvent?.start_time ?? ""}
         eventEndTime={presenceEvent?.end_time ?? ""}
         isLoading={isPresenceLoading}
         isUpdating={isPresenceUpdating}

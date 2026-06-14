@@ -1,3 +1,13 @@
+/**
+ * ConversationFilters.tsx — Barre de filtres au-dessus de la liste des conversations.
+ *
+ * RÔLE :
+ *   4 boutons radio pour filtrer la liste des conversations :
+ *   • Tous (MessageCircle)
+ *   • Non lus (CheckCheck) — conversations avec unread_count > 0
+ *   • Groupes (Users) — conversations de type GROUP
+ *   • Archivés (Archive) — conversations archivées par l'utilisateur
+ */
 import { Archive, CheckCheck, MessageCircle, Users } from "lucide-react";
 import type { ConversationListFilterMode } from "../conversationFilters";
 

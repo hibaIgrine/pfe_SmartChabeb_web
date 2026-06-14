@@ -1,9 +1,29 @@
+/**
+ * EventRequestsPage.tsx — Demandes d'inscription aux événements (vue centre).
+ *
+ * RÔLE :
+ *   Liste des demandes d'inscription en attente pour les événements du centre.
+ *   Accessible via /centre/events-requests.
+ *
+ * PROPS :
+ *   clubIds? — Filtre optionnel sur un sous-ensemble de clubs du centre
+ *
+ * FONCTIONNALITÉS :
+ *   - Approuver ou refuser des demandes d'inscription individuelles
+ *   - Actions en masse (approuver tout / refuser tout)
+ *   - Vue par événement avec liste des candidats
+ *
+ * ACCÈS : RESPONSABLE_CENTRE uniquement
+ */
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import { ROUTES } from "../../constants/routes";
 import type { EventItem, EventParticipant } from "./types";
 import { formatDateOnly } from "./utils";
 
 export default function EventRequestsPage({ clubIds }: { clubIds?: string[] }) {
+  const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const headers = useMemo(
     () => ({ Authorization: `Bearer ${token}` }),
@@ -141,6 +161,26 @@ export default function EventRequestsPage({ clubIds }: { clubIds?: string[] }) {
           className="px-4 py-2 rounded-xl bg-[#436D75] text-white text-xs font-black"
         >
           Actualiser
+        </button>
+      </div>
+
+      <div className="flex items-center gap-1 p-1.5 bg-gray-100 rounded-2xl w-fit">
+        <button
+          className="px-4 py-2 rounded-xl text-xs font-black bg-white text-smart-teal shadow-sm"
+        >
+          Demandes
+        </button>
+        <button
+          onClick={() => navigate(ROUTES.centre.eventParticipants)}
+          className="px-4 py-2 rounded-xl text-xs font-black transition text-gray-500 hover:text-gray-700 hover:bg-white/70"
+        >
+          Participants
+        </button>
+        <button
+          onClick={() => navigate(ROUTES.centre.eventWaitingList)}
+          className="px-4 py-2 rounded-xl text-xs font-black transition text-gray-500 hover:text-gray-700 hover:bg-white/70"
+        >
+          Liste d'attente
         </button>
       </div>
 

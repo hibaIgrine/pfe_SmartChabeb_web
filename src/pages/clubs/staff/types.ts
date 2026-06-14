@@ -1,3 +1,12 @@
+/**
+ * types.ts — Types TypeScript locaux du module staff de club.
+ *
+ * TYPES :
+ *   NotificationState    — Toast de notification { msg, type: 'success'|'error' } | null
+ *   ClubRoleItem         — Rôle personnalisé du club { id, nom, description, is_active, staff[] }
+ *   ClubStaffPageState   — État complet de la page ClubStaffPage
+ *                          (club, search, loading, error, notification, modals ouverts)
+ */
 export type NotificationState = {
   msg: string;
   type: "success" | "error";

@@ -1,3 +1,15 @@
+/**
+ * CentreEventsStatsPage.tsx — Statistiques des événements (vue responsable de centre).
+ *
+ * RÔLE :
+ *   Version centre des statistiques d'événements, filtrée sur le périmètre du centre.
+ *   Accessible via /centre/events-stats.
+ *
+ * Identique à AdminEventsStatsPage mais avec les données du centre courant uniquement.
+ * Utilise EventsDashboardStats en passant centreId en filtre.
+ *
+ * ACCÈS : RESPONSABLE_CENTRE uniquement
+ */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";

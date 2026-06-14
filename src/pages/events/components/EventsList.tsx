@@ -1,3 +1,19 @@
+/**
+ * EventsList.tsx — Liste des événements avec actions de gestion.
+ *
+ * RÔLE :
+ *   Tableau/liste des événements dans EventManagementDetailPage.
+ *
+ * COLONNES :
+ *   Nom, date, heure, lieu, nombre de participants, statut
+ *
+ * ACTIONS PAR LIGNE :
+ *   Eye           → Voir détails (EventDetailsModal)
+ *   Pencil        → Modifier (EventFormModal)
+ *   ClipboardCheck→ Gérer présences (EventPresenceModal)
+ *   Ban           → Annuler l'événement
+ *   CalendarDays  → Vue calendrier
+ */
 import {
   Ban,
   CalendarDays,

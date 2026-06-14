@@ -1,3 +1,17 @@
+/**
+ * StoryUploadModal.tsx — Modale de création d'une nouvelle story.
+ *
+ * RÔLE :
+ *   Interface pour publier une story (image ou vidéo éphémère 24h).
+ *   Ouverte depuis le bouton "+" dans StoryReel.
+ *
+ * FONCTIONNALITÉS :
+ *   - Upload fichier (image/vidéo) via FileReader → dataUrl
+ *   - Saisie de texte accompagnant la story
+ *   - EmojiPicker (Theme.LIGHT) pour enrichir le texte
+ *   - createStory({ media: MediaItem[], texte }) → POST /stories
+ *   - onStoryCreated() → rafraîchit StoryReel après publication
+ */
 import { useState, useRef } from "react";
 import EmojiPicker, { Theme, type EmojiClickData } from "emoji-picker-react";
 import { Smile, X, Upload } from "lucide-react";

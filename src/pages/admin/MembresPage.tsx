@@ -1,3 +1,28 @@
+/**
+ * MembresPage.tsx — Gestion de la communauté des membres (Admin + Responsable Centre).
+ *
+ * RÔLE :
+ *   Page partagée entre ADMIN et RESPONSABLE_CENTRE pour gérer les utilisateurs.
+ *   L'ADMIN voit tous les membres de la plateforme, le RESPONSABLE_CENTRE ne voit
+ *   que les membres affiliés à son centre.
+ *
+ * FONCTIONNALITÉS :
+ *   - Recherche par nom/prénom/email
+ *   - Filtres par rôle (ADMIN/CENTRE/CLUB/ADHERENT), statut (actif/banni), tranche d'âge
+ *   - Statistiques agrégées (UserStats)
+ *   - Actions sur chaque UserCard :
+ *     * BanModal      — Suspendre/débannir un compte
+ *     * RoleModal     — Changer le rôle d'un utilisateur
+ *     * AssignCentreModal — Affecter un utilisateur à un centre
+ *     * AssignClubModal   — Inscrire un utilisateur dans un club
+ *     * DeleteUserModal   — Supprimer définitivement un compte
+ *
+ * TRANCHES D'ÂGE :
+ *   Enfants < 12 | Ados 12-18 | Jeunes 18-30 | Adultes 30+
+ *   Calculées depuis date_naissance en front-end (useMemo)
+ *
+ * ACCÈS : ADMIN + RESPONSABLE_CENTRE
+ */
 import { useEffect, useState, useMemo } from "react";
 import api from "../../api/axios";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";

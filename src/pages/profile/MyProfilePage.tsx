@@ -1,3 +1,26 @@
+/**
+ * MyProfilePage.tsx — Page de profil personnel de l'utilisateur connecté.
+ *
+ * RÔLE :
+ *   Affiche et permet de modifier le profil de l'utilisateur courant.
+ *   Accessible à tous les rôles via /mon-profil.
+ *
+ * SECTIONS :
+ *   - Avatar : photo de profil avec upload via api.patch("/users/me/photo")
+ *   - Informations personnelles : FormUpdateInfo (nom, prénom, bio, lieu, établissement, genre, naissance)
+ *   - Changement de mot de passe : FormUpdateMdp
+ *   - Publications de l'utilisateur : ses posts du fil d'actualité
+ *   - Stories archivées : StoryArchiveModal (toutes ses stories y compris expirées)
+ *
+ * STORIES :
+ *   Bouton "+" sur l'avatar ouvre StoryUploadModal pour créer une story
+ *   Bouton "Archive" ouvre StoryArchiveModal
+ *
+ * NAVIGATION :
+ *   Lien vers ProfileGamificationPage (/profile) pour voir le classement
+ *
+ * ACCÈS : Tous les rôles authentifiés (ADMIN_OR_ANY_MEMBER)
+ */
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {

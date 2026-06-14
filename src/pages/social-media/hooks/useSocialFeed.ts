@@ -1,3 +1,33 @@
+/**
+ * useSocialFeed.ts — Hook custom centralisant toute la logique du fil d'actualité.
+ *
+ * RÔLE :
+ *   Encapsule l'ensemble des opérations du feed social pour SocialFeedPage.
+ *   Séparation propre entre la logique métier (hook) et le rendu (composant).
+ *
+ * ÉTAT GÉRÉ :
+ *   posts[]          — Publications chargées (paginées)
+ *   hasMore          — Y a-t-il d'autres pages ?
+ *   isLoading        — Chargement initial
+ *   isLoadingMore    — Chargement de la page suivante (infinite scroll)
+ *   hiddenUsers[]    — Utilisateurs masqués (filtrés du feed en front-end)
+ *   mentionUsers[]   — Utilisateurs pour l'autocomplétion @mention
+ *   currentUserId    — ID de l'utilisateur connecté (pour les actions "c'est moi")
+ *
+ * FONCTIONS EXPOSÉES :
+ *   loadMore()           — Charge la page suivante (offset += limit)
+ *   handleCreatePost()   — createPublication() + prepend au feed
+ *   handleDeletePost()   — deletePublication() + remove du feed
+ *   handleUpdatePost()   — updatePublication() + replace dans le feed
+ *   handleSharePost()    — sharePublication() + prepend
+ *   handleReaction()     — addReaction() ou removeReaction() + update optimiste
+ *   handleFavorite()     — addFavorite() ou removeFavorite() + dispatch 'social-favorites-updated'
+ *   handleHideUser()     — hideUser() + filtre les posts de cet auteur
+ *   handleUnhideUser()   — unhideUser() + rechargement du feed
+ *
+ * ÉVÉNEMENTS WINDOW DISPATCHED :
+ *   'social-favorites-updated' → pour FavoritePostsBell (rafraîchit le badge)
+ */
 import { useEffect, useMemo, useState } from "react";
 import {
   addFavorite,

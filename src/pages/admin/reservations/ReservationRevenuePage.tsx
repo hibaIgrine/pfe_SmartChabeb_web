@@ -1,3 +1,18 @@
+/**
+ * ReservationRevenuePage.tsx — Revenus des réservations (vue administrateur).
+ *
+ * RÔLE :
+ *   Tableau de bord financier des revenus générés par les réservations de locaux.
+ *   Accessible via /admin/reservation-revenues.
+ *
+ * MÉTRIQUES :
+ *   - Revenus totaux (TND) + par centre
+ *   - Nombre de réservations payées / en attente / remboursées
+ *   - Graphiques par période (semaine/mois/année) — Recharts ou similaire
+ *   - Tableau détaillé des paiements avec statut Stripe
+ *
+ * ACCÈS : ADMIN uniquement
+ */
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import api from "../../../api/axios";
 import {

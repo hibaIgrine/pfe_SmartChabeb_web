@@ -1,3 +1,35 @@
+/**
+ * AuthPage.tsx — Page d'authentification (Login + Inscription en un seul écran).
+ *
+ * RÔLE :
+ *   Porte d'entrée principale de l'application. Gère deux modes sur la même page :
+ *   isSignUp=false → formulaire de connexion (email + mot de passe)
+ *   isSignUp=true  → formulaire d'inscription (nom, prénom, email, mot de passe)
+ *
+ * CONNEXION (Login) :
+ *   POST /auth/login → { token, user }
+ *   Stocke token + user dans localStorage
+ *   Redirige vers getLandingPathForRole(user.role) (dashboard adapté au rôle)
+ *
+ * INSCRIPTION (Sign Up) :
+ *   POST /auth/register → crée le compte en attente de validation
+ *   Message de confirmation affiché (pas de redirection immédiate)
+ *
+ * GOOGLE OAUTH :
+ *   GoogleLogin (@react-oauth/google) → callback credential Google
+ *   POST /auth/google-login { credential }
+ *   Si profil incomplet → redirige vers /auth/complete-google
+ *   Sinon → stocke token/user + redirige vers landing page du rôle
+ *
+ * VALIDATION INSCRIPTION :
+ *   nom/prénom : lettres uniquement (regex /^[a-zA-ZÀ-ÿ\s'-]+$/)
+ *   Validation côté client avant envoi + gestion des erreurs serveur
+ *
+ * UX :
+ *   Toggle Eye/EyeOff sur le champ mot de passe
+ *   Notice (success/error/info) avec auto-dismiss après 5s (useRef timer)
+ *   Transition fluide entre les deux formulaires (basculement isSignUp)
+ */
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getLandingPathForRole } from "../../constants/routes";

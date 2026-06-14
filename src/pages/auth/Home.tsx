@@ -1,3 +1,21 @@
+/**
+ * Home.tsx — Page d'accueil publique (landing page de Smart Chabeb).
+ *
+ * RÔLE :
+ *   Premier écran visible par un visiteur non authentifié.
+ *   Présente la plateforme avec une illustration animée SVG et des statistiques clés.
+ *
+ * CONTENU :
+ *   - Illustration SVG animée (jeunes sportifs avec animations CSS svJump/svFloat/svSpin)
+ *   - Carte de statistiques : Maisons des jeunes, Clubs, Membres, Activités
+ *   - Deux boutons CTA :
+ *     * "Se connecter" → /auth
+ *     * "Déjà membre" → getLandingPathForRole() : redirige vers l'espace du rôle si connecté
+ *
+ * STYLE :
+ *   Layout deux colonnes (texte gauche + illustration droite) sur grand écran
+ *   Fond crème (#F7F3E9), palette teal + saumon + vert doux
+ */
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Zap, MapPin, Building2, Users } from "lucide-react";
 import { getCurrentRoleLandingPath, ROUTES } from "../../constants/routes";

@@ -1,3 +1,19 @@
+/**
+ * RecipientPanel.tsx — Panneau de création de nouvelle conversation.
+ *
+ * RÔLE :
+ *   Interface pour initier une conversation privée ou de groupe.
+ *   Apparaît dans le panneau gauche quand l'utilisateur clique "Nouveau message".
+ *
+ * PROPS :
+ *   mode              — 'private' | 'group'
+ *   onModeChange()    — Bascule entre les deux modes
+ *   searchValue       — Texte de recherche pour trouver un destinataire
+ *   groupTitle        — Nom du groupe (en mode group)
+ *   selectedUsers[]   — Utilisateurs déjà sélectionnés
+ *   availableUsers[]  — Tous les utilisateurs disponibles
+ *   onSubmit()        — Crée la conversation
+ */
 import { PlusCircle, Users } from "lucide-react";
 
 type RecipientPanelProps = {

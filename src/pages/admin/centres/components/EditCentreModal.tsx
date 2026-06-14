@@ -1,3 +1,12 @@
+/**
+ * EditCentreModal.tsx — Modale de modification d'un centre existant.
+ *
+ * RÔLE :
+ *   Formulaire pré-rempli pour modifier les données d'un centre (admin uniquement).
+ *   Mêmes champs qu'AddCentreModal mais avec données initiales du centre.
+ *
+ * API : PATCH /centres/:id
+ */
 import {
   X,
   Save,

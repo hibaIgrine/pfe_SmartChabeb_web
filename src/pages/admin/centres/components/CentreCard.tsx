@@ -1,3 +1,18 @@
+/**
+ * CentreCard.tsx — Carte d'affichage d'un centre dans la liste admin.
+ *
+ * RÔLE :
+ *   Présente les informations résumées d'un centre avec les actions admin.
+ *
+ * INFORMATIONS :
+ *   Nom, gouvernorat, nombre de clubs, nombre d'adhérents, statut (ACTIF/INACTIF)
+ *
+ * ACTIONS :
+ *   Eye      → Vue rapide (CentreQuickView)
+ *   Edit     → Modification (EditCentreModal)
+ *   Power    → Désactivation (DeleteCentreModal)
+ *   RefreshCw→ Réactivation (ReactivateCentreModal)
+ */
 import { Eye, Edit, Power, RefreshCw } from "lucide-react";
 
 export const CentreCard = ({

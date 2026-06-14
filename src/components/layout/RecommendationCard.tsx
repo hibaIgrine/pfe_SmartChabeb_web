@@ -1,3 +1,26 @@
+/**
+ * RecommendationCard.tsx — Carte de sélection d'une activité recommandée par le ML.
+ *
+ * RÔLE :
+ *   Affiche la liste des activités recommandées par le modèle ML pour une session,
+ *   et permet au coach de valider son choix final (feedback loop pour le réentraînement).
+ *
+ * PROPS :
+ *   recoId          — ID de la recommandation (recommendation_history.id)
+ *   recommendations — Tableau d'activités suggérées par le modèle [{activite}]
+ *   onChosen        — Callback appelé après validation du choix (pour rafraîchir le parent)
+ *
+ * FLUX :
+ *   1. Coach clique "Choisir cette activité"
+ *   2. chooseActivity(recoId, activite) → PATCH /recommendations/:id/choose
+ *   3. activite_choisie est persisté en BDD comme label terrain (feedback loop ML)
+ *   4. L'activité choisie passe en vert, les autres s'estompent
+ *
+ * ÉTATS VISUELS :
+ *   chosen === null         → tous les boutons "Choisir" visibles
+ *   chosen === reco.activite → bordure verte + CheckCircle2 + message "sélectionnée"
+ *   chosen !== reco.activite → opacité réduite (opacity-50)
+ */
 import { useState } from "react";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import { chooseActivity } from "../../api/recommendations";

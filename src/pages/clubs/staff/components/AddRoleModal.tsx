@@ -1,3 +1,17 @@
+/**
+ * AddRoleModal.tsx — Modale de création / modification d'un rôle de club.
+ *
+ * RÔLE :
+ *   Formulaire pour définir un rôle personnalisé dans le club
+ *   (ex: "Secrétaire", "Trésorier", "Coach adjoint").
+ *   Utilisé par ClubRolesPanel en mode création (editing=false) et modification (editing=true).
+ *
+ * CHAMPS :
+ *   roleName        — Nom du rôle
+ *   roleDescription — Description des responsabilités
+ *
+ * API : POST /clubs/:id/roles  ou  PATCH /clubs/:id/roles/:roleId
+ */
 type Props = {
   open: boolean;
   editing: boolean;

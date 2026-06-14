@@ -1,3 +1,21 @@
+/**
+ * AdherentSeancesPage.tsx — Historique des séances et feedbacks de l'adhérent.
+ *
+ * RÔLE :
+ *   Page de l'adhérent pour consulter ses présences/absences aux séances de club
+ *   et soumettre un feedback (évaluation) pour chaque séance passée.
+ *   Accessible via /mes-seances.
+ *
+ * CONTENU :
+ *   - Liste des séances du club avec statut de présence (Présent / Absent)
+ *   - Formulaire de feedback post-séance :
+ *     * Note globale (1-5 étoiles)
+ *     * Appréciation de l'activité
+ *     * Commentaire libre
+ *   - Statistiques personnelles (taux de présence, nombre de séances)
+ *
+ * ACCÈS : ADMIN + ADHERENT
+ */
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,

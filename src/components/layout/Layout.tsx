@@ -1,3 +1,46 @@
+/**
+ * Layout.tsx — Composant de mise en page principal de l'application.
+ *
+ * RÔLE :
+ *   Enveloppe toutes les pages authentifiées. Fournit :
+ *     - Sidebar de navigation adaptative selon le rôle (ADMIN / CENTRE / CLUB / ADHERENT)
+ *     - Top bar : drapeaux, logo, MessageBell, FavoritePostsBell, NotificationBell, profil
+ *     - Zone de contenu centrale scrollable (children)
+ *
+ * SIDEBAR ADAPTATIVE PAR RÔLE :
+ *   ADMIN          → Dashboard, Revenus, Centres, Membres, Événements, Rôles
+ *   RESPONSABLE_CENTRE → Centre, Locaux, Réservations, Membres, Événements, Clubs
+ *   RESPONSABLE_CLUB   → Liste clubs gérés (dynamique), Tâches, Feedbacks, Présences,
+ *                        Recommandations IA, Calendrier staff
+ *   ADHERENT           → Clubs, Mes demandes, Événements, Séances, Certificats
+ *   Tous              → Assistant IA chatbot, Fil actualité, Messagerie
+ *
+ * GESTION DE SESSION (useEffect) :
+ *   1. Chargement profil DB au montage (GET /users/me/profile)
+ *      → syncStoredUserFromProfile() met à jour localStorage si le profil a changé
+ *      → forceLogout() si compte désactivé ou 401
+ *   2. Polling toutes les 10 secondes + sur focus/visibilité
+ *      → Détecte la suspension de compte en temps réel pendant l'utilisation
+ *   3. Écoute des événements window (storage, user-updated, auth-session-invalidated)
+ *      → Synchronise l'état React si le localStorage change dans un autre onglet
+ *
+ * CLUBS DYNAMIQUES DANS LA SIDEBAR :
+ *   managedClubs — Clubs gérés par le RESPONSABLE_CLUB (GET /presences/my-clubs)
+ *   staffClubs   — Clubs où l'utilisateur est membre du staff (GET /clubs/my-staff-clubs)
+ *   staffTaskClubs — Combinaison des deux pour la section "Tâches staff"
+ *
+ * CAS SPÉCIAUX :
+ *   Page messagerie (/messagerie) : overflow:hidden sur body (hauteur 100vh exacte, pas de scroll)
+ *   Page chatbot (/chatbot)       : fond transparent, sans card blanche autour du contenu
+ *   Mobile                        : sidebar en drawer (translate-x, overlay noir à 40%)
+ *
+ * TOPBAR :
+ *   MessageBell        — Badge non-lu messagerie
+ *   Newspaper          — Lien rapide vers /fil-actualite
+ *   FavoritePostsBell  — Badge favoris publications
+ *   NotificationBell   — Notifications in-app
+ *   Profil             — Avatar + nom + rôle → lien vers /mon-profil
+ */
 import { useEffect, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import {

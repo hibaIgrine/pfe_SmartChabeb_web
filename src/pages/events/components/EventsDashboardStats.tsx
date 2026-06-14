@@ -1,3 +1,12 @@
+/**
+ * EventsDashboardStats.tsx — Cartes KPI du tableau de bord des événements.
+ *
+ * MÉTRIQUES (EventDashboardStats) :
+ *   Total événements    (Activity)  — Tous les événements du centre/club
+ *   Taux de participation (Percent) — Participants / Capacité totale
+ *   Participants uniques (Users)    — Nombre de participants distincts
+ *   Événements actifs   (Flame)     — Événements avec inscriptions ouvertes
+ */
 import { Activity, Flame, Percent, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import type { EventDashboardStats } from "../types";

@@ -1,3 +1,24 @@
+/**
+ * FavoritePostsBell.tsx — Cloche des publications favorites (bookmarks).
+ *
+ * RÔLE :
+ *   Icône Heart dans la top bar affichant le nombre de publications sauvegardées.
+ *   Ouvre un panel dropdown avec la liste des 12 dernières publications favorites.
+ *
+ * PANEL DROPDOWN (createPortal sur document.body) :
+ *   - Aperçu texte de chaque publication (82 caractères max + "...")
+ *   - Support des posts partagés : parseSharedPostContent() extrait le texte du token [[shared:]]
+ *   - Date relative (A l'instant / Il y a X min/h/j)
+ *   - Clic sur un post → navigate vers /fil-actualite?postId=<id>
+ *
+ * POLLING :
+ *   Intervalle 25 secondes pour refreshFavoritesCount()
+ *   Écoute l'événement window "social-favorites-updated" (dispatché dans PostCard)
+ *
+ * POSITIONNEMENT :
+ *   Même système de positioning dynamique que NotificationBell
+ *   (getBoundingClientRect + recalcul sur resize/scroll)
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Heart } from "lucide-react";
 import { createPortal } from "react-dom";

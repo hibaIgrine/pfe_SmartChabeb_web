@@ -1,3 +1,16 @@
+/**
+ * AssignCentreModal.tsx — Modal d'assignation d'un utilisateur à un centre.
+ *
+ * RÔLE :
+ *   Permet à l'admin d'assigner un RESPONSABLE_CENTRE à un centre spécifique.
+ *   Dropdown des centres disponibles avec recherche.
+ *
+ * COMPORTEMENT :
+ *   Si l'utilisateur a déjà un centre, il est affiché en avertissement (AlertTriangle).
+ *   L'assignation crée un lien user ↔ centre en base.
+ *
+ * API : PATCH /users/:id/assign-centre
+ */
 import { X, Building2, AlertTriangle } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 

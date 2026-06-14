@@ -1,3 +1,18 @@
+/**
+ * ClubRolesPanel.tsx — Panneau de gestion des rôles personnalisés d'un club.
+ *
+ * RÔLE :
+ *   Liste les rôles définis par le responsable (ClubRoleItem[]) et
+ *   permet de les créer, modifier, ou désactiver.
+ *
+ * PROPS :
+ *   roles[]          — Rôles actuels du club
+ *   blockedStaffRole — Rôle système (RESPONSABLE_CLUB) non modifiable
+ *   readOnly         — Désactive les boutons d'action (vue lecture seule)
+ *   onCreateRole()   — Ouvre AddRoleModal
+ *   onEditRole()     — Ouvre AddRoleModal en mode édition
+ *   onDeactivateRole()— Ouvre DeactivateRoleModal
+ */
 import { PencilLine, Power } from "lucide-react";
 import type { ClubRoleItem } from "../types";
 import { normalizeRoleKey } from "../utils";

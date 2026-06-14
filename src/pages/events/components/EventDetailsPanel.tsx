@@ -1,25 +1,21 @@
+/**
+ * EventDetailsPanel.tsx — Panneau de détails d'un événement (utilisé dans modale et page).
+ *
+ * RÔLE :
+ *   Affiche toutes les informations d'un EventDetail : infos générales,
+ *   feedbacks et étoiles, self check-in.
+ *
+ * FONCTIONNALITÉS :
+ *   - Feedback: note moyenne, saisie de la note personnelle, commentaires récents
+ *   - Self check-in si l'événement est en cours et l'adhérent est confirmé
+ */
 import { useEffect, useState } from "react";
 import { Star } from "lucide-react";
-import type {
-  EventDetail,
-  EventParticipant,
-  ParticipantStatus,
-} from "../types";
+import type { EventDetail } from "../types";
 import { formatDateOnly, toTimeHHMM } from "../utils";
 
 type Props = {
   selectedDetail: EventDetail | null;
-  canManageParticipants: boolean;
-  onUpdateParticipantStatus: (
-    eventId: string,
-    participantId: string,
-    status: ParticipantStatus,
-  ) => void;
-  onToggleCheckin: (
-    eventId: string,
-    participantId: string,
-    checkin: boolean,
-  ) => void;
   onSelfCheckin: (eventId: string) => Promise<void>;
   onSubmitFeedback: (
     eventId: string,
@@ -29,18 +25,8 @@ type Props = {
   isSubmittingFeedback: boolean;
 };
 
-const statusBadge: Record<string, string> = {
-  CONFIRME: "bg-green-100 text-green-700",
-  EN_ATTENTE: "bg-amber-100 text-amber-700",
-  REFUSE: "bg-red-100 text-red-700",
-  ANNULE: "bg-gray-100 text-gray-700",
-};
-
 export default function EventDetailsPanel({
   selectedDetail,
-  canManageParticipants,
-  onUpdateParticipantStatus,
-  onToggleCheckin,
   onSelfCheckin,
   onSubmitFeedback,
   isSubmittingFeedback,
@@ -61,8 +47,6 @@ export default function EventDetailsPanel({
   ]);
 
   const participants = selectedDetail?.participants ?? [];
-  const confirmed = participants.filter((p) => p.status === "CONFIRME");
-  const waiting = participants.filter((p) => p.status === "EN_ATTENTE");
   const feedbacks = selectedDetail?.recentFeedbacks ?? [];
   const timeline = Array.isArray(selectedDetail?.timeline)
     ? selectedDetail.timeline
@@ -109,71 +93,6 @@ export default function EventDetailsPanel({
       </div>
     );
   };
-
-  const renderParticipantRow = (participant: EventParticipant) => (
-    <div
-      key={participant.id}
-      className="p-3 rounded-xl border border-gray-100 bg-white/70 space-y-2"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <p className="font-semibold text-gray-700 text-xs">
-          {participant.user.nom} {participant.user.prenom}
-        </p>
-        <span
-          className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-            statusBadge[participant.status] ?? "bg-gray-100 text-gray-700"
-          }`}
-        >
-          {participant.status}
-        </span>
-      </div>
-
-      {canManageParticipants && (
-        <div className="flex flex-wrap gap-1">
-          {(
-            [
-              "EN_ATTENTE",
-              "CONFIRME",
-              "REFUSE",
-              "ANNULE",
-            ] as ParticipantStatus[]
-          ).map((status) => (
-            <button
-              key={status}
-              onClick={() =>
-                selectedDetail &&
-                onUpdateParticipantStatus(
-                  selectedDetail.id,
-                  participant.id,
-                  status,
-                )
-              }
-              className="px-2 py-1 text-[9px] font-black rounded-lg border border-gray-200 hover:bg-gray-100"
-            >
-              {status}
-            </button>
-          ))}
-          <button
-            onClick={() =>
-              selectedDetail &&
-              onToggleCheckin(
-                selectedDetail.id,
-                participant.id,
-                !participant.checkin,
-              )
-            }
-            className={`px-2 py-1 text-[9px] font-black rounded-lg border ${
-              participant.checkin
-                ? "border-green-300 text-green-700 bg-green-50"
-                : "border-gray-200 text-gray-700"
-            }`}
-          >
-            {participant.checkin ? "Check-in OK" : "Check-in"}
-          </button>
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <div className="bg-white rounded-[30px] border border-gray-100 shadow-sm p-5">
@@ -431,37 +350,6 @@ export default function EventDetailsPanel({
             )}
           </div>
 
-          <div className="pt-2 border-t border-gray-100">
-            <p className="text-[10px] font-bold text-gray-500 mb-3">
-              Validation des participants depuis le web.
-            </p>
-
-            <div className="space-y-2">
-              <p className="text-[10px] uppercase font-black tracking-wider text-gray-400">
-                Confirmés ({confirmed.length})
-              </p>
-              {confirmed.length === 0 ? (
-                <p className="text-xs text-gray-400">
-                  Aucun participant confirmé.
-                </p>
-              ) : (
-                confirmed.map(renderParticipantRow)
-              )}
-            </div>
-
-            <div className="space-y-2 mt-3">
-              <p className="text-[10px] uppercase font-black tracking-wider text-gray-400">
-                Liste d'attente ({waiting.length})
-              </p>
-              {waiting.length === 0 ? (
-                <p className="text-xs text-gray-400">
-                  Aucun participant en attente.
-                </p>
-              ) : (
-                waiting.map(renderParticipantRow)
-              )}
-            </div>
-          </div>
         </div>
       )}
     </div>

@@ -1,3 +1,15 @@
+/**
+ * ClubResponsablesList.tsx — Affichage des responsables d'un club.
+ *
+ * RÔLE :
+ *   Petit composant inline montrant les responsables du club :
+ *   • responsable (unique, RESPONSABLE_CLUB principal)
+ *   • responsables[] (liste, pour compatibilité multi-responsables)
+ *
+ * AFFICHAGE :
+ *   Avatar circulaire + nom et prénom pour chaque responsable.
+ *   Icône User (individuel) ou Users (liste).
+ */
 import { User, Users } from "lucide-react";
 
 interface ClubResponsablesListProps {

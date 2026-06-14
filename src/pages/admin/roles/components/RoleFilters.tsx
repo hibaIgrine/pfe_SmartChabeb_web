@@ -1,3 +1,11 @@
+/**
+ * RoleFilters.tsx — Filtres de la liste des grades/rôles.
+ *
+ * FILTRES :
+ *   search        — Recherche par nom de rôle
+ *   selectedGouv  — Filtre par gouvernorat du club associé
+ *   selectedCentre— Filtre par centre du club associé
+ */
 import { X, Search } from "lucide-react";
 
 export const RoleFilters = ({

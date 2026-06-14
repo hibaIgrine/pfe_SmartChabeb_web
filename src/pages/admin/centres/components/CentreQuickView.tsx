@@ -1,3 +1,18 @@
+/**
+ * CentreQuickView.tsx — Vue rapide latérale d'un centre (panneau glissant).
+ *
+ * RÔLE :
+ *   Panneau de détails d'un centre sans naviguer vers une autre page.
+ *   S'ouvre depuis l'icône Eye dans CentreCard.
+ *
+ * INFORMATIONS :
+ *   Infos générales (adresse, téléphone, responsable), liste des clubs,
+ *   statistiques (membres, événements), bouton édition rapide.
+ *
+ * API :
+ *   GET /centres/:id (détails)
+ *   GET /clubs?centreId=:id (clubs du centre)
+ */
 import { useEffect, useMemo, useState } from "react";
 import {
   Building2,

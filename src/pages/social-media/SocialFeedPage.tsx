@@ -1,3 +1,27 @@
+/**
+ * SocialFeedPage.tsx — Fil d'actualité du réseau social Smart Chabeb.
+ *
+ * RÔLE :
+ *   Page principale du module social. Affiche un fil de publications (posts) avec
+ *   stories en haut, recherche par hashtag/mot-clé, et compositeur de posts.
+ *
+ * COMPOSITION :
+ *   StoryReel       — Carrousel de stories éphémères (24h) en haut du fil
+ *   FeedHeader      — Barre de recherche + filtres (hashtags, visibilité)
+ *   PostComposer    — Formulaire de création de publication (texte, médias, hashtags, mentions)
+ *   FeedList        — Liste infinie de publications paginées
+ *   OriginalPostModal — Modal affichant le post original quand on clique "voir post partagé"
+ *
+ * HOOK PRINCIPAL : useSocialFeed()
+ *   Encapsule toute la logique : fetchFeed, pagination, création, réactions, favoris,
+ *   commentaires, suppression, partage, masquage, following
+ *
+ * DEEP LINK (URL Query) :
+ *   ?postId=<id> → ouvre automatiquement un post spécifique (depuis NotificationBell)
+ *   useEffect sur location.search → lit le paramètre et scroll/highlight le post
+ *
+ * ACCÈS : Tous les rôles authentifiés (ADMIN_OR_ANY_MEMBER)
+ */
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";

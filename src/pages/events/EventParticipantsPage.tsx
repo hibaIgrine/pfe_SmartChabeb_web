@@ -1,5 +1,23 @@
+/**
+ * EventParticipantsPage.tsx — Liste des participants inscrits à un événement.
+ *
+ * RÔLE :
+ *   Page dédiée à la gestion fine des participants d'un événement spécifique.
+ *   Accessible via /centre/events-participants.
+ *
+ * FONCTIONNALITÉS :
+ *   - Sélection de l'événement (liste déroulante)
+ *   - Liste paginée des participants avec statut (INSCRIT/CONFIRME/LISTE_ATTENTE)
+ *   - Bouton checkin individuel (marque CONFIRME)
+ *   - Export PDF/CSV de la liste de présence
+ *   - Statistiques rapides : total inscrits, confirmés, liste d'attente
+ *
+ * ACCÈS : RESPONSABLE_CENTRE uniquement
+ */
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import { ROUTES } from "../../constants/routes";
 import type { EventItem, EventParticipant } from "./types";
 import { formatDateOnly } from "./utils";
 
@@ -11,6 +29,7 @@ type ParticipantsResponse = {
 };
 
 export default function EventParticipantsPage({ clubIds }: { clubIds?: string[] }) {
+  const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const headers = useMemo(
     () => ({ Authorization: `Bearer ${token}` }),
@@ -139,6 +158,26 @@ export default function EventParticipantsPage({ clubIds }: { clubIds?: string[] 
           className="px-4 py-2 rounded-xl bg-[#436D75] text-white text-xs font-black"
         >
           Actualiser
+        </button>
+      </div>
+
+      <div className="flex items-center gap-1 p-1.5 bg-gray-100 rounded-2xl w-fit">
+        <button
+          onClick={() => navigate(ROUTES.centre.eventRequests)}
+          className="px-4 py-2 rounded-xl text-xs font-black transition text-gray-500 hover:text-gray-700 hover:bg-white/70"
+        >
+          Demandes
+        </button>
+        <button
+          className="px-4 py-2 rounded-xl text-xs font-black bg-white text-smart-teal shadow-sm"
+        >
+          Participants
+        </button>
+        <button
+          onClick={() => navigate(ROUTES.centre.eventWaitingList)}
+          className="px-4 py-2 rounded-xl text-xs font-black transition text-gray-500 hover:text-gray-700 hover:bg-white/70"
+        >
+          Liste d'attente
         </button>
       </div>
 

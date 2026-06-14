@@ -1,3 +1,20 @@
+/**
+ * ClubCreationRequestsPage.tsx — Demandes de création de nouveaux clubs.
+ *
+ * RÔLE :
+ *   Page permettant aux adhérents de soumettre une demande de création de club,
+ *   et aux responsables de centre de les valider ou refuser.
+ *
+ * DEUX MODES SELON LE RÔLE :
+ *   ADHERENT         → Formulaire de création + liste de ses propres demandes
+ *   RESPONSABLE_CENTRE → Liste de toutes les demandes de sa circonscription +
+ *                        boutons Approuver / Refuser
+ *
+ * STATUTS DE DEMANDE :
+ *   EN_ATTENTE → APPROUVEE (club créé automatiquement) / REFUSEE
+ *
+ * ACCÈS : ADHERENT + RESPONSABLE_CENTRE (ADHERENT_OR_CENTRE dans App.tsx)
+ */
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarRange,

@@ -1,3 +1,23 @@
+/**
+ * EventsManagerPage.tsx — Gestion des participants à un événement.
+ *
+ * RÔLE :
+ *   Interface de suivi des inscriptions et de gestion des présences à un événement.
+ *   Accessible via /centre/events-manager et /club-events-manager.
+ *
+ * FONCTIONNALITÉS :
+ *   - Liste des participants inscrits (INSCRIT) et en liste d'attente (LISTE_ATTENTE)
+ *   - Enregistrement du checkin (CONFIRME) pour marquer la présence physique
+ *   - Transfert de la liste d'attente vers la liste principale si des places se libèrent
+ *   - Export PDF de la liste des participants
+ *
+ * RÔLE ADAPTATIF :
+ *   getStoredRole() → adapte les actions disponibles (CENTRE vs CLUB)
+ *   CENTRE : peut valider/refuser les participants de tous les clubs de son périmètre
+ *   CLUB   : ne gère que les participants de ses propres événements
+ *
+ * ACCÈS : RESPONSABLE_CENTRE (ROUTES.centre.eventsManager) + RESPONSABLE_CLUB (ROUTES.club.eventsManager)
+ */
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, MapPin, RefreshCcw, Users } from "lucide-react";
 import api from "../../api/axios";

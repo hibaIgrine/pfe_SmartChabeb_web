@@ -1,3 +1,25 @@
+/**
+ * AdherentCertificatesPage.tsx — Page des certificats de participation de l'adhérent.
+ *
+ * RÔLE :
+ *   Affiche l'historique des événements auxquels l'adhérent a participé (statut CONFIRME
+ *   + checkin) et permet de générer/télécharger les certificats de participation en SVG.
+ *
+ * DONNÉES :
+ *   GET /certificates/my-history → liste des AttendanceCertificate :
+ *   { id, titre, date_debut, date_fin, lieu, organisateur, club? }
+ *
+ * GÉNÉRATION DU CERTIFICAT :
+ *   POST /certificates/generate/:eventId → retourne { certificate: base64SVG }
+ *   Le SVG est converti en Blob et téléchargé via un lien temporaire (<a> créé dynamiquement)
+ *   Format : certificate_<eventId>.svg
+ *
+ * FILTRES :
+ *   Recherche par nom d'événement + filtre par période (tous / ce mois / 3 mois / 6 mois)
+ *   Calculé en front-end via useMemo sur les données déjà chargées
+ *
+ * ACCÈS : ADMIN + ADHERENT (ADMIN_OR_ADHERENT dans App.tsx)
+ */
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {

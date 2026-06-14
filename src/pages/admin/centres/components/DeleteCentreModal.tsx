@@ -1,3 +1,12 @@
+/**
+ * DeleteCentreModal.tsx — Modal de désactivation d'un centre.
+ *
+ * RÔLE :
+ *   Popup de confirmation avant de désactiver un centre (Power icon).
+ *   La désactivation ne supprime pas les données : elle passe le statut à INACTIF.
+ *
+ * API : PATCH /centres/:id/deactivate
+ */
 import { X, AlertTriangle, Power } from "lucide-react";
 
 export const DeleteCentreModal = ({

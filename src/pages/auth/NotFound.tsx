@@ -1,3 +1,14 @@
+/**
+ * NotFound.tsx — Page 404 "Page introuvable".
+ *
+ * RÔLE :
+ *   Affichée par la route wildcard `*` dans App.tsx quand aucune route ne correspond.
+ *   Design animé avec fantôme Ghost (lucide) et blobs décoratifs.
+ *
+ * NAVIGATION :
+ *   Bouton "Retour"   → navigate(-1)
+ *   Bouton "Accueil"  → navigate("/")
+ */
 import { useNavigate } from "react-router-dom";
 import { Home, Ghost, ArrowLeft } from "lucide-react";
 

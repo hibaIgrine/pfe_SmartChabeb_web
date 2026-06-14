@@ -1,3 +1,18 @@
+/**
+ * ConversationMuteMenu.tsx — Menu de sourdine pour une conversation.
+ *
+ * RÔLE :
+ *   Petit menu déroulant (overlay) permettant de désactiver les notifications
+ *   d'une conversation pour une durée choisie.
+ *
+ * OPTIONS :
+ *   • Mettre en sourdine 1 heure  (ConversationMuteMode: '1H')
+ *   • Mettre en sourdine jusqu'à réactivation ('UNTIL_REACTIVATED')
+ *   • Réactiver les notifications (si déjà en sourdine)
+ *
+ * ACCÈS :
+ *   Ouvert via le bouton 🔔/🔕 dans ConversationView.
+ */
 import { BellOff, BellRing, Clock3, X } from "lucide-react";
 
 export type ConversationMuteMenuProps = {

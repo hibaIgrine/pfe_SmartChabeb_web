@@ -1,3 +1,20 @@
+/**
+ * ManagementTabs.tsx — Onglets de gestion des membres d'un club.
+ *
+ * RÔLE :
+ *   Barre d'onglets dans ClubManagementView permettant de filtrer les inscriptions.
+ *
+ * ONGLETS :
+ *   PENDING  (Clock)     — Demandes en attente de validation
+ *   ACCEPTED (Users)     — Membres actifs (statut ACCEPTE)
+ *   WAITING  (Hourglass) — Liste d'attente (capacité atteinte)
+ *   REJECTED (XCircle)   — Inscriptions refusées
+ *
+ * Props :
+ *   activeTab — Onglet sélectionné
+ *   setTab()  — Change l'onglet
+ *   counts    — Compteurs par statut { PENDING, ACCEPTED, WAITING, REJECTED }
+ */
 import { Clock, Users, Hourglass, XCircle } from "lucide-react"; // 💡 Ajout de XCircle
 
 export const ManagementTabs = ({ activeTab, setTab, counts }: any) => {

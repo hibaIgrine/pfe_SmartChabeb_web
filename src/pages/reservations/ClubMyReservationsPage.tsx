@@ -1,3 +1,17 @@
+/**
+ * ClubMyReservationsPage.tsx — Réservations de locaux faites par le club.
+ *
+ * RÔLE :
+ *   Historique des réservations effectuées par le club pour ses séances/événements.
+ *   Accessible via /club-my-reservations.
+ *
+ * CONTENU :
+ *   - Liste des réservations du club (même vue que AdherentMyReservationsPage mais pour le club)
+ *   - Paiement Stripe des réservations approuvées
+ *   - Annulation des réservations en attente
+ *
+ * ACCÈS : RESPONSABLE_CLUB + ADHERENT
+ */
 import { useEffect, useState } from "react";
 import { XCircle, CreditCard, CheckCircle, RefreshCw } from "lucide-react";
 import api from "../../api/axios";

@@ -1,3 +1,48 @@
+/**
+ * messagerie.api.ts — Appels API REST pour le module de messagerie instantanée.
+ *
+ * RÔLE :
+ *   Toutes les opérations HTTP (CRUD) sur les conversations et messages.
+ *   Le temps réel (événements Socket.IO) est géré séparément dans messagerie.socket.ts.
+ *
+ * TYPES PRINCIPAUX :
+ *   MessengerUser          — Profil réduit d'un participant (id, nom, prenom, photo, online)
+ *   MessengerMessage       — Message avec statut SENT/DELIVERED/READ, media[], sender
+ *   MessengerParticipant   — Participant avec ses métadonnées (rôle, mute, archive, read)
+ *   MessengerConversationSummary — Aperçu de conversation pour la liste gauche
+ *   MessengerConversation  — Conversation complète avec participants[] + messages[]
+ *
+ * FONCTIONS PAR CATÉGORIE :
+ *
+ *   CONVERSATIONS :
+ *     fetchMyConversations()           — Liste toutes mes conversations (triées par last_message_at)
+ *     createPrivateConversation()      — Crée ou retourne une conv privée avec un user
+ *     createGroupConversation()        — Crée un groupe (titre + participants)
+ *     fetchConversation(id)            — Détail complet d'une conversation
+ *     deleteConversation(id)           — Supprime une conversation
+ *     renameGroupConversation()        — Change le titre du groupe
+ *     addGroupConversationMembers()    — Ajoute des membres au groupe
+ *     removeGroupConversationMember()  — Retire un membre du groupe
+ *     updateConversationMute()         — Active/désactive le mute (1H ou INDEFINI)
+ *     updateConversationArchive()      — Archive/désarchive la conversation
+ *     markConversationAsRead()         — Marque tous les messages comme lus
+ *
+ *   MESSAGES :
+ *     fetchConversationMessages(id)    — Charge tous les messages d'une conversation
+ *     sendConversationMessage()        — Envoie un message (TEXT/IMAGE/VIDEO/DOCUMENT)
+ *     updateConversationMessage()      — Édite un message existant
+ *     updateConversationMessagePin()   — Épingle/désépingle un message
+ *     deleteConversationMessage()      — Supprime pour soi (ME) ou pour tous (EVERYONE)
+ *
+ *   TYPAGE EN TEMPS RÉEL :
+ *     fetchConversationTypingStatus()  — Récupère qui est en train de taper (polling)
+ *     sendTypingStatus()               — Notifie que l'utilisateur tape ou s'arrête
+ *
+ *   PRÉSENCE :
+ *     sendPresenceHeartbeat()          — Maintient le statut "en ligne" (appelé toutes les 30s)
+ *     setPresenceOffline()             — Force le statut "hors ligne" (beforeunload)
+ *     fetchUnreadMessagesCount()       — Badge non-lu dans le Layout
+ */
 import api from "./axios";
 
 export type MessengerUser = {

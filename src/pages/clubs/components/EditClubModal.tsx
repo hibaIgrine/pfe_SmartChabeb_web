@@ -1,3 +1,16 @@
+/**
+ * EditClubModal.tsx — Modale de modification d'un club existant.
+ *
+ * RÔLE :
+ *   Formulaire pre-rempli pour modifier les données d'un club.
+ *   Réutilise ALL_CATEGORIES et getCategoryIcon depuis AddClubModal.
+ *   Même structure multi-étapes qu'AddClubModal.
+ *
+ * DIFFÉRENCES avec AddClubModal :
+ *   - Les données initiales viennent du club existant (prop `club`)
+ *   - centre peut être verrouillé si l'utilisateur est RESPONSABLE_CENTRE
+ *   - API: PATCH /clubs/:id
+ */
 import {
   X,
   Map,
@@ -88,6 +101,7 @@ export const EditClubModal = ({
   categories = [],
   lockedCentreId,
   lockedCentreName,
+  club,
 }: any) => {
   const [selectedGouvernorat, setSelectedGouvernorat] = useState("");
   const [errors, setErrors] = useState<any>({});
@@ -336,8 +350,13 @@ export const EditClubModal = ({
         }
 
         const date = formatDateOnly(getNextDateForFrenchDay(slot.day));
+        // Exclure les réservations automatiques du club pour éviter un faux conflit
+        const originalName = club?.nom;
+        const excludeParam = originalName
+          ? `&excludeObjet=${encodeURIComponent(`Créneau club validé: ${originalName}`)}`
+          : "";
         const response = await api.get(
-          `/reservations/check?id_local=${localId}&date=${date}&start=${slot.startTime}&end=${slot.endTime}`,
+          `/reservations/check?id_local=${localId}&date=${date}&start=${slot.startTime}&end=${slot.endTime}${excludeParam}`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
 

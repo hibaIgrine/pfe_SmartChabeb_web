@@ -1,3 +1,17 @@
+/**
+ * SignupPage.tsx — Page d'inscription (formulaire de création de compte).
+ *
+ * RÔLE :
+ *   Formulaire d'inscription classique (sans Google OAuth).
+ *   Peut être un second formulaire ou variante de AuthPage.tsx.
+ *
+ * FONCTIONNALITÉS :
+ *   - Champs: nom, prénom, email, mot de passe, confirmation
+ *   - Validation côté client (errors Record<string, string>)
+ *   - API: POST /auth/register
+ *   - Après succès: redirection vers getLandingPathForRole(role)
+ *   - Navigation retour (ChevronLeft) vers la page de connexion
+ */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getLandingPathForRole } from "../../constants/routes";

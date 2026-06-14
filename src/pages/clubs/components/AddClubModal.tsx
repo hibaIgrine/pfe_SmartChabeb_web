@@ -1,3 +1,21 @@
+/**
+ * AddClubModal.tsx — Modale de création d'un nouveau club.
+ *
+ * RÔLE :
+ *   Formulaire multi-étapes pour créer un club (admin ou responsable centre).
+ *
+ * ÉTAPES DU FORMULAIRE :
+ *   1. Informations générales : nom, catégorie (ALL_CATEGORIES), description
+ *   2. Localisation : gouvernorat, centre (sélection autocomplete)
+ *   3. Paramètres : capacité max, public cible, logo URL
+ *   4. Planning : créneaux hebdomadaires via PlanningInput
+ *
+ * CONSTANTES EXPORTÉES :
+ *   ALL_CATEGORIES — Array des catégories de club avec icônes emoji
+ *   getCategoryIcon(id) — Retourne l'emoji correspondant à une catégorie
+ *
+ * API : POST /clubs
+ */
 import {
   X,
   Map,

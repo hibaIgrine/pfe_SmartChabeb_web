@@ -1,3 +1,14 @@
+/**
+ * ManagementHeader.tsx — En-tête de la vue de gestion d'un club.
+ *
+ * RÔLE :
+ *   Affiche le nom du club, le nombre de membres actifs, les places restantes,
+ *   et le bouton retour vers la liste des clubs gérés.
+ *
+ * INFORMATIONS :
+ *   club.nom, club.capacite, membersCount actifs
+ *   freePlaces = capacite - membersCount (affiche ∞ si capacite = null)
+ */
 import { ArrowLeft, CheckCircle, Users } from "lucide-react";
 
 export const ManagementHeader = ({ club, membersCount, onBack }: any) => {

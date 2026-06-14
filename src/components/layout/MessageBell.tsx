@@ -1,3 +1,17 @@
+/**
+ * MessageBell.tsx — Bouton messagerie avec badge de messages non lus.
+ *
+ * RÔLE :
+ *   Icône MessageSquare dans la top bar qui affiche le nombre de messages non lus
+ *   et redirige vers /messagerie au clic.
+ *
+ * POLLING :
+ *   Appel initial + intervalle 25 secondes → fetchUnreadMessagesCount()
+ *   Écoute l'événement window "messagerie-updated" pour rafraîchir immédiatement
+ *   quand un message est lu ou reçu dans MessageriePage.
+ *
+ * BADGE : affiché si unreadCount > 0, cap à "99+"
+ */
 import { useEffect, useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";

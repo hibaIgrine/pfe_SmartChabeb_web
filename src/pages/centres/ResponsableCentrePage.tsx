@@ -1,3 +1,22 @@
+/**
+ * ResponsableCentrePage.tsx — Tableau de bord du responsable de centre.
+ *
+ * RÔLE :
+ *   Page d'accueil de l'espace RESPONSABLE_CENTRE.
+ *   Vue d'ensemble de sa maison des jeunes avec KPIs et accès rapides.
+ *
+ * SECTIONS :
+ *   - Infos du centre (nom, adresse, gouvernorat)
+ *   - CentreMetricCard : métriques (clubs, membres, locaux, réservations, événements)
+ *   - Liens rapides vers les sections (locaux, planning, réservations, membres, événements)
+ *   - Alertes (demandes de réservation en attente, événements à valider)
+ *
+ * DONNÉES :
+ *   GET /centres/my-centre → détail du centre géré par l'utilisateur courant
+ *   GET /clubs?centreId=... → clubs affiliés
+ *
+ * ACCÈS : RESPONSABLE_CENTRE uniquement (ROUTES.centre.home)
+ */
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {

@@ -1,3 +1,17 @@
+/**
+ * FeedList.tsx — Liste des publications du feed social.
+ *
+ * RÔLE :
+ *   Rendu de la liste des Publications via PostCard.
+ *   Gère l'état vide ("Aucune publication") et le spinner chargement.
+ *
+ * PROPS :
+ *   posts[]        — Publications à afficher
+ *   loading        — Affiche un spinner si vrai
+ *   currentUserId  — ID de l'utilisateur connecté (pour les droits d'édition)
+ *   isAdmin        — Si vrai, active les boutons de modération
+ *   onDelete/onEdit/onShare/onReact/onFavorite/onHideUser — Callbacks du hook useSocialFeed
+ */
 import type { Publication, ReactionType } from "../../../api/social-media.api";
 import { PostCard } from "./post-card/PostCard";
 

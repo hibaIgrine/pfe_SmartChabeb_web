@@ -1,3 +1,24 @@
+/**
+ * ClubRequestsPage.tsx — Gestion des demandes d'adhésion à un club.
+ *
+ * RÔLE :
+ *   Interface pour le RESPONSABLE_CLUB de traiter les demandes d'inscription
+ *   des adhérents à son club. Accessible via /clubs/:clubId/requests.
+ *
+ * COMPOSITION :
+ *   ClubPageShell          — Wrapper avec en-tête du club
+ *   ClubManagementView     — Vue complète avec onglets (demandes + membres actifs)
+ *   ClubMembersReadOnlyView— Vue lecture seule pour ADMIN/CENTRE
+ *   SuspensionModal        — Modal de suspension/réactivation d'un membre
+ *
+ * ACTIONS DISPONIBLES :
+ *   - Accepter une demande → statut ACCEPTEE → membre actif
+ *   - Refuser une demande → statut REJETEE
+ *   - Suspendre un membre actif → temporairement exclus des séances
+ *   - Expulser un membre → suppression définitive de l'inscription
+ *
+ * ACCÈS : ADMIN + RESPONSABLE_CLUB + RESPONSABLE_CENTRE
+ */
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Trash2, X } from "lucide-react";

@@ -1,3 +1,35 @@
+/**
+ * ClubRecommendationPage.tsx — Interface complète du système de recommandation ML.
+ *
+ * RÔLE :
+ *   Page principale pour le RESPONSABLE_CLUB accédant aux recommandations d'activités
+ *   générées par l'IA (système ML scikit-learn + Flask). C'est LA page la plus
+ *   importante du projet pour la démonstration au jury.
+ *
+ * FLUX COMPLET (4 étapes) :
+ *   1. SÉLECTION DU CLUB  → Le coach sélectionne son club (GET /clubs/my-clubs)
+ *   2. SAISIE DE SESSION  → Formulaire en 7 sections avec les 30 features ML :
+ *      Section 1 : Contexte temporel (num_seance, phase_annee, saison, mois, jour_semaine)
+ *      Section 2 : Profil du groupe (tranche_age, niveau, format_seance, lieu, duree)
+ *      Section 3 : Historique activités (j-2, précédente, actuelle)
+ *      Section 4 : État du groupe (difficulte, niveau_fatigue, humeur_groupe)
+ *      Section 5 : Métriques (score_engagement, nb_membres, nb_presents, taux_presence)
+ *      Section 6 : Évaluations (note_technique, note_comportement, evaluation_coach,
+ *                               progression_observee)
+ *      Section 7 : Contexte env. (meteo, activite_exterieure, repetition, sequence_logique)
+ *   3. PRÉDICTION ML → POST /sessions, puis POST /recommendations/session/:id
+ *      → Affiche RecommendationCard avec top-3 activités + probabilités
+ *   4. CHOIX COACH    → Le coach valide son choix (feedback loop pour réentraînement)
+ *
+ * ÉTATS DE L'INTERFACE :
+ *   "form"    → Formulaire de saisie de session
+ *   "loading" → Spinner pendant l'appel Flask ML
+ *   "result"  → RecommendationCard avec les recommandations
+ *   "history" → Historique des prédictions passées pour ce club
+ *
+ * ACCÈS : ADHERENT uniquement (route /club-recommendations dans App.tsx)
+ *         Mais logiquement destiné aux RESPONSABLE_CLUB (voir note route App.tsx)
+ */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertCircle,

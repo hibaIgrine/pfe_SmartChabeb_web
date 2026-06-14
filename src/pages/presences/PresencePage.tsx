@@ -1,3 +1,25 @@
+/**
+ * PresencePage.tsx — Gestion des présences aux séances de club.
+ *
+ * RÔLE :
+ *   Page principale du marquage de présence. Permet au RESPONSABLE_CLUB de
+ *   gérer les présences de ses membres aux séances (TP/cours du club).
+ *
+ * FONCTIONNALITÉS :
+ *   - Sélection du club et de la séance
+ *   - Liste des membres inscrits au club avec statut présent/absent
+ *   - Marquage et dé-marquage des présences en temps réel
+ *   - Création de nouvelles séances (date + nom)
+ *   - Feuille de présence PDF téléchargeable (jsPDF + jspdf-autotable)
+ *   - Statistiques : taux de présence, nb présents/absents
+ *
+ * FLUX PDF :
+ *   jsPDF A4 + autoTable → tableau nom/prénom/statut par séance
+ *   Exported sous : feuille_presence_<club>_<date>.pdf
+ *
+ * ACCÈS : ADMIN + ADHERENT + RESPONSABLE_CLUB
+ *         (L'ADHERENT peut consulter ses propres présences via AdherentSeancesPage)
+ */
 import { useEffect, useMemo, useState } from "react";
 import api from "../../api/axios";
 import jsPDF from "jspdf";

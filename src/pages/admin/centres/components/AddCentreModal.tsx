@@ -1,3 +1,15 @@
+/**
+ * AddCentreModal.tsx — Modale de création d'un nouveau centre.
+ *
+ * RÔLE :
+ *   Formulaire pour créer un centre (admin uniquement).
+ *
+ * CHAMPS :
+ *   nom, gouvernorat, adresse, code postal, téléphone,
+ *   description, image (URL ou upload), responsable (assignation)
+ *
+ * API : POST /centres
+ */
 import {
   X,
   Check,

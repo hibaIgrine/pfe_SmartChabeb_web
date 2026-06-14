@@ -1,3 +1,27 @@
+/**
+ * ClubsPage.tsx — Gestion de tous les clubs (ADMIN + RESPONSABLE_CENTRE).
+ *
+ * RÔLE :
+ *   Vue administrative de la liste des clubs d'un centre ou de toute la plateforme.
+ *   Permet de créer, modifier, désactiver et consulter les clubs.
+ *
+ * FONCTIONNALITÉS :
+ *   - ClubStats : statistiques (total, actifs, en attente, catégories)
+ *   - ClubFilters : filtre par catégorie, statut, recherche par nom
+ *   - ClubCard : carte de chaque club avec actions (éditer, supprimer, voir détails)
+ *   - AddClubModal : formulaire de création de club (nom, catégorie, description, planning…)
+ *   - EditClubModal : modification d'un club existant
+ *   - DeleteConfirmModal : confirmation de suppression
+ *
+ * CATÉGORIES DISPONIBLES :
+ *   ALL_CATEGORIES (défini dans AddClubModal) : Sports, Arts, Culture, Technologie, etc.
+ *
+ * DIFFÉRENCE AVEC AdherentClubsPage :
+ *   ClubsPage = vue GESTION (admin/centre) avec création/édition
+ *   AdherentClubsPage = vue DÉCOUVERTE (adherent) avec inscription
+ *
+ * ACCÈS : ADMIN + RESPONSABLE_CENTRE + RESPONSABLE_CLUB (selon App.tsx)
+ */
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
@@ -429,6 +453,7 @@ export default function ClubsPage() {
         lockedCentreId={isResponsableCentre ? myCentreId : ""}
         lockedCentreName={isResponsableCentre ? myCentreName : ""}
         onSubmit={handleUpdate}
+        club={editingClub}
       />
       <DeleteConfirmModal
         club={deletingClub}

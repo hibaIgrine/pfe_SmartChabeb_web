@@ -1,3 +1,17 @@
+/**
+ * CertificateModal.tsx — Modale d'aperçu et téléchargement de certificat de participation.
+ *
+ * RÔLE :
+ *   Affiche le certificat généré côté serveur (image base64) et
+ *   permet à l'adhérent de le télécharger en PNG.
+ *
+ * PROPS :
+ *   imageBase64    — Image du certificat encodée en base64 (PNG)
+ *   filename       — Nom du fichier téléchargé (ex: "certificat_evenement.png")
+ *   participantName— Nom du participant affiché dans la modale
+ *
+ * API : GET /events/:id/certificate (génère le certificat côté serveur)
+ */
 import { Download, X, Loader2 } from "lucide-react";
 
 type Props = {

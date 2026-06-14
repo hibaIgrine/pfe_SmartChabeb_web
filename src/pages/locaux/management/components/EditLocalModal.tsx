@@ -1,3 +1,12 @@
+/**
+ * EditLocalModal.tsx — Modale de modification d'un local existant.
+ *
+ * RÔLE :
+ *   Formulaire pré-rempli pour modifier les données d'un local/salle.
+ *   Mêmes champs qu'AddLocalModal mais avec les données actuelles du local.
+ *
+ * API : PATCH /salles/:id
+ */
 import {
   X,
   Save,

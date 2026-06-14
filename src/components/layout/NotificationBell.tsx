@@ -1,3 +1,39 @@
+/**
+ * NotificationBell.tsx — Cloche de notifications unifiée (in-app + messagerie).
+ *
+ * RÔLE :
+ *   Composant complexe qui agrège DEUX types de notifications en un seul badge :
+ *   1. Notifications in-app (réactions, mentions, tâches, événements…)
+ *   2. Messages non-lus de la messagerie
+ *
+ * BADGE :
+ *   totalUnreadCount = notificationsNonLues + messagesNonLus
+ *   Affiché sur l'icône cloche (Bell) en rouge-saumon (#E98A7D)
+ *   Cap à "99+" si total > 99
+ *
+ * PANEL DROPDOWN (createPortal sur document.body) :
+ *   Section "Messagerie" : dernières conversations avec messages non lus
+ *     → Clic : navigate vers /messagerie?conversationId=<id>
+ *   Section "Notifications" : 12 dernières notifications (triées par date)
+ *     → Tâches : badge coloré (ASSIGNED/violet, UPDATED/amber, COMPLETED/green, REMINDER/blue)
+ *     → Réactions/mentions : clic → navigate vers /fil-actualite?postId=<id>
+ *     → Bouton "Tout marquer lu" → markAllNotificationsAsRead()
+ *
+ * POLLING :
+ *   Intervalle de 25 secondes pour refreshUnreadCount + refreshMessageNotifications
+ *   Écoute l'événement window "messagerie-updated" (dispatché par MessageriePage)
+ *
+ * POSITIONNEMENT DU PANEL :
+ *   getBoundingClientRect() du bouton référence → position absolue calculée dynamiquement
+ *   Se recalcule sur resize et scroll pour rester ancré au bouton
+ *   Click outside → fermeture
+ *
+ * TYPES DE NOTIFICATIONS TÂCHES :
+ *   TASK_ASSIGNED   — Nouvelle tâche assignée
+ *   TASK_UPDATED    — Tâche validée (VALIDEE) ou refusée (REFUSE)
+ *   TASK_COMPLETED  — Tâche marquée terminée
+ *   TASK_REMINDER   — Rappel d'échéance imminente
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, CheckCircle2, Clock3, Pencil, Send } from "lucide-react";
 import { createPortal } from "react-dom";

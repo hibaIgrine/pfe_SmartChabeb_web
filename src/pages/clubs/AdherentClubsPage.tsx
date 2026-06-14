@@ -1,3 +1,25 @@
+/**
+ * AdherentClubsPage.tsx — Catalogue des clubs pour les adhérents.
+ *
+ * RÔLE :
+ *   Vue DÉCOUVERTE des clubs pour les adhérents. Permet de parcourir, filtrer
+ *   et faire une demande d'adhésion à un club.
+ *
+ * FONCTIONNALITÉS :
+ *   - Grille de clubs avec photo, catégorie, nombre de membres
+ *   - Filtre par catégorie + recherche par nom
+ *   - Affichage du statut d'inscription (INSCRIT / EN_ATTENTE / REFUSE / non-inscrit)
+ *   - Bouton "Rejoindre" → POST /clubs/:clubId/inscriptions → crée une demande
+ *   - Clic sur une card → AdherentClubDetailsPage (/clubs/:clubId)
+ *
+ * ÉTATS D'INSCRIPTION :
+ *   null                  → bouton "Rejoindre" actif
+ *   EN_ATTENTE_VALIDATION → badge orange "En attente"
+ *   ACCEPTEE              → badge vert "Membre" + bouton désactivé
+ *   REJETEE               → badge rouge "Refusé"
+ *
+ * ACCÈS : ADHERENT (composant sélectionné par ClubsPageRouter dans App.tsx)
+ */
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {

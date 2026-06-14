@@ -1,3 +1,16 @@
+/**
+ * AddStaffModal.tsx — Modale d'ajout d'un membre au staff d'un club.
+ *
+ * RÔLE :
+ *   Formulaire permettant au RESPONSABLE_CLUB d'ajouter un utilisateur
+ *   existant au personnel du club avec un rôle spécifique.
+ *
+ * CHAMPS :
+ *   selectedStaffId — Utilisateur à ajouter (dropdown des adhérents disponibles)
+ *   selectedRole    — Rôle à attribuer (liste des rôles actifs du club)
+ *
+ * API : POST /clubs/:id/staff
+ */
 import { formatRoleLabel } from "../utils";
 
 type Props = {

@@ -1,3 +1,18 @@
+/**
+ * CentreReservationRevenuePage.tsx — Revenus des réservations (vue responsable de centre).
+ *
+ * RÔLE :
+ *   Version centre du tableau de bord financier des réservations.
+ *   Accessible via /centre/reservation-revenues.
+ *   Similaire à ReservationRevenuePage mais filtré sur le centre courant.
+ *
+ * MÉTRIQUES :
+ *   - Revenus du centre courant uniquement
+ *   - Statistiques par local (quel local génère le plus)
+ *   - Export CSV ou PDF des revenus
+ *
+ * ACCÈS : RESPONSABLE_CENTRE uniquement
+ */
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import api from "../../api/axios";
 import {

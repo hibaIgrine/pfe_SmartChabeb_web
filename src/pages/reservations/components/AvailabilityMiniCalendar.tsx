@@ -1,3 +1,17 @@
+/**
+ * AvailabilityMiniCalendar.tsx — Mini-calendrier d'occupation journalière d'une salle.
+ *
+ * RÔLE :
+ *   Affiche visuellement les créneaux occupés dans la journée pour une salle donnée.
+ *   Utilisé dans la page de réservation pour montrer les plages horaires déjà prises.
+ *
+ * PROPS :
+ *   occupiedSlots — Liste de créneaux { heure_debut, heure_fin, objet }
+ *
+ * AFFICHAGE :
+ *   Chaque créneau occupé est affiché comme une bande colorée avec l'heure et l'objet.
+ *   Message "Aucune occupation" si la liste est vide.
+ */
 export const AvailabilityMiniCalendar = ({ occupiedSlots }: any) => {
   return (
     <div className="bg-smart-bg p-6 rounded-[30px] border border-smart-sage/30">

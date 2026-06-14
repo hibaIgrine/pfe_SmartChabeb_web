@@ -1,3 +1,24 @@
+/**
+ * LocauxPage.tsx — Gestion des locaux/salles d'une maison des jeunes.
+ *
+ * RÔLE :
+ *   Interface CRUD pour les salles et espaces physiques du centre.
+ *   Accessible via /centre/locaux (RESPONSABLE_CENTRE uniquement).
+ *
+ * COMPOSITION :
+ *   LocalCard      — Carte d'un local (nom, capacité, équipements, statut)
+ *   AddLocalModal  — Formulaire de création d'un nouveau local
+ *   EditLocalModal — Formulaire de modification d'un local existant
+ *   DeleteLocalModal — Confirmation de suppression
+ *   LocalFilters   — Filtres par capacité, disponibilité, recherche
+ *   LocauxStats    — Statistiques (total locaux, taux d'occupation…)
+ *
+ * DONNÉES :
+ *   GET /locaux → liste des locaux du centre courant
+ *   POST/PATCH/DELETE /locaux/:id → CRUD
+ *
+ * ACCÈS : RESPONSABLE_CENTRE uniquement
+ */
 import { useEffect, useMemo, useState } from "react";
 import api from "../../api/axios";
 import { Loader2, Plus } from "lucide-react";

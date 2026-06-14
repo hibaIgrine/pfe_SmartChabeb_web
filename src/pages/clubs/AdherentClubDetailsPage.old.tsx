@@ -1,3 +1,11 @@
+/**
+ * AdherentClubDetailsPage.old.tsx — FICHIER LEGACY (ancienne version).
+ *
+ * STATUT : Remplacé par AdherentClubDetailsPage.tsx (version actuelle).
+ * Conservé uniquement comme référence historique. Ne pas utiliser.
+ *
+ * @deprecated Utiliser AdherentClubDetailsPage.tsx à la place.
+ */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {

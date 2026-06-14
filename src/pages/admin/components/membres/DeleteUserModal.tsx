@@ -1,3 +1,12 @@
+/**
+ * DeleteUserModal.tsx — Modal de suppression définitive d'un utilisateur.
+ *
+ * RÔLE :
+ *   Popup de confirmation avant suppression irréversible d'un compte.
+ *   Affiche le nom de l'utilisateur et avertit du caractère définitif.
+ *
+ * API : DELETE /users/:id
+ */
 import { X, Power, ShieldAlert } from "lucide-react";
 
 interface DeleteUserModalProps {

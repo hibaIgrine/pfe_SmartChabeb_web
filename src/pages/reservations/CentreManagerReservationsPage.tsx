@@ -1,3 +1,19 @@
+/**
+ * CentreManagerReservationsPage.tsx — Gestion des réservations par le responsable de centre.
+ *
+ * RÔLE :
+ *   Interface d'approbation/refus des demandes de réservation de locaux
+ *   soumises par les clubs et adhérents. Accessible via /centre/reservations.
+ *
+ * FONCTIONNALITÉS :
+ *   - Liste de toutes les demandes de réservation du centre (EN_ATTENTE → APPROUVEE/REFUSEE)
+ *   - Filtres : statut, local, date, demandeur
+ *   - AvailabilityMiniCalendar : visualiser les créneaux occupés avant d'approuver
+ *   - Approbation → génère un lien de paiement Stripe pour le demandeur
+ *   - Refus avec message optionnel
+ *
+ * ACCÈS : RESPONSABLE_CENTRE uniquement
+ */
 import { useEffect, useState } from "react";
 import { Check, X, Calendar, MapPin, User, Clock, Filter, Search, Eye } from "lucide-react";
 import api from "../../api/axios";

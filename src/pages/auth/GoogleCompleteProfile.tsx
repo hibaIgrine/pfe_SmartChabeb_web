@@ -1,3 +1,24 @@
+/**
+ * GoogleCompleteProfile.tsx — Complétion de profil après connexion Google OAuth.
+ *
+ * RÔLE :
+ *   Étape obligatoire post-OAuth Google si le compte est nouveau ou incomplet.
+ *   Redirigé depuis AuthPage après POST /auth/google-login quand completeProfile=true.
+ *
+ * FLUX EN 2 ÉTAPES :
+ *   Étape 1 : Infos personnelles (prénom, nom, genre, date de naissance)
+ *   Étape 2 : Localisation (gouvernorat → filtre les centres disponibles → centreId)
+ *
+ * DONNÉES CHARGÉES :
+ *   GET /centres/governorates → liste des gouvernorats de Tunisie
+ *   GET /centres?gouvernorat=<selectedGouv> → centres disponibles dans le gouvernorat choisi
+ *   GET /users/me/profile → pré-remplit les champs si déjà partiellement renseignés
+ *
+ * SOUMISSION :
+ *   PATCH /auth/complete-google-profile → complète le profil
+ *   Stocke token + user dans localStorage
+ *   Redirige vers getLandingPathForRole(role)
+ */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";

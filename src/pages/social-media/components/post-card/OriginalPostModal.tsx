@@ -1,3 +1,16 @@
+/**
+ * OriginalPostModal.tsx — Modale affichant la publication originale partagée.
+ *
+ * RÔLE :
+ *   Quand un post partagé est affiché dans le feed, l'aperçu de la publication
+ *   originale est cliquable. Ce modal charge et affiche la version complète.
+ *
+ * COMPORTEMENT :
+ *   1. Appel fetchPost(originalPostId) pour charger la publication originale
+ *   2. Appel fetchReactions(postId) pour charger les réactions
+ *   3. Rendu de PostCard en lecture seule (pas d'actions de modification)
+ *   4. Fermeture par clic overlay ou bouton X
+ */
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import type {

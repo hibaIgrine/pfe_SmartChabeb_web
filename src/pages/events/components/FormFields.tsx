@@ -1,3 +1,13 @@
+/**
+ * FormFields.tsx — Composants de champs de formulaire réutilisables (module events).
+ *
+ * RÔLE :
+ *   Petits composants de champs standardisés utilisés dans EventFormModal :
+ *   InputField, TextareaField, SelectField — avec label, value, onChange, validation.
+ *
+ * AVANTAGE :
+ *   Uniformisation du style des champs de formulaire dans tout le module events.
+ */
 type InputProps = {
   label: string;
   value: string;

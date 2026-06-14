@@ -1,3 +1,20 @@
+/**
+ * ConversationView.tsx — Panneau central de la messagerie : affichage et envoi de messages.
+ *
+ * RÔLE :
+ *   Zone principale de conversation : historique des messages, zone de saisie,
+ *   envoi de texte/image/fichier/audio, épinglage, recherche dans les messages.
+ *
+ * FONCTIONNALITÉS :
+ *   - Affichage des MessageBubble avec scroll vers le bas automatique
+ *   - Zone de saisie avec support multi-types (texte, image, fichier, audio)
+ *   - Indicateur "X est en train d'écrire..." (Socket.IO typingStatus)
+ *   - Bouton recherche → ouvre ConversationMessageSearch
+ *   - Bouton paramètres → ouvre GroupManagementPanel (groupes) ou profil (privé)
+ *   - ConversationMuteMenu (menu de sourdine des notifications)
+ *   - Messages épinglés en bandeau en haut
+ *   - VoiceMessageRecorder pour les messages vocaux
+ */
 import {
   FileImage,
   FileText,

@@ -1,3 +1,19 @@
+/**
+ * conversationFilters.ts — Filtres et utilitaires de tri pour la liste des conversations.
+ *
+ * TYPES :
+ *   ConversationListFilterMode — 'ALL' | 'UNREAD' | 'GROUP' | 'ARCHIVED'
+ *                                Utilisé par ConversationFilters.tsx et useMessageriePage
+ *
+ * FONCTIONS :
+ *   isChatbotConversation()    — Vrai si conversation.type === 'chatbot'
+ *   getConversationSortTime()  — Retourne la date du dernier message (pour tri DESC)
+ *   filterConversations()      — Applique le filtre actif sur la liste brute
+ *
+ * LOGIQUE DE TRI :
+ *   Les conversations chatbot sont toujours remontées en tête de liste.
+ *   Ensuite tri par date du dernier message décroissant.
+ */
 import type { MessengerConversationSummary } from "../../api/messagerie.api";
 
 export type ConversationListFilterMode =

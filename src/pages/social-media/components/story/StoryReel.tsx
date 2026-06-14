@@ -1,4 +1,21 @@
-import { useEffect, useState, useRef } from "react";
+/**
+ * StoryReel.tsx — Bandeau horizontal des stories en haut du feed social.
+ *
+ * RÔLE :
+ *   Affiche les avatars des utilisateurs qui ont des stories actives (< 24h),
+ *   similaire aux stories Instagram/Snapchat.
+ *
+ * FONCTIONNALITÉS :
+ *   - Cercle "+" de l'utilisateur courant → ouvre StoryUploadModal
+ *   - Cercle avatar pour chaque utilisateur avec story → ouvre StoryViewer
+ *   - Stories vues: bordure grise | Stories non vues: bordure teal vive
+ *   - Chargement: fetchStoriesByUser() (mes stories) + fetchStoriesForFeed() (autres)
+ *   - Scroll horizontal avec useRef et drag (ou flèches natif overflow-x)
+ *
+ * DURÉE DE VIE :
+ *   Les stories expirent après 24h (story.expires_at côté backend).
+ */
+import { useEffect, useState, useRef, useMemo } from "react";
 import { Plus } from "lucide-react";
 import {
   fetchStoriesByUser,
@@ -64,8 +81,39 @@ export function StoryReel({ currentUserId, isAdmin, onStoryCreated }: StoryReelP
   const [loading, setLoading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const showUploadModalRef = useRef(false);
-  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  // stories groupées par user_id pour le viewer (toutes les stories de l'auteur sélectionné)
+  const [viewerStories, setViewerStories] = useState<Story[]>([]);
   const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
+
+  // Grouper les stories du feed par user_id (1 bulle par auteur, toutes ses stories disponibles)
+  const groupedByUser = useMemo(() => {
+    const groups: Record<string, Story[]> = {};
+    for (const story of stories) {
+      if (!groups[story.user_id]) groups[story.user_id] = [];
+      groups[story.user_id].push(story);
+    }
+    // Trier chaque groupe du plus ancien au plus récent pour le viewer (ordre chronologique)
+    for (const userId in groups) {
+      groups[userId].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      );
+    }
+    return groups;
+  }, [stories]);
+
+  // Un tableau d'un seul représentant par utilisateur (la story la plus récente = thumbnail)
+  const userGroups = useMemo(
+    () =>
+      Object.values(groupedByUser).map((userStories) => ({
+        // La plus récente pour la vignette
+        thumbnail: userStories[userStories.length - 1],
+        // Toutes les stories de cet auteur (pour le viewer)
+        allStories: userStories,
+        // Toutes vues = toutes ont hasViewed=true
+        allViewed: userStories.every((s) => s.hasViewed),
+      })),
+    [groupedByUser],
+  );
 
   const loadStories = async () => {
     try {
@@ -113,25 +161,20 @@ export function StoryReel({ currentUserId, isAdmin, onStoryCreated }: StoryReelP
     void loadStories();
   };
 
-  const handleOpenStory = (story: Story, index: number) => {
-    setSelectedStory(story);
-    setSelectedStoryIndex(index);
+  const handleOpenStory = (userStories: Story[]) => {
+    setViewerStories(userStories);
+    setSelectedStoryIndex(0);
   };
 
   const handleCloseStory = () => {
-    setSelectedStory(null);
+    setViewerStories([]);
     setSelectedStoryIndex(0);
   };
 
   const handleOpenMyStories = () => {
     if (!myStories.length) return;
-
-    const preferredIndex = myStories.findIndex(
-      (story) => getStoryMediaCount(story) > 0,
-    );
-    const nextIndex = preferredIndex >= 0 ? preferredIndex : 0;
-    setSelectedStory(myStories[nextIndex]);
-    setSelectedStoryIndex(nextIndex);
+    setViewerStories(myStories);
+    setSelectedStoryIndex(0);
   };
 
   if (loading && !stories.length) {
@@ -217,65 +260,63 @@ export function StoryReel({ currentUserId, isAdmin, onStoryCreated }: StoryReelP
             </button>
           )}
 
-          {stories.map((story, index) => {
-            const hasViewed = story.hasViewed;
-
-            return (
-              <button
-                key={story.id}
-                type="button"
-                onClick={() => handleOpenStory(story, index)}
-                className="group relative h-32 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-[#D4E3E7] bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-              >
-                <div className="h-full w-full">
-                  {story.user?.photo_profil_url ? (
-                    <img
-                      src={story.user.photo_profil_url}
-                      alt={`${story.user.nom} ${story.user.prenom}`}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="h-full w-full bg-gradient-to-br from-[#436D75] via-[#4F7F88] to-[#8a5d2a]" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
-                </div>
-
-                <div
-                  className={`absolute left-2 top-2 h-8 w-8 rounded-full border-2 p-[2px] backdrop-blur ${
-                    hasViewed
-                      ? "border-white/70 bg-white/10"
-                      : "border-[#FFD57A] bg-white/20"
-                  }`}
-                >
-                  {story.user?.photo_profil_url ? (
-                    <img
-                      src={story.user.photo_profil_url}
-                      alt={story.user.prenom}
-                      className="h-full w-full rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center rounded-full bg-white/25 text-[10px] font-black text-white">
-                      {story.user?.nom?.[0]}
-                      {story.user?.prenom?.[0]}
-                    </div>
-                  )}
-                </div>
-
-                <div className="absolute bottom-2 left-2 right-2">
-                  <p className="truncate text-[11px] font-black text-white">
-                    {story.user?.prenom}
-                  </p>
-                  <p className="truncate text-[10px] font-semibold text-white/80">
-                    {formatStoryTime(story.created_at)}
-                  </p>
-                </div>
-
-                {!hasViewed && (
-                  <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#FFD57A] shadow-[0_0_0_3px_rgba(255,213,122,0.25)]" />
+          {userGroups.map(({ thumbnail: story, allStories, allViewed }) => (
+            <button
+              key={story.user_id}
+              type="button"
+              onClick={() => handleOpenStory(allStories)}
+              className="group relative h-32 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-[#D4E3E7] bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <div className="h-full w-full">
+                {story.user?.photo_profil_url ? (
+                  <img
+                    src={story.user.photo_profil_url}
+                    alt={`${story.user.nom} ${story.user.prenom}`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full bg-gradient-to-br from-[#436D75] via-[#4F7F88] to-[#8a5d2a]" />
                 )}
-              </button>
-            );
-          })}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
+              </div>
+
+              <div
+                className={`absolute left-2 top-2 h-8 w-8 rounded-full border-2 p-[2px] backdrop-blur ${
+                  allViewed
+                    ? "border-white/70 bg-white/10"
+                    : "border-[#FFD57A] bg-white/20"
+                }`}
+              >
+                {story.user?.photo_profil_url ? (
+                  <img
+                    src={story.user.photo_profil_url}
+                    alt={story.user.prenom}
+                    className="h-full w-full rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center rounded-full bg-white/25 text-[10px] font-black text-white">
+                    {story.user?.nom?.[0]}
+                    {story.user?.prenom?.[0]}
+                  </div>
+                )}
+              </div>
+
+              <div className="absolute bottom-2 left-2 right-2">
+                <p className="truncate text-[11px] font-black text-white">
+                  {story.user?.prenom}
+                </p>
+                <p className="truncate text-[10px] font-semibold text-white/80">
+                  {allStories.length > 1
+                    ? `${allStories.length} stories`
+                    : formatStoryTime(story.created_at)}
+                </p>
+              </div>
+
+              {!allViewed && (
+                <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#FFD57A] shadow-[0_0_0_3px_rgba(255,213,122,0.25)]" />
+              )}
+            </button>
+          ))}
         </div>
       </section>
 
@@ -286,11 +327,9 @@ export function StoryReel({ currentUserId, isAdmin, onStoryCreated }: StoryReelP
         />
       )}
 
-      {selectedStory && (
+      {viewerStories.length > 0 && (
         <StoryViewer
-          stories={
-            selectedStory.user_id === currentUserId ? myStories : stories
-          }
+          stories={viewerStories}
           initialIndex={selectedStoryIndex}
           currentUserId={currentUserId}
           isAdmin={isAdmin}

@@ -1,3 +1,15 @@
+/**
+ * AddLocalModal.tsx — Modale de création d'un nouveau local/salle.
+ *
+ * RÔLE :
+ *   Formulaire pour créer un local (RESPONSABLE_CENTRE uniquement).
+ *
+ * CHAMPS :
+ *   nom, type (Salle/Terrain/Gymnase...), capacité (Users),
+ *   tarif horaire (DollarSign), description, équipements disponibles
+ *
+ * API : POST /salles
+ */
 import {
   X,
   Check,

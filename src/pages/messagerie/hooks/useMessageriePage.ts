@@ -1,3 +1,44 @@
+/**
+ * useMessageriePage.ts — Hook central de la page messagerie (≈ 800 lignes de logique).
+ *
+ * RÔLE :
+ *   Encapsule toute la logique métier de MessageriePage.tsx :
+ *   liste des conversations, messages, envoi, Socket.IO, présence, groupes.
+ *
+ * ÉTAT GÉRÉ :
+ *   conversations[]       — Liste triée (non archivées / archivées)
+ *   activeConversation    — Conversation sélectionnée + ses messages
+ *   viewMode              — ConversationViewMode: 'empty' | 'loading' | 'ready'
+ *   messengerUsers[]      — Tous les utilisateurs disponibles (pour nouveau message)
+ *   typingStatus[]        — Qui est en train d'écrire (Socket.IO)
+ *   draftText             — Texte en cours de saisie
+ *   draftAttachment       — Pièce jointe en cours (MessageDraftAttachment)
+ *   filter                — ConversationListFilterMode: ALL/UNREAD/GROUP/ARCHIVED
+ *   presenceMap           — Map userId → dernière vue (heartbeat socket)
+ *
+ * GESTION SOCKET.IO :
+ *   - Singleton getMessagerieSocket() connecté à l'ouverture
+ *   - subscribeTypingUpdates() → met à jour typingStatus
+ *   - joinConversationSocketRoom() → rejoint le canal de la conversation active
+ *   - Événements reçus: 'conversation:new-message', 'conversation:typing'
+ *   - Heartbeat de présence toutes les 30s via sendPresenceHeartbeat()
+ *   - setPresenceOffline() au démontage (useRef cleanup)
+ *
+ * FONCTIONS EXPOSÉES :
+ *   selectConversation()       — Charge messages + marque comme lu
+ *   sendMessage()              — Texte, image, fichier, audio
+ *   deleteMessage()            — Supprime un message
+ *   editMessage()              — Met à jour le contenu d'un message
+ *   pinMessage()               — Épingle un message
+ *   createPrivate()            — Nouvelle conv privée
+ *   createGroup()              — Nouveau groupe
+ *   renameGroup()              — Renomme le groupe
+ *   addGroupMembers()          — Ajoute des membres au groupe
+ *   removeGroupMember()        — Retire un membre
+ *   deleteConversation()       — Supprime la conversation
+ *   archiveConversation()      — Archive / désarchive
+ *   muteConversation()         — Désactive les notifications (1H ou UNTIL_REACTIVATED)
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addGroupConversationMembers,

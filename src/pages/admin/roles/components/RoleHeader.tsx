@@ -1,3 +1,10 @@
+/**
+ * RoleHeader.tsx — En-tête de la page Grades & Habilitations.
+ *
+ * RÔLE :
+ *   Titre de la page "Grades & Habilitations" + bouton "Nouveau grade" (Plus icon).
+ *   Le bouton appelle onAdd() pour ouvrir RoleModals en mode 'create'.
+ */
 import { Plus } from "lucide-react";
 
 export const RoleHeader = ({ onAdd }: { onAdd: () => void }) => (

@@ -1,3 +1,20 @@
+/**
+ * ClubCard.tsx — Carte visuelle d'un club dans la liste admin/centre.
+ *
+ * RÔLE :
+ *   Composant d'affichage d'un club avec actions inline (éditer, activer/désactiver).
+ *   Utilisé dans ClubsPage (admin) et dans les pages de gestion de centre.
+ *
+ * INFORMATIONS AFFICHÉES :
+ *   - Nom, catégorie, gouvernorat, centre (MapPin)
+ *   - Nombre de membres (Users) et responsables (ClubResponsablesList)
+ *   - Badge statut: ACTIF (vert) / INACTIF (rouge) / EN_ATTENTE (jaune)
+ *   - Planning hebdomadaire (Calendar)
+ *
+ * ACTIONS :
+ *   - Bouton Modifier → ouvre EditClubModal
+ *   - Bouton Activer/Désactiver → PATCH /clubs/:id/toggle-status
+ */
 import {
   Users,
   Power,

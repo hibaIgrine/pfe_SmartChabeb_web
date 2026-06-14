@@ -1,3 +1,12 @@
+/**
+ * AssignClubModal.tsx — Modal d'assignation d'un utilisateur à un club comme responsable.
+ *
+ * RÔLE :
+ *   Permet à l'admin d'assigner un RESPONSABLE_CLUB à un club spécifique.
+ *   Liste des clubs disponibles avec checkmark sur le club actuellement sélectionné.
+ *
+ * API : PATCH /users/:id/assign-club
+ */
 import { useState, useEffect } from "react";
 import { X, LayoutGrid, Check } from "lucide-react";
 

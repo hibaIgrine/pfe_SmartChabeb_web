@@ -1,3 +1,33 @@
+/**
+ * chat.tsx — Interface de l'assistant IA (chatbot Smart Chabeb).
+ *
+ * RÔLE :
+ *   Page de chat conversationnel avec un assistant IA intégré au backend NestJS.
+ *   L'assistant connaît le contexte de la plateforme (clubs, événements, séances…)
+ *   et peut répondre en français aux questions des utilisateurs.
+ *
+ * TYPES :
+ *   ChatMessage      — { role: 'user' | 'model', parts: [{text}] }
+ *   ChatbotResponse  — { response, conversationId }
+ *   StoredConversation — { id, title, messages[], updatedAt } (persisté en BDD)
+ *
+ * FONCTIONNALITÉS :
+ *   - Historique des conversations sauvegardé (MAX_HISTORY = 10 messages par contexte)
+ *   - Prompts rapides prédéfinis (8 suggestions contextuelles)
+ *   - Auto-scroll vers le bas après chaque message (useRef sur le conteneur)
+ *   - Textarea avec envoi sur Entrée (Shift+Entrée = saut de ligne)
+ *   - Rendu Markdown dans les réponses de l'IA
+ *   - Liste des conversations passées dans la sidebar gauche
+ *
+ * API :
+ *   POST /chatbot/message → { message, conversationId? } → ChatbotResponse
+ *   GET  /chatbot/conversations → liste des conversations sauvegardées
+ *
+ * ACCÈS : Tous les rôles authentifiés (partagé, voir ROUTES.shared.chatbot)
+ *
+ * NOTE DESIGN :
+ *   Page sans card blanche (Layout détecte isChatbotPage et supprime le fond)
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Bot, SendHorizontal, ShieldAlert, Sparkles, Zap } from "lucide-react";
 import api from "../../api/axios";

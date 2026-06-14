@@ -1,3 +1,17 @@
+/**
+ * ReactionBar.tsx — Barre de réactions d'une publication.
+ *
+ * RÔLE :
+ *   Affiche le sélecteur de réactions (👍❤️😂😮😢😡), le bouton commentaires,
+ *   et le bouton partage sous chaque publication.
+ *
+ * FONCTIONNALITÉS :
+ *   - Survol du bouton réaction → popup des 6 emojis (REACTION_EMOJIS map)
+ *   - Clic sur un emoji → onReact(type) ou onRemoveReaction() si déjà sélectionné
+ *   - Compteur de réactions par type depuis ReactionSummary
+ *   - Bouton commentaires → onToggleComments()
+ *   - Bouton partage → onShare()
+ */
 import { useState } from "react";
 import { MessageCircle, Share2 } from "lucide-react";
 import type {

@@ -1,3 +1,18 @@
+/**
+ * CentreEventsRequestsPage.tsx — Validation des demandes d'événements par le centre.
+ *
+ * RÔLE :
+ *   Interface d'approbation/refus des demandes d'événements soumises par les clubs.
+ *   Accessible via /centre/centre-events-requests.
+ *
+ * FONCTIONNALITÉS :
+ *   - Liste des demandes EN_ATTENTE dans le périmètre du centre
+ *   - Bouton Approuver → événement passe en statut APPROUVE
+ *   - Bouton Refuser + message de refus optionnel
+ *   - Filtres par statut, club, période
+ *
+ * ACCÈS : RESPONSABLE_CENTRE uniquement
+ */
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,

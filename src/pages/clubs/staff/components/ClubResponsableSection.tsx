@@ -1,3 +1,15 @@
+/**
+ * ClubResponsableSection.tsx — Section d'affichage/changement du responsable principal.
+ *
+ * RÔLE :
+ *   Affiche le responsable actuel du club avec son rôle.
+ *   Permet au RESPONSABLE_CENTRE de transférer la responsabilité à un autre membre.
+ *
+ * FONCTIONNALITÉS :
+ *   - Avatar + nom du responsable actuel
+ *   - Dropdown de changement de rôle si readOnly=false
+ *   - Bouton "Ajouter" si aucun responsable n'est assigné
+ */
 import { User, UserPlus } from "lucide-react";
 import { useState } from "react";
 

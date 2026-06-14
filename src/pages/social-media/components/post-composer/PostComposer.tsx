@@ -1,3 +1,21 @@
+/**
+ * PostComposer.tsx — Éditeur de publication du feed social.
+ *
+ * RÔLE :
+ *   Zone de rédaction d'une nouvelle publication (ou modification d'un post existant).
+ *   Affichée en haut du feed et aussi en mode édition inline.
+ *
+ * FONCTIONNALITÉS :
+ *   - Textarea de rédaction avec autocomplétion @mention
+ *   - Boutons médias: 📷 Image, 🎬 Vidéo, 📄 Fichier (IconActionButton)
+ *   - Hashtag input : saisi + touche Enter → ajouté en badge
+ *   - Visibilité: PUBLIC / FRIENDS / PRIVATE / MASKED (avec liste utilisateurs cachés)
+ *   - Localisation: champ texte + suggestions SOCIAL_LOCATION_SUGGESTIONS
+ *   - Mentions @: dropdown avec autocomplétion sur mentionUsers[]
+ *   - Prévisualisation des médias (images) avant envoi
+ *   - Bouton "Publier" → publish() depuis useSocialFeed
+ *   - Mode édition : pré-rempli via startEditPost() depuis useSocialFeed
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type {

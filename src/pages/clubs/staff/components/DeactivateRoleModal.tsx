@@ -1,3 +1,15 @@
+/**
+ * DeactivateRoleModal.tsx — Modal de confirmation de désactivation d'un rôle.
+ *
+ * RÔLE :
+ *   Popup de confirmation avant de désactiver un rôle personnalisé du club.
+ *   Affiche le nom du rôle et avertit des conséquences (membres concernés).
+ *
+ * PROPS :
+ *   roleName   — Nom du rôle à désactiver (affiché dans le message)
+ *   onCancel() — Ferme la modal sans action
+ *   onConfirm()— Confirme la désactivation (PATCH /clubs/:id/roles/:roleId)
+ */
 type Props = {
   roleName: string;
   onCancel: () => void;

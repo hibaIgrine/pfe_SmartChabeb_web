@@ -1,3 +1,16 @@
+/**
+ * ClubEventsRequestsPage.tsx — Suivi des demandes d'événement du club.
+ *
+ * RÔLE :
+ *   Page du RESPONSABLE_CLUB pour voir l'état de ses demandes d'événements
+ *   soumises au centre pour validation. Accessible via /club-events-requests.
+ *
+ * STATUTS VISIBLES :
+ *   EN_ATTENTE (horloge orange), APPROUVE (vert), REFUSE (rouge)
+ *   Pour chaque demande : titre, dates, capacité demandée, commentaire de refus (si applicable)
+ *
+ * ACCÈS : RESPONSABLE_CLUB uniquement
+ */
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,

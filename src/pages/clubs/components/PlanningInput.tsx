@@ -1,3 +1,18 @@
+/**
+ * PlanningInput.tsx — Saisie des créneaux horaires hebdomadaires d'un club.
+ *
+ * RÔLE :
+ *   Composant de formulaire permettant de définir le planning du club :
+ *   jours de la semaine + heures de début/fin.
+ *   Utilisé dans AddClubModal et EditClubModal.
+ *
+ * STRUCTURE :
+ *   PlanningSlot { day: string, startTime: string, endTime: string }
+ *   Bouton "+" ajoute un créneau | Bouton Trash2 supprime un créneau existant
+ *
+ * VALIDATION :
+ *   startTime < endTime requis avant soumission du formulaire parent.
+ */
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Clock, Calendar } from "lucide-react";
 

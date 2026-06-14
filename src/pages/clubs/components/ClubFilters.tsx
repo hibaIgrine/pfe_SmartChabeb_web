@@ -1,3 +1,20 @@
+/**
+ * ClubFilters.tsx — Barre de filtres de la liste des clubs.
+ *
+ * RÔLE :
+ *   Permet de filtrer la liste des clubs selon plusieurs critères combinés.
+ *
+ * FILTRES :
+ *   searchQuery        — Recherche par nom de club (text input)
+ *   selectedCategory   — Filtre par catégorie (Sport, Culture, Arts, etc.)
+ *   selectedGouvernorat— Filtre par gouvernorat
+ *   selectedCentre     — Filtre par centre rattaché
+ *   selectedStatus     — Filtre par statut (ACTIF/INACTIF/EN_ATTENTE)
+ *
+ * COMPORTEMENT :
+ *   Tous les filtres remontent via setters au composant parent.
+ *   Bouton X vide tous les filtres actifs.
+ */
 import { Search, X } from "lucide-react";
 
 interface ClubFiltersProps {

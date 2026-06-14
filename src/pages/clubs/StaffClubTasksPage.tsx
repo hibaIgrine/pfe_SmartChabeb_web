@@ -1,3 +1,23 @@
+/**
+ * StaffClubTasksPage.tsx — Tâches d'un club depuis la perspective du staff.
+ *
+ * RÔLE :
+ *   Vue des tâches pour les membres du STAFF (non-responsables) d'un club.
+ *   Accessible via /my-clubs/:clubId/staff-tasks.
+ *
+ * DIFFÉRENCE AVEC ClubTasksPage :
+ *   ClubTasksPage (responsable) : voit toutes les tâches, peut créer/assigner/valider
+ *   StaffClubTasksPage (staff)  : voit uniquement ses tâches assignées, peut les compléter
+ *                                  + uploader des preuves de réalisation
+ *
+ * FONCTIONNALITÉS :
+ *   - Liste de ses tâches avec statut + date limite
+ *   - Marquer une tâche comme "TERMINEE" + upload de preuve (photo/document)
+ *   - Commentaires sur les tâches
+ *   - Deep link : ?taskId=<id> → ouvre une tâche spécifique (depuis NotificationBell)
+ *
+ * ACCÈS : Tous les rôles membres du staff (ADMIN_OR_ANY_MEMBER dans App.tsx)
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useParams, useSearchParams } from "react-router-dom";

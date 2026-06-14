@@ -1,3 +1,16 @@
+/**
+ * EventsCalendar.tsx — Vue calendrier mensuel des événements.
+ *
+ * RÔLE :
+ *   Affiche les événements dans une grille calendrier (mois courant).
+ *   Permet de voir la distribution temporelle des événements à un coup d'œil.
+ *
+ * FONCTIONNALITÉS :
+ *   - Navigation mois précédent / suivant
+ *   - Points colorés sur les jours avec événements
+ *   - Clic sur un jour → sélectionne l'événement (onSelectEvent)
+ *   - useMemo pour calculer les jours du mois et l'alignement du premier jour
+ */
 import { useMemo, useState } from "react";
 import type { EventItem } from "../types";
 

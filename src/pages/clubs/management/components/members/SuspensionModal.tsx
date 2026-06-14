@@ -1,3 +1,19 @@
+/**
+ * SuspensionModal.tsx — Modal de suspension d'un membre de club.
+ *
+ * RÔLE :
+ *   Permet au RESPONSABLE_CLUB de suspendre temporairement un membre
+ *   avec un motif et une durée (en jours).
+ *
+ * PROPS :
+ *   memberName  — Nom du membre concerné (affiché dans la modal)
+ *   onClose()   — Ferme sans action
+ *   onConfirm() — Confirme la suspension avec le motif saisi
+ *
+ * DIFFÉRENCE avec BanModal (admin) :
+ *   La suspension par le RESPONSABLE_CLUB est limitée au club,
+ *   tandis que le bannissement admin bloque l'accès à toute la plateforme.
+ */
 import { X, ShieldAlert, Calendar } from "lucide-react";
 import { useState } from "react";
 

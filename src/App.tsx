@@ -1,3 +1,54 @@
+/**
+ * App.tsx — Composant racine et routeur principal de l'application Smart Chabeb.
+ *
+ * RÔLE :
+ *   Définit TOUTES les routes de l'application avec leur composant associé et
+ *   les restrictions d'accès par rôle. C'est le "chef d'orchestre" du frontend.
+ *
+ * SYSTÈME RBAC (Role-Based Access Control) :
+ *   Chaque route est enveloppée dans withAccess([roles], <Page/>) qui délègue
+ *   à ProtectedRoute la vérification du rôle courant (localStorage).
+ *   Si le rôle n'est pas autorisé → redirection vers AccessDeniedPage.
+ *
+ *   Groupes de rôles définis :
+ *     ADMIN_ONLY              — ['ADMIN']
+ *     ADMIN_OR_CLUB           — ['ADMIN', 'RESPONSABLE_CLUB']
+ *     ADMIN_OR_CLUB_OR_CENTRE — ['ADMIN', 'RESPONSABLE_CLUB', 'RESPONSABLE_CENTRE']
+ *     ADMIN_OR_ANY_MEMBER     — Tous les 4 rôles
+ *     ADMIN_OR_ADHERENT       — ['ADMIN', 'ADHERENT']
+ *     CENTRE_ONLY             — ['RESPONSABLE_CENTRE']
+ *     CLUB_ONLY               — ['RESPONSABLE_CLUB']
+ *     ADHERENT_ONLY           — ['ADHERENT']
+ *     ADHERENT_OR_CENTRE      — ['ADHERENT', 'RESPONSABLE_CENTRE']
+ *
+ * COMPOSANTS SPÉCIAUX :
+ *   ClubsPageRouter         — Sélecteur conditionnel : ADHERENT → AdherentClubsPage,
+ *                             sinon → ClubsPage (vue admin/gestion).
+ *   SessionRedirectListener — Écoute AUTH_SESSION_INVALIDATED_EVENT et redirige
+ *                             vers /auth (utilisé lors d'un 401 ou compte suspendu).
+ *   LegacyLandingRedirect   — Redirige /dashboard vers la bonne page selon le rôle.
+ *   LegacyCentreRedirect    — Redirige /centres selon ADMIN ou RESPONSABLE_CENTRE.
+ *   LegacyMembresRedirect   — Redirige /membres selon CENTRE ou ADMIN.
+ *
+ * RÉACTIVITÉ DE SESSION :
+ *   sessionRevision (useState) est incrémenté à chaque événement de session
+ *   (storage, AUTH_USER_UPDATED, AUTH_SESSION_INVALIDATED) pour forcer le
+ *   re-rendu des ProtectedRoute sans rechargement de page.
+ *
+ * STRUCTURE GÉNÉRALE DES ROUTES :
+ *   /                       — Page d'accueil publique (Home)
+ *   /auth                   — Login/Register
+ *   /auth/signup            — Inscription
+ *   /auth/complete-google   — Complétion profil après OAuth Google
+ *   /admin/*                — Espace administrateur
+ *   /centre/*               — Espace responsable de centre
+ *   /clubs/*  /mon-club/*   — Espace clubs (coaches + adhérents)
+ *   /events /presences …    — Espace adhérent
+ *   /fil-actualite          — Réseau social (feed)
+ *   /messagerie             — Messagerie temps réel
+ *   /chatbot                — Assistant IA
+ *   *                       — NotFound (404)
+ */
 import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import Home from "./pages/auth/Home";
 import Layout from "./components/layout/Layout";

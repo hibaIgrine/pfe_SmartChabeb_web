@@ -1,3 +1,20 @@
+/**
+ * UserCard.tsx — Carte de profil utilisateur dans la page gestion des membres (admin).
+ *
+ * RÔLE :
+ *   Affiche les informations d'un utilisateur avec les actions d'administration.
+ *
+ * INFORMATIONS :
+ *   Photo de profil, nom, email, rôle (badge coloré), centre rattaché, clubs
+ *
+ * ACTIONS :
+ *   • Changer le rôle → ouvre RoleModal
+ *   • Assigner un centre → ouvre AssignCentreModal (RESPONSABLE_CENTRE)
+ *   • Assigner un club → ouvre AssignClubModal (RESPONSABLE_CLUB)
+ *   • Bannir / Débannir → ouvre BanModal
+ *   • Supprimer → ouvre DeleteUserModal
+ *   • Activer/Désactiver le compte → toggle compte_actif
+ */
 import {
   Building2,
   Power,

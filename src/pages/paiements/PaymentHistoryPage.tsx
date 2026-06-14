@@ -1,3 +1,29 @@
+/**
+ * PaymentHistoryPage.tsx — Historique des paiements de l'utilisateur.
+ *
+ * RÔLE :
+ *   Affiche tous les paiements effectués (réservations de locaux via Stripe).
+ *   Permet de filtrer par statut et de télécharger un reçu PDF pour chaque paiement.
+ *
+ * DONNÉES :
+ *   GET /payments/my-payments → PaymentItem[] (triés par date DESC)
+ *
+ * FILTRES :
+ *   Recherche par nom de local / référence
+ *   Filtre par statut : TOUS / PAID / PENDING / FAILED / REFUNDED
+ *   Filtre par date
+ *
+ * REÇU PDF :
+ *   generatePaymentReceipt(payment) → jsPDF A4 avec design professionnel
+ *   Inclut : bénéficiaire, montant TND, méthode (Stripe), détails réservation
+ *
+ * STATUTS VISUELS :
+ *   PAID    → badge vert (CheckCircle)
+ *   PENDING → badge jaune (Clock)
+ *   FAILED  → badge rouge (XCircle)
+ *
+ * ACCÈS : ADMIN + ADHERENT + RESPONSABLE_CLUB
+ */
 import { useEffect, useState } from "react";
 import { Search, Calendar, Filter, CreditCard, CheckCircle, XCircle, Clock, Download } from "lucide-react";
 import api from "../../api/axios";

@@ -1,3 +1,16 @@
+/**
+ * RoleCard.tsx — Carte d'affichage d'un grade/habilitation dans RolesPage.
+ *
+ * RÔLE :
+ *   Présente un rôle de club avec ses statistiques et actions de gestion.
+ *
+ * INFORMATIONS :
+ *   Nom du rôle, description, nombre de membres ayant ce rôle (filteredCount)
+ *
+ * ACTIONS :
+ *   Edit3  → Modifier le rôle (ouvre RoleModals en mode 'edit')
+ *   Trash2 → Supprimer le rôle (ouvre RoleModals en mode 'delete')
+ */
 import { ShieldCheck, Edit3, Trash2 } from "lucide-react";
 
 export const RoleCard = ({ role, filteredCount, onEdit, onDelete }: any) => (

@@ -1,3 +1,13 @@
+/**
+ * utils.ts — Fonctions utilitaires pour le module événements.
+ *
+ * FONCTIONS :
+ *   toTimeHHMM(isoString)      — Extrait l'heure HH:MM d'une date ISO 8601
+ *   getCurrentTimeHHMM()       — Retourne l'heure actuelle HH:MM
+ *   formatDateOnly(isoString)  — Formate une date en "DD/MM/YYYY" (locale fr-FR)
+ *   buildEventFormPayload()    — Construit le payload API depuis un EventForm
+ *   MAX_EVENT_CAPACITY         — Constante : capacité maximale (1 000 000)
+ */
 import type { EventForm } from "./types";
 
 export const MAX_EVENT_CAPACITY = 1000000;

@@ -1,3 +1,22 @@
+/**
+ * StaffCalendarPage.tsx — Calendrier personnel des tâches du staff.
+ *
+ * RÔLE :
+ *   Vue calendrier mensuel des tâches assignées au membre du staff connecté.
+ *   Accessible via /staff-calendar (ROUTES.club.staffCalendar).
+ *
+ * CONTENU :
+ *   - Calendrier mensuel avec positionnement des tâches par date limite
+ *   - Code couleur : EN_ATTENTE (gris) / EN_COURS (bleu) / TERMINEE (vert) / REFUSEE (rouge)
+ *   - Clic sur une tâche → détail avec description + statut actuel
+ *   - Navigation mois précédent / suivant
+ *
+ * DONNÉES :
+ *   Agrège les tâches de tous les clubs dont l'utilisateur est staff
+ *   (même source que StaffClubTasksPage mais vue calendrier)
+ *
+ * ACCÈS : RESPONSABLE_CLUB (CLUB_ONLY dans App.tsx)
+ */
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,

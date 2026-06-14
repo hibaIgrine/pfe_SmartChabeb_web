@@ -1,3 +1,16 @@
+/**
+ * RoleModal.tsx — Modal de changement de rôle système d'un utilisateur.
+ *
+ * RÔLE :
+ *   Permet à l'admin de changer le rôle principal d'un utilisateur.
+ *   Affiche les 4 rôles disponibles avec icônes et descriptions.
+ *
+ * RÔLES :
+ *   ADMIN (ShieldCheck) | RESPONSABLE_CENTRE (Building2) |
+ *   RESPONSABLE_CLUB (LayoutGrid) | ADHERENT (GraduationCap)
+ *
+ * API : PATCH /users/:id/role
+ */
 import {
   X,
   ShieldCheck,

@@ -1,3 +1,21 @@
+/**
+ * EventFormModal.tsx — Modale de création et modification d'un événement.
+ *
+ * RÔLE :
+ *   Formulaire complet pour créer ou modifier un événement sportif/culturel.
+ *   Rendu via createPortal sur document.body pour éviter les conflits z-index.
+ *
+ * CHAMPS :
+ *   nom, description, date_event, heure_debut, heure_fin,
+ *   lieu, capacity, type (public/privé), club organisateur,
+ *   clubs collaborateurs, image
+ *
+ * MODE :
+ *   Création (mode='create') ou Modification (mode='edit', data=EventItem)
+ *
+ * API :
+ *   POST /events (create) | PATCH /events/:id (edit)
+ */
 import { createPortal } from "react-dom";
 import { useState } from "react";
 import { X } from "lucide-react";

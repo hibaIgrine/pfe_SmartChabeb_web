@@ -1,4 +1,25 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿/**
+ * EventsPage.tsx — Gestion des événements (ADMIN + RESPONSABLE_CENTRE).
+ *
+ * RÔLE :
+ *   Interface de gestion complète des événements pour les administrateurs et
+ *   responsables de centre. Vue calendrier + liste des événements.
+ *
+ * FONCTIONNALITÉS :
+ *   - EventsCalendar : calendrier mensuel avec les événements positionnés par date
+ *   - EventsList : liste avec filtres (statut, club, période)
+ *   - EventFormModal : création/édition d'un événement (titre, description, dates, lieu,
+ *                      capacité, timeline en étapes)
+ *   - EventPresenceModal : enregistrement des présences à un événement
+ *   - Navigation vers le détail d'un événement (EventManagementDetailPage)
+ *
+ * TYPES D'ÉVÉNEMENTS :
+ *   Statut : EN_ATTENTE (pending) | APPROUVE (approved) | REFUSE (rejected)
+ *   Actions ADMIN/CENTRE : Approuver / Refuser une demande de club
+ *
+ * ACCÈS : ADMIN (ROUTES.admin.eventsManagement) + RESPONSABLE_CENTRE (ROUTES.centre.eventsManagement)
+ */
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { ROUTES } from "../../constants/routes";
@@ -669,6 +690,7 @@ export default function EventsPage() {
       <EventPresenceModal
         isOpen={Boolean(presenceEvent)}
         eventName={presenceEvent?.nom ?? ""}
+        eventStartTime={presenceEvent?.start_time ?? ""}
         eventEndTime={presenceEvent?.end_time ?? ""}
         isLoading={isPresenceLoading}
         isUpdating={isPresenceUpdating}

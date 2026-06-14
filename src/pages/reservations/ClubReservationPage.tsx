@@ -1,3 +1,23 @@
+/**
+ * ClubReservationPage.tsx — Formulaire de réservation de local par un club ou adhérent.
+ *
+ * RÔLE :
+ *   Page permettant aux clubs et adhérents de soumettre une demande de réservation
+ *   d'un local dans une maison des jeunes. Accessible via /club-reservations.
+ *
+ * FORMULAIRE :
+ *   - Sélection du local (liste des locaux du centre affilié)
+ *   - Date et heure de début / fin
+ *   - Objet de la réservation (description)
+ *   - Vérification de disponibilité en temps réel avant soumission
+ *
+ * APRÈS SOUMISSION :
+ *   La réservation est créée en statut EN_ATTENTE.
+ *   Le RESPONSABLE_CENTRE la valide depuis CentreManagerReservationsPage.
+ *   Après validation → email + lien Stripe pour payer.
+ *
+ * ACCÈS : RESPONSABLE_CLUB + ADHERENT
+ */
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import api from "../../api/axios";

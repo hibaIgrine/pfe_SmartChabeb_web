@@ -1,3 +1,16 @@
+/**
+ * types.ts — Types TypeScript partagés entre toutes les pages du module événements.
+ *
+ * TYPES PRINCIPAUX :
+ *   ClubLite            — Club simplifié (id, nom, id_centre)
+ *   LocalLite           — Local simplifié avec capacité et centre parent
+ *   EventTimelineStep   — Étape d'une timeline d'événement (titre, description, date)
+ *   EventItem           — Événement en liste (données condensées pour les listes/calendriers)
+ *   EventDetail         — Événement complet avec participants, feedbacks, timeline, local
+ *   EventParticipant    — Participant à un événement avec statut INSCRIT/CONFIRME/LISTE_ATTENTE
+ *   EventForm           — Formulaire de création/édition d'événement (tous les champs editables)
+ *   AlertState          — État d'une alerte UI {type: 'success'|'error'|'info', message}
+ */
 export type ClubLite = {
   id: string;
   nom: string;

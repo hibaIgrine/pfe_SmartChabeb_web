@@ -1,3 +1,29 @@
+/**
+ * useClubStaffPage.ts — Hook central de la page de gestion du staff d'un club.
+ *
+ * RÔLE :
+ *   Encapsule toute la logique métier de ClubStaffPage pour :
+ *   • Gestion du personnel (staff)
+ *   • Gestion des rôles personnalisés (ClubRoleItem[])
+ *
+ * ÉTAT GÉRÉ (ClubStaffPageState) :
+ *   club               — Données complètes du club (avec staff et inscriptions)
+ *   search             — Filtre de recherche dans le staff
+ *   loading/error      — États de chargement et erreur
+ *   notification       — Toast succès/erreur
+ *   isAddStaffModalOpen, isAddRoleModalOpen, etc. — États des modales
+ *
+ * FONCTIONS EXPOSÉES :
+ *   handleAddStaff()       — POST /clubs/:id/staff → ajoute un membre
+ *   handleRemoveStaff()    — DELETE /clubs/:id/staff/:staffId
+ *   handleUpdateStaffRole()— PATCH /clubs/:id/staff/:staffId/role
+ *   handleCreateRole()     — POST /clubs/:id/roles
+ *   handleEditRole()       — PATCH /clubs/:id/roles/:roleId
+ *   handleDeactivateRole() — PATCH /clubs/:id/roles/:roleId/deactivate
+ *
+ * DONNÉES CHARGÉES :
+ *   useParams().clubId → GET /clubs/:id (staff + rôles + inscriptions)
+ */
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../../../../api/axios";

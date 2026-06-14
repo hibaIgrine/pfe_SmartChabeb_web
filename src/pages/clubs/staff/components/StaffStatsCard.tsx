@@ -1,3 +1,12 @@
+/**
+ * StaffStatsCard.tsx — Carte statistiques détaillées de la page staff.
+ *
+ * RÔLE :
+ *   Affiche des métriques supplémentaires dans ClubStaffPage :
+ *   • Nombre de membres du personnel
+ *   • Nombre total de membres du club
+ *   • Statut actif/inactif du club (clubActive)
+ */
 import { Calendar } from "lucide-react";
 
 type Props = {

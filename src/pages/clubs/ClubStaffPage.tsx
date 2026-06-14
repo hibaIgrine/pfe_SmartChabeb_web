@@ -1,3 +1,25 @@
+/**
+ * ClubStaffPage.tsx — Gestion du staff et des rôles d'un club.
+ *
+ * RÔLE :
+ *   Page de gestion des membres du staff (encadrants, assistants, bénévoles) d'un club.
+ *   Accessible via /clubs/:clubId/staff.
+ *
+ * COMPOSITION :
+ *   ClubPageShell         — Wrapper avec en-tête du club (nom, catégorie, breadcrumb)
+ *   useClubStaffPage      — Hook custom gérant toute la logique (chargement, actions)
+ *   StaffOverviewCards    — KPIs : total staff, par rôle, taux d'activité
+ *   StaffQuickActionsCard — Boutons rapides (ajouter membre, créer rôle)
+ *   ClubResponsableSection— Section dédiée au responsable principal du club
+ *   StaffTeamSection      — Liste des membres du staff avec leurs rôles
+ *   StaffStatsCard        — Statistiques de performance du staff
+ *   ClubRolesPanel        — Liste des rôles disponibles (créer/désactiver un rôle)
+ *   AddStaffModal         — Formulaire ajout d'un membre au staff
+ *   AddRoleModal          — Formulaire création d'un rôle personnalisé
+ *   DeactivateRoleModal   — Confirmation désactivation d'un rôle
+ *
+ * ACCÈS : ADMIN + RESPONSABLE_CLUB + RESPONSABLE_CENTRE
+ */
 import { ClubPageShell } from "./components/ClubPageShell";
 import { useClubStaffPage } from "./staff/hooks/useClubStaffPage";
 import { StaffOverviewCards } from "./staff/components/StaffOverviewCards";

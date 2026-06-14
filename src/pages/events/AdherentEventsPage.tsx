@@ -1,3 +1,24 @@
+/**
+ * AdherentEventsPage.tsx — Catalogue des événements pour l'adhérent.
+ *
+ * RÔLE :
+ *   Page de découverte et d'inscription aux événements pour les adhérents.
+ *   Affiche les événements approuvés et ouverts à l'inscription.
+ *
+ * FONCTIONNALITÉS :
+ *   - Liste des événements avec filtres (type, période, statut d'inscription)
+ *   - EventDetailsModal : détail d'un événement (description, dates, lieu, capacité)
+ *   - Inscription à un événement (s'il reste de la place)
+ *   - Ajout à la liste d'attente si l'événement est complet
+ *   - Évaluation post-événement (feedback étoiles + commentaire)
+ *   - Téléchargement du certificat de participation (si événement terminé + présent)
+ *
+ * STATUTS DE PARTICIPATION :
+ *   INSCRIT → CONFIRME (après checkin) → Certificat disponible
+ *   LISTE_ATTENTE → INSCRIT (si une place se libère)
+ *
+ * ACCÈS : ADMIN + ADHERENT (ADMIN_OR_ADHERENT dans App.tsx)
+ */
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,

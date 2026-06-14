@@ -1,3 +1,18 @@
+/**
+ * ClubFeedbacksPage.tsx — Feedbacks des séances reçus par le responsable de club.
+ *
+ * RÔLE :
+ *   Vue des évaluations soumises par les adhérents après chaque séance.
+ *   Accessible via /my-clubs/:clubId/feedbacks.
+ *
+ * CONTENU :
+ *   - Sélection de la séance (liste des séances passées)
+ *   - Feedbacks reçus : note 1-5 étoiles + commentaire + auteur
+ *   - Note moyenne calculée + distribution des notes (histogramme)
+ *   - Filtre par séance + par note
+ *
+ * ACCÈS : ADMIN + RESPONSABLE_CLUB (ADMIN_OR_CLUB dans App.tsx)
+ */
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Star, Filter } from "lucide-react";

@@ -1,3 +1,17 @@
+/**
+ * BanModal.tsx — Modal de bannissement d'un utilisateur.
+ *
+ * RÔLE :
+ *   Permet à l'admin de bannir un utilisateur pour une durée déterminée avec un motif.
+ *   Le bannissement désactive l'accès : l'intercepteur Axios détecte le message
+ *   "compte suspendu" et force la déconnexion côté client.
+ *
+ * CHAMPS :
+ *   days   — Durée du bannissement en jours
+ *   reason — Motif (affiché à l'utilisateur en cas de connexion)
+ *
+ * API : PATCH /users/:id/ban
+ */
 import { X, ShieldAlert, Calendar, Info } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 

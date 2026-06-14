@@ -1,3 +1,17 @@
+/**
+ * FormUpdateMdp.tsx — Formulaire de changement de mot de passe.
+ *
+ * RÔLE :
+ *   Sous-formulaire de MyProfilePage pour changer le mot de passe.
+ *   Différencié du formulaire d'informations pour isoler la sensibilité.
+ *
+ * CHAMPS :
+ *   newPassword, confirmPassword
+ *
+ * VALIDATION :
+ *   Les deux champs doivent correspondre avant activation du bouton de soumission.
+ *   Le parent gère l'appel API et les états saving/resettingPassword.
+ */
 import { useState } from "react";
 
 type PasswordValues = {

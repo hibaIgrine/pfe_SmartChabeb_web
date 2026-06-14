@@ -1,3 +1,12 @@
+/**
+ * CentresStats.tsx — Cartes KPI en haut de la page gestion des centres.
+ *
+ * MÉTRIQUES :
+ *   Total centres   (Building2)    — Nombre total de centres
+ *   Centres actifs  (Activity)     — Centres avec statut ACTIF
+ *   Centres inactifs(CircleSlash2) — Centres désactivés
+ *   Adhérents       (Users2)       — Nombre total d'adhérents dans tous les centres
+ */
 import { Building2, Users2, CircleSlash2, Activity } from "lucide-react";
 
 type CentreStatsProps = {

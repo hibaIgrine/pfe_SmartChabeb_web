@@ -1,3 +1,15 @@
+/**
+ * presence.ts — Formatage de la présence utilisateur dans la messagerie.
+ *
+ * FONCTIONS :
+ *   getUserPresenceLabel(user) — Retourne un libellé de présence lisible :
+ *     • "En ligne" si last_seen < 2 min
+ *     • "il y a X min / X h / X j" sinon
+ *     • "" si pas de last_seen
+ *
+ * UTILISATION :
+ *   GroupManagementPanel, ConversationList — affichage du statut "online" des membres
+ */
 import type { MessengerUser } from "../types";
 
 function formatRelativeDate(value?: string | null) {

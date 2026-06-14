@@ -1,3 +1,13 @@
+/**
+ * UserStats.tsx — Cartes KPI en haut de la page gestion des membres.
+ *
+ * MÉTRIQUES :
+ *   Total utilisateurs (Users2) — Tous les utilisateurs du système
+ *   Actifs (UserCheck)         — Comptes avec compte_actif=true
+ *   Sans centre (MapPinOff)    — Utilisateurs non rattachés à un centre
+ *   Bannis (ShieldAlert)       — Utilisateurs actuellement bannis
+ *   hideOrphanStat             — Masque la stat "sans centre" si prop=true
+ */
 import { Users2, UserCheck, MapPinOff, ShieldAlert } from "lucide-react"; // 💡 Changé MapPin par MapPinOff pour le sens
 import { useMemo } from "react";
 

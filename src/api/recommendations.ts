@@ -1,3 +1,29 @@
+/**
+ * recommendations.ts — Appels API pour le système de recommandation ML.
+ *
+ * RÔLE :
+ *   Interface frontend complète avec le pipeline ML :
+ *   Frontend → NestJS /sessions + /recommendations → Flask /predict → scikit-learn.
+ *
+ * INTERFACE SessionPayload (les 30 features ML) :
+ *   Correspond exactement aux champs attendus par le CreateSessionDto NestJS.
+ *   Voir backend/src/sessions/dto/create-session.dto.ts pour la description détaillée
+ *   de chaque feature et son rôle dans le modèle ML.
+ *
+ * FLUX D'UTILISATION (ClubRecommendationPage) :
+ *   1. createSession(payload)            → Crée la session en BDD, retourne { id, ... }
+ *   2. getRecommendation(sessionId)      → NestJS appelle Flask, retourne les top-k activités
+ *                                           { recommandations: [{activite, probabilite}], modele_utilise }
+ *   3. getSessionRecommendations(id)     → Historique des prédictions pour une session
+ *   4. chooseActivity(recoId, activite)  → Le coach valide son choix → feedback loop ML
+ *
+ * FONCTIONS EXPORTÉES :
+ *   createSession(data)               — POST /sessions (crée une séance ML)
+ *   getSessions()                     — GET /sessions (liste toutes les sessions)
+ *   getRecommendation(sessionId)      — POST /recommendations/session/:id (demande ML)
+ *   getSessionRecommendations(id)     — GET /recommendations/session/:id (historique)
+ *   chooseActivity(recoId, activite)  — PATCH /recommendations/:id/choose (choix coach)
+ */
 import axios from "./axios";
 
 export interface SessionPayload {

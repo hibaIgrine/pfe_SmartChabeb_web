@@ -1,3 +1,18 @@
+/**
+ * LocauxPlanningPage.tsx — Planning de l'occupation des locaux (vue calendrier).
+ *
+ * RÔLE :
+ *   Vue hebdomadaire ou journalière de l'occupation de toutes les salles du centre.
+ *   Accessible via /centre/locaux-planning.
+ *
+ * CONTENU :
+ *   - Grille calendrier avec créneaux horaires × locaux
+ *   - Code couleur par type de réservation (club, événement, autre)
+ *   - Navigation semaine précédente / suivante
+ *   - RoomOccupancyModal : détail des réservations d'une salle pour un créneau donné
+ *
+ * ACCÈS : RESPONSABLE_CENTRE uniquement
+ */
 import { useEffect, useMemo, useState } from "react";
 import api from "../../api/axios";
 import {

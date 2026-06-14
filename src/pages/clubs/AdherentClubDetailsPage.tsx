@@ -1,3 +1,19 @@
+/**
+ * AdherentClubDetailsPage.tsx — Détail d'un club vu par l'adhérent.
+ *
+ * RÔLE :
+ *   Page de détail d'un club depuis la perspective de l'adhérent ou de l'admin.
+ *   Accessible via /clubs/:clubId (ROUTES.club.details).
+ *
+ * CONTENU :
+ *   - Présentation du club : nom, catégorie, description, planning, lieu
+ *   - Liste des responsables et du staff encadrant
+ *   - Bouton "Rejoindre" ou statut d'inscription actuel
+ *   - Événements récents du club
+ *   - Retour vers la liste des clubs
+ *
+ * ACCÈS : ADMIN + ADHERENT
+ */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {

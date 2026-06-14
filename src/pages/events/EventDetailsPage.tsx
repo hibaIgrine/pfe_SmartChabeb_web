@@ -1,3 +1,23 @@
+/**
+ * EventDetailsPage.tsx — Page de détail d'un événement (vue adhérent).
+ *
+ * RÔLE :
+ *   Page de consultation d'un événement pour les adhérents.
+ *   Accessible via /events/:id (ROUTES.adherent.eventDetails).
+ *
+ * CONTENU :
+ *   - Titre, description, dates, lieu, organisateur
+ *   - Capacité restante et statut d'inscription de l'utilisateur courant
+ *   - Timeline des étapes de l'événement
+ *   - Bouton d'inscription / annulation / liste d'attente
+ *   - Liens vers certificat si événement terminé et participation confirmée
+ *
+ * TYPES :
+ *   EventDetail (depuis events/types.ts) — type complet de l'événement
+ *   formatDateOnly / toTimeHHMM (events/utils.ts) — formatage dates
+ *
+ * ACCÈS : ADMIN + ADHERENT
+ */
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";

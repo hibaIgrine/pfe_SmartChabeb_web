@@ -1,3 +1,24 @@
+/**
+ * AccessDeniedPage.tsx — Page d'erreur 403 "Accès refusé" avec design visuel.
+ *
+ * RÔLE :
+ *   Affichée par ProtectedRoute quand un utilisateur tente d'accéder à une route
+ *   pour laquelle son rôle n'est pas autorisé.
+ *
+ * DESIGN :
+ *   - Illustration cadenas SVG pur CSS (anneau + corps + trou de serrure)
+ *   - Blobs décoratifs arrière-plan (glassmorphism)
+ *   - Badge "Accès restreint" rouge-saumon
+ *   - Message friendly en français
+ *
+ * NAVIGATION :
+ *   Bouton "Retour"      → navigate(-1) : retour à la page précédente dans l'historique
+ *   Bouton "Mon espace"  → getLandingPathForRole(role) : redirige vers la page d'accueil
+ *                          appropriée selon le rôle courant (admin/centre/club/adherent)
+ *
+ * PALETTE :
+ *   #436D75 = teal principal, #E98A7D = rouge-saumon accent, #D9E8D1 = vert doux
+ */
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Home } from "lucide-react";
 import { ROUTES, getLandingPathForRole } from "../../constants/routes";

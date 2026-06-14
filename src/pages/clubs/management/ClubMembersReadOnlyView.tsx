@@ -1,3 +1,17 @@
+/**
+ * ClubMembersReadOnlyView.tsx — Vue lecture seule des membres d'un club (staff non-responsable).
+ *
+ * RÔLE :
+ *   Affiche la liste des membres actifs (statut=ACCEPTE) du club
+ *   pour les membres du staff qui n'ont pas les droits de gestion complets.
+ *
+ * INFORMATIONS AFFICHÉES :
+ *   - Nom, prénom, email, date d'inscription de chaque membre
+ *   - Capacité du club et nombre de places restantes
+ *   - Compteur total des membres actifs
+ *
+ * ACCÈS : RESPONSABLE_CLUB (lecture seule) / staff club
+ */
 import { ArrowLeft, Users, CheckCircle2, Mail, Calendar, User } from "lucide-react";
 
 export const ClubMembersReadOnlyView = ({ club, onBack }: any) => {

@@ -1,3 +1,17 @@
+/**
+ * GroupManagementPanel.tsx — Panneau de gestion d'un groupe de messagerie.
+ *
+ * RÔLE :
+ *   Interface accessible depuis l'icône ⚙️ dans ConversationView pour les groupes.
+ *   Permet au créateur/admin du groupe de modifier sa configuration.
+ *
+ * FONCTIONNALITÉS :
+ *   - Renommer le groupe
+ *   - Ajouter des membres (depuis availableUsers non déjà membres)
+ *   - Retirer un membre (avec confirmation)
+ *   - Affichage du statut de présence (getUserPresenceLabel) pour chaque membre
+ *   - Seul canManage=true active les boutons d'action (restriction au créateur)
+ */
 import { PlusCircle, Save, Trash2, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { MessengerConversation, MessengerUser } from "../types";

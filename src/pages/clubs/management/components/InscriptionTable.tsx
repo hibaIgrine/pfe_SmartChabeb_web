@@ -1,3 +1,22 @@
+/**
+ * InscriptionTable.tsx — Tableau des inscriptions d'un club selon leur statut.
+ *
+ * RÔLE :
+ *   Affiche la liste des membres/demandes selon l'onglet actif (type prop).
+ *   Utilisé dans ClubManagementView avec ManagementTabs.
+ *
+ * TYPES (prop `type`) :
+ *   'PENDING'  — Demandes en attente: boutons Accepter (Check) / Refuser (X)
+ *   'ACCEPTED' — Membres actifs: bouton Exclure (Trash2) + badge ShieldAlert si suspendu
+ *   'WAITING'  — Liste d'attente: possibilité de promouvoir si place dispo
+ *   'REJECTED' — Refusés: vue lecture seule
+ *
+ * INFORMATIONS PAR LIGNE :
+ *   Avatar, nom (User), email (Mail), date d'inscription (Calendar)
+ *
+ * MODE readOnly :
+ *   Si readOnly=true, masque tous les boutons d'action (vue staff non-responsable)
+ */
 import { Check, X, Trash2, User, Calendar, Mail, ShieldAlert } from "lucide-react";
 
 export const InscriptionTable = ({ data, type, readOnly = false, onAction }: any) => {

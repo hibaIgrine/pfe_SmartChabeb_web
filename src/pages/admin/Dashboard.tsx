@@ -1,3 +1,24 @@
+/**
+ * Dashboard.tsx — Tableau de bord statistique de l'administrateur.
+ *
+ * RÔLE :
+ *   Page d'accueil de l'espace ADMIN. Affiche une vue d'ensemble de toute la plateforme
+ *   avec des KPIs en temps réel chargés depuis le backend.
+ *
+ * MÉTRIQUES AFFICHÉES :
+ *   - Utilisateurs : total, nouveaux cette semaine, actifs, bannis
+ *   - Centres : nombre total de maisons des jeunes
+ *   - Clubs : total, actifs, en attente de validation
+ *   - Réservations : nombre total + revenus (TND)
+ *   - Présences : taux de participation aux séances
+ *   - Activité récente : derniers événements / inscriptions
+ *
+ * DONNÉES :
+ *   Chargées via plusieurs appels API parallèles au montage (useEffect)
+ *   Chaque KPI est une "MetricCard" avec icône Lucide, valeur, variation (TrendingUp)
+ *
+ * ACCÈS : ADMIN uniquement (protégé par ProtectedRoute dans App.tsx)
+ */
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
 import {

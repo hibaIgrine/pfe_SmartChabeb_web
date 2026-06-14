@@ -1,3 +1,19 @@
+/**
+ * StoryViewer.tsx — Visionneuse plein écran des stories d'un utilisateur.
+ *
+ * RÔLE :
+ *   Interface de visualisation des stories (image/vidéo) avec barre de progression.
+ *   Style "Instagram Stories" : bande de progression en haut, auto-avance.
+ *
+ * FONCTIONNALITÉS :
+ *   - Barre de progression animée (CSS transition 5s par story)
+ *   - Navigation manuelle: ChevronLeft / ChevronRight
+ *   - Affichage du compteur de vues (Eye)
+ *   - Bouton Supprimer (Trash2) pour l'auteur de la story
+ *   - markStoryAsViewed() appelé à l'ouverture de chaque story
+ *   - deleteStory() avec confirmation
+ *   - Fermeture par bouton X ou clic overlay
+ */
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Eye, Trash2, X } from "lucide-react";
 import {

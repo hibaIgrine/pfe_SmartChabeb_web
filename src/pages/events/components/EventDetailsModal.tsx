@@ -1,3 +1,17 @@
+/**
+ * EventDetailsModal.tsx — Modale affichant les détails complets d'un événement.
+ *
+ * RÔLE :
+ *   Wrapper portal pour EventDetailsPanel.
+ *   Affichée quand un utilisateur clique sur "Voir les détails" dans EventsList.
+ *
+ * CONTENU :
+ *   EventDetailsPanel — Toutes les infos de l'événement + liste des participants
+ *
+ * COMPORTEMENT :
+ *   Fermeture par clic overlay ou bouton X.
+ *   Rendu via createPortal sur document.body.
+ */
 import { createPortal } from "react-dom";
 import { useEffect } from "react";
 import EventDetailsPanel from "./EventDetailsPanel";
@@ -45,6 +59,11 @@ export default function EventDetailsModal({
     (p: any) => p.user?.id === user.id,
   );
 
+  const isPastEvent =
+    selectedDetail?.end_time
+      ? new Date(selectedDetail.end_time).getTime() < Date.now()
+      : false;
+
   const handlePrimaryAction = () => {
     if (!selectedDetail) return;
     if (myParticipation) {
@@ -71,21 +90,23 @@ export default function EventDetailsModal({
             </h3>
           </div>
 
-          <div className="flex-shrink-0">
-            <button
-              onClick={handlePrimaryAction}
-              disabled={isActionLoading}
-              className="px-4 py-2 rounded-xl bg-[#E98A7D] text-white font-black disabled:opacity-60"
-            >
-              {isActionLoading
-                ? "Traitement..."
-                : myParticipation
-                  ? myParticipation.status === "EN_ATTENTE"
-                    ? "Annuler ma demande"
-                    : "Annuler ma participation"
-                  : "Demander à participer"}
-            </button>
-          </div>
+          {!isPastEvent && (
+            <div className="flex-shrink-0">
+              <button
+                onClick={handlePrimaryAction}
+                disabled={isActionLoading}
+                className="px-4 py-2 rounded-xl bg-[#E98A7D] text-white font-black disabled:opacity-60"
+              >
+                {isActionLoading
+                  ? "Traitement..."
+                  : myParticipation
+                    ? myParticipation.status === "EN_ATTENTE"
+                      ? "Annuler ma demande"
+                      : "Annuler ma participation"
+                    : "Demander à participer"}
+              </button>
+            </div>
+          )}
         </div>
 
         <div
@@ -94,9 +115,6 @@ export default function EventDetailsModal({
         >
           <EventDetailsPanel
             selectedDetail={selectedDetail}
-            canManageParticipants={false}
-            onUpdateParticipantStatus={() => undefined}
-            onToggleCheckin={() => undefined}
             onSelfCheckin={onSelfCheckin ?? (async () => {})}
             onSubmitFeedback={onSubmitFeedback}
             isSubmittingFeedback={isSubmittingFeedback}

@@ -1,3 +1,15 @@
+/**
+ * RoomOccupancyModal.tsx — Modale de consultation du planning d'une salle.
+ *
+ * RÔLE :
+ *   Popup affichant tous les créneaux de réservation d'une salle pour une journée donnée.
+ *   Aide les utilisateurs à choisir le bon créneau sans conflit.
+ *
+ * COMPORTEMENT :
+ *   1. À l'ouverture : GET /reservations?salleId=:id&date=:date → OccupancySlot[]
+ *   2. Affichage de la liste des créneaux { heure_debut, heure_fin, objet }
+ *   3. Fermeture par clic X ou overlay
+ */
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import api from "../../../api/axios";

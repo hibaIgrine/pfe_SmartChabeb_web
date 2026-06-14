@@ -1,3 +1,25 @@
+/**
+ * PostCard.tsx — Carte d'affichage d'une publication du feed social.
+ *
+ * RÔLE :
+ *   Composant principal de rendu d'une Publication avec toutes ses interactions.
+ *   C'est le composant le plus complexe du module social-media.
+ *
+ * CONTENU :
+ *   - En-tête : avatar, nom cliquable (Link → /profile/:id), date relative, visibility badge
+ *   - Partage : si post.original_post_id, affiche l'aperçu de la publication originale
+ *   - Corps   : texte, hashtags (#tag), mentions (@nom), localisation
+ *   - Médias  : images (galerie), vidéos, fichiers PDF/document
+ *   - ReactionBar : réactions + commentaires + partage
+ *   - Section commentaires : liste + saisie + emoji picker (emoji-picker-react)
+ *   - Menu contextuel (⋮) : modifier, supprimer, masquer l'auteur, signaler
+ *
+ * INTERACTIONS :
+ *   - Comments: create/edit/delete via API (createComment, updateComment, deleteComment)
+ *   - EmojiPicker (Theme.LIGHT) pour enrichir les commentaires
+ *   - onEdit(post) → ouvre PostComposer en mode édition dans SocialFeedPage
+ *   - onFavorite() → met à jour le badge FavoritePostsBell
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import EmojiPicker, { Theme, type EmojiClickData } from "emoji-picker-react";

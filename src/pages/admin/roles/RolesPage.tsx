@@ -1,3 +1,23 @@
+/**
+ * RolesPage.tsx — Gestion des rôles personnalisés (grades) de la plateforme.
+ *
+ * RÔLE :
+ *   Interface CRUD pour les rôles/grades qui peuvent être assignés aux membres du staff
+ *   des clubs (ex: "Entraîneur Principal", "Assistant Coach", "Bénévole"…).
+ *   Accessible via /admin/roles.
+ *
+ * COMPOSITION :
+ *   RoleHeader  — Titre + bouton "Créer un rôle"
+ *   RoleFilters — Filtre par statut (actif/inactif), recherche par nom
+ *   RoleCard    — Carte d'un rôle avec description, permissions, actions
+ *   RoleModals  — Modales de création, édition et désactivation
+ *
+ * NOTE :
+ *   Ces rôles sont distincts des rôles système (ADMIN/RESPONSABLE_CLUB…).
+ *   Ce sont des rôles métier dans un club.
+ *
+ * ACCÈS : ADMIN uniquement
+ */
 import { useEffect, useState, useMemo } from "react";
 import api from "../../../api/axios";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";

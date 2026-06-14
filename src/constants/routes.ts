@@ -1,3 +1,28 @@
+/**
+ * routes.ts — Table de correspondance centralisée de toutes les URLs de l'application.
+ *
+ * RÔLE :
+ *   Évite les URLs "magiques" dispersées dans le code. Toute navigation doit utiliser
+ *   ces constantes pour faciliter les refactorisations et détecter les routes cassées.
+ *
+ * ORGANISATION PAR RÔLE :
+ *   public   — Pages accessibles sans authentification (accueil, login, signup, Google OAuth)
+ *   admin    — Espace ADMIN (dashboard, centres, membres, rôles, événements, revenus)
+ *   centre   — Espace RESPONSABLE_CENTRE (locaux, réservations, événements, membres)
+ *   club     — Espace RESPONSABLE_CLUB + partiel ADHERENT (clubs, tâches, réservations…)
+ *   adherent — Espace ADHERENT (réservations, certificats, présences, événements, séances)
+ *   shared   — Pages communes à tous les rôles (profil, feed, messagerie, chatbot, paiements)
+ *
+ * FONCTIONS EXPORTÉES :
+ *   getLandingPathForRole(role) — Retourne la page d'accueil par défaut selon le rôle
+ *                                 (ADMIN → /admin/dashboard, CENTRE → /centre/mon-centre,
+ *                                  CLUB → /mon-club, ADHERENT → /clubs)
+ *   getCurrentRoleLandingPath() — Même chose mais depuis le localStorage (user connecté)
+ *
+ * NOTE :
+ *   Les routes contenant `:id` ou `:clubId` sont des patterns React Router v7.
+ *   Utiliser la fonction `generatePath()` de React Router pour les construire avec une valeur réelle.
+ */
 import { getStoredRole } from "../utils/authSession";
 
 export const ROUTES = {

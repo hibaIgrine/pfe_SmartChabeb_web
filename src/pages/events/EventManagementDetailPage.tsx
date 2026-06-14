@@ -1,3 +1,22 @@
+/**
+ * EventManagementDetailPage.tsx — Page de détail avancée d'un événement (gestionnaire).
+ *
+ * RÔLE :
+ *   Vue complète de gestion d'un événement pour ADMIN, CENTRE et CLUB.
+ *   Accessible via /admin/events/:id/detail, /centre/events/:id/detail, /club/events/:id/detail.
+ *
+ * CONTENU :
+ *   - Informations complètes de l'événement (titre, description, dates, lieu, capacité)
+ *   - Timeline des étapes (EventTimelineStep)
+ *   - Statistiques de participation (inscrits, présents, taux)
+ *   - Actions selon le rôle :
+ *     ADMIN/CENTRE : Approuver, Refuser, Modifier, Supprimer
+ *     CLUB : Modifier sa propre demande d'événement
+ *   - Téléchargement liste des participants (PDF)
+ *   - Feedback moyen des participants après l'événement
+ *
+ * ACCÈS : ADMIN, RESPONSABLE_CENTRE, RESPONSABLE_CLUB (routes différentes par rôle)
+ */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -138,6 +157,7 @@ export default function EventManagementDetailPage() {
   const eventStart = detail?.start_time ? new Date(detail.start_time) : null;
   const eventEnd = detail?.end_time ? new Date(detail.end_time) : null;
   const isEventOngoing = eventStart && eventEnd && now >= eventStart && now <= eventEnd;
+  const isEventOver = eventEnd ? now > eventEnd : false;
   const canDoSelfCheckin = isMyStatusConfirmed && !isMyCheckInAlready && isEventOngoing;
 
   const renderStars = (value: number, size = 16) => (
@@ -175,23 +195,25 @@ export default function EventManagementDetailPage() {
           {(["EN_ATTENTE", "CONFIRME", "REFUSE", "ANNULE"] as ParticipantStatus[]).map((status) => (
             <button
               key={status}
+              disabled={isEventOver}
               onClick={() => updateParticipantStatus(participant.id, status)}
               className={`px-2.5 py-1 text-[10px] font-black rounded-xl border transition ${
                 participant.status === status
                   ? "border-smart-teal bg-smart-teal text-white"
                   : "border-gray-200 hover:bg-gray-100 text-gray-700"
-              }`}
+              } disabled:opacity-40 disabled:cursor-not-allowed`}
             >
               {status}
             </button>
           ))}
           <button
+            disabled={!isEventOngoing}
             onClick={() => toggleCheckin(participant.id, !participant.checkin)}
             className={`px-2.5 py-1 text-[10px] font-black rounded-xl border transition ${
               participant.checkin
                 ? "border-green-300 text-green-700 bg-green-50 hover:bg-green-100"
                 : "border-gray-200 text-gray-700 hover:bg-gray-100"
-            }`}
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             {participant.checkin ? "✓ Check-in OK" : "Check-in"}
           </button>
@@ -476,7 +498,31 @@ export default function EventManagementDetailPage() {
 
       {/* Participants */}
       <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm p-6 space-y-6">
-        <p className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-400">Participants</p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-400">Participants</p>
+          {user?.role === "RESPONSABLE_CENTRE" && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => navigate(ROUTES.centre.eventRequests)}
+                className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-black hover:bg-amber-100 transition"
+              >
+                Demandes
+              </button>
+              <button
+                onClick={() => navigate(ROUTES.centre.eventParticipants)}
+                className="px-3 py-1.5 rounded-xl bg-[#D9E8D1] border border-[#436D75]/25 text-[#436D75] text-[11px] font-black hover:bg-[#C4DBBF] transition"
+              >
+                Participants
+              </button>
+              <button
+                onClick={() => navigate(ROUTES.centre.eventWaitingList)}
+                className="px-3 py-1.5 rounded-xl bg-gray-100 border border-gray-200 text-gray-600 text-[11px] font-black hover:bg-gray-200 transition"
+              >
+                Liste d'attente
+              </button>
+            </div>
+          )}
+        </div>
 
         <div>
           <div className="flex items-center gap-2 mb-3">

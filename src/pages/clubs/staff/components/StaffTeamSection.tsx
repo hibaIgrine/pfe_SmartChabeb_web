@@ -1,3 +1,16 @@
+/**
+ * StaffTeamSection.tsx — Section liste du personnel (staff) d'un club.
+ *
+ * RÔLE :
+ *   Affiche les membres du staff avec recherche, filtrage par rôle,
+ *   et actions de gestion (changer rôle, désactiver membre).
+ *
+ * FONCTIONNALITÉS :
+ *   search             — Recherche par nom
+ *   filtreRôle         — Filtre par rôle personnalisé
+ *   Bouton "Désactiver" — Retire le membre du staff (Power icon)
+ *   Affichage du rôle formaté via formatRoleLabel()
+ */
 import { useState } from "react";
 import { ListFilter, Power, Search, Users } from "lucide-react";
 import { formatRoleLabel } from "../utils";

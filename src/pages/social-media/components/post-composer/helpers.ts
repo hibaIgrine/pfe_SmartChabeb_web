@@ -1,3 +1,18 @@
+/**
+ * helpers.ts — Fonctions utilitaires du PostComposer (suggestions de localisation).
+ *
+ * CONSTANTES :
+ *   CUSTOM_LOCATION_STORAGE_KEY — Clé localStorage pour les localisations personnalisées
+ *
+ * FONCTIONS :
+ *   normalizeLocation(value)          — Trim + suppression des espaces multiples
+ *   readCustomLocationSuggestions()   — Lit les localisations mémorisées depuis localStorage
+ *   saveCustomLocationSuggestion(loc) — Ajoute une localisation dans localStorage (max 10)
+ *   getAllLocationSuggestions()        — Combine SOCIAL_LOCATION_SUGGESTIONS + localisations custom
+ *
+ * UTILISATION :
+ *   PostComposer.tsx — pour afficher les suggestions de localisation dans le champ lieu
+ */
 import { SOCIAL_LOCATION_SUGGESTIONS } from "../../types";
 
 export const CUSTOM_LOCATION_STORAGE_KEY = "social-feed-custom-locations";

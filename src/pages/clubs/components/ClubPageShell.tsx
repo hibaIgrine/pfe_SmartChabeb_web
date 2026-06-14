@@ -1,3 +1,17 @@
+/**
+ * ClubPageShell.tsx — Enveloppe de mise en page commune à toutes les pages club.
+ *
+ * RÔLE :
+ *   Layout wrapper partagé entre les pages du module clubs :
+ *   bouton retour, titre, sous-titre, spinner chargement, notification toast.
+ *
+ * PROPS :
+ *   title, subtitle  — Entête de la page
+ *   loading          — Affiche un Loader2 spinner centré
+ *   error            — Message d'erreur rouge (AlertCircle)
+ *   notification     — Toast succès/erreur (disparaît après 3s)
+ *   children         — Contenu principal de la page
+ */
 import type { ReactNode } from "react";
 import { ArrowLeft, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";

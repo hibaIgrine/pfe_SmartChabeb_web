@@ -1,3 +1,18 @@
+/**
+ * ManagedClubDetailsPage.tsx — Détail d'un club géré par le responsable.
+ *
+ * RÔLE :
+ *   Vue détaillée d'un club depuis la perspective du RESPONSABLE_CLUB.
+ *   Accessible via /my-clubs/:clubId (ROUTES.club.managedDetails).
+ *
+ * CONTENU :
+ *   - Informations du club (nom, catégorie, lieu, description, planning)
+ *   - Statistiques (nb membres, inscriptions en attente, taux de présence)
+ *   - Navigation vers les sous-sections : membres, tâches, feedbacks, présences
+ *   - Bouton édition (ouvre EditClubModal si ADMIN/CENTRE)
+ *
+ * ACCÈS : ADMIN + RESPONSABLE_CLUB
+ */
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../api/axios";

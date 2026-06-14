@@ -1,3 +1,18 @@
+/**
+ * ConversationList.tsx — Panneau gauche de la messagerie : liste des conversations.
+ *
+ * RÔLE :
+ *   Affiche toutes les conversations de l'utilisateur avec filtres, recherche,
+ *   badges non-lus, actions contextuelles (archiver, supprimer).
+ *
+ * FONCTIONNALITÉS :
+ *   - Filtre par mode: ALL / UNREAD / GROUP / ARCHIVED
+ *   - Recherche par nom de conversation ou participant
+ *   - Badge rouge pour messages non lus
+ *   - Menu contextuel (⋮) : archiver/désarchiver, supprimer
+ *   - Indicateur "En ligne" (point vert) via presenceMap
+ *   - Aperçu du dernier message (texte tronqué, ou "📎 Pièce jointe")
+ */
 import {
   Archive,
   ArchiveRestore,

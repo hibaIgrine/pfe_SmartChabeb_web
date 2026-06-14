@@ -1,3 +1,18 @@
+/**
+ * MyAllRequestsPage.tsx — Toutes les demandes d'inscription de l'adhérent.
+ *
+ * RÔLE :
+ *   Page récapitulative des demandes d'adhésion soumises par l'adhérent connecté.
+ *   Accessible via /my-club-requests (ROUTES.adherent.myClubRequests).
+ *
+ * CONTENU :
+ *   - Liste de toutes les demandes avec statut : EN_ATTENTE / ACCEPTEE / REJETEE
+ *   - Nom du club, catégorie, date de la demande
+ *   - Badge coloré selon le statut
+ *   - Lien direct vers le club (si ACCEPTEE)
+ *
+ * ACCÈS : ADHERENT uniquement
+ */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {

@@ -1,3 +1,19 @@
+/**
+ * comment-content.ts — Sérialisation/désérialisation des commentaires enrichis.
+ *
+ * RÔLE :
+ *   Les commentaires peuvent contenir des images et des réponses à d'autres commentaires.
+ *   Ce format est encodé avec des tokens spéciaux dans le champ content (string) :
+ *
+ *   [[img:url]] — Image embarquée dans le commentaire
+ *   [[reply:commentId]] — Réponse à un commentaire existant
+ *
+ * FONCTIONS :
+ *   serializeCommentContent()  — Construit le string encodé depuis les données
+ *   parseCommentContent()      — Extrait { text, imageUrls[], replyToCommentId } depuis le string
+ *
+ * UTILISATION : PostCard.tsx pour l'affichage et l'envoi de commentaires avec médias
+ */
 const COMMENT_IMAGE_TOKEN_REGEX = /\[\[img:(.*?)\]\]/g;
 const COMMENT_REPLY_TOKEN_REGEX = /\[\[reply:(.*?)\]\]/g;
 

@@ -1,3 +1,16 @@
+/**
+ * types.ts — Props de PostComposer (interface TypeScript complète).
+ *
+ * RÔLE :
+ *   Définit PostComposerProps : toutes les props du composant PostComposer.
+ *   Séparation de l'interface des types dans un fichier dédié pour la lisibilité.
+ *
+ * PROPS PRINCIPALES :
+ *   Texte/média/hashtags/mentions/visibilité/localisation — état du brouillon
+ *   canSubmit, submitting — états UI du bouton Publier
+ *   isEditing            — vrai si modification d'un post existant
+ *   Callbacks: onSubmit, setters d'état, onAddMediaFile, onAddMentionById, etc.
+ */
 import type { FormEvent } from "react";
 import type {
   MentionUser,

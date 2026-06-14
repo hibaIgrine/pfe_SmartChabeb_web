@@ -1,3 +1,19 @@
+/**
+ * FormUpdateInfo.tsx — Formulaire de mise à jour des informations personnelles.
+ *
+ * RÔLE :
+ *   Sous-formulaire de MyProfilePage pour modifier les données du profil utilisateur.
+ *
+ * CHAMPS :
+ *   nom, prénom, email (lecture seule), bio, genre, date_naissance,
+ *   gouvernorat (liste GOVERNORATES), établissement (recherche autocomplétion API),
+ *   photo de profil (upload image)
+ *
+ * FONCTIONNALITÉS :
+ *   - Autocomplete établissement via searchEtablissements() (debounce)
+ *   - Validation locale avant soumission
+ *   - onSubmit(values) remonte les données au parent MyProfilePage
+ */
 import { useEffect, useState } from "react";
 import { GOVERNORATES } from "../../../constants/governorates";
 import { searchEtablissements } from "../../../api/etablissements.api";

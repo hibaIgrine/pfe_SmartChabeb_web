@@ -1,3 +1,14 @@
+/**
+ * LocalFilters.tsx — Filtres de la liste des locaux.
+ *
+ * FILTRES :
+ *   search        — Recherche par nom de local
+ *   type          — Filtre par type de local (Salle, Terrain, Gymnase...)
+ *   availableTypes— Types disponibles (calculés dynamiquement depuis la liste)
+ *
+ * COMPORTEMENT :
+ *   Bouton X remet tous les filtres à zéro.
+ */
 import { Search, X, MapPin, LayoutGrid } from "lucide-react";
 
 interface LocalFiltersProps {

@@ -1,3 +1,19 @@
+/**
+ * ReservationPage.tsx — Page de réservation de locaux (composant de base partagé).
+ *
+ * RÔLE :
+ *   Interface de réservation de salles/locaux dans les maisons des jeunes.
+ *   Affiche la disponibilité des locaux et gère la réservation.
+ *
+ * SOUS-COMPOSANT :
+ *   AvailabilityMiniCalendar — Affiche les créneaux occupés du jour pour un local donné
+ *
+ * FONCTIONNALITÉS :
+ *   - Sélection du local à réserver
+ *   - Visualisation de la disponibilité (créneaux occupés/libres)
+ *   - Soumission d'une demande de réservation (objet, date, durée)
+ *   - Statuts : EN_ATTENTE → APPROUVEE / REFUSEE → PAYEE
+ */
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
 import { Check, X, Clock, Calendar, Eye } from "lucide-react";

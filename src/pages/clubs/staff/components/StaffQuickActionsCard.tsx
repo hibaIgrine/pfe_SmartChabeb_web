@@ -1,3 +1,11 @@
+/**
+ * StaffQuickActionsCard.tsx — Carte d'actions rapides de la page staff.
+ *
+ * RÔLE :
+ *   Deux boutons d'action principaux dans ClubStaffPage :
+ *   • "Ajouter un membre" → ouvre AddStaffModal (désactivé si hasAvailableStaff=false)
+ *   • "Créer un rôle" → ouvre AddRoleModal
+ */
 type Props = {
   onAddStaff: () => void;
   onAddRole: () => void;

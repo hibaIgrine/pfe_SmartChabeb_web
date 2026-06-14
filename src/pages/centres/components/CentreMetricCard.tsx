@@ -1,3 +1,16 @@
+/**
+ * CentreMetricCard.tsx — Carte KPI générique pour le tableau de bord ResponsableCentre.
+ *
+ * RÔLE :
+ *   Composant réutilisable pour afficher un indicateur avec icône, libellé, valeur et aide.
+ *   Utilisé dans ResponsableCentrePage pour les métriques du centre.
+ *
+ * PROPS :
+ *   icon      — Composant icône React (Lucide)
+ *   label     — Titre de la métrique
+ *   value     — Valeur numérique de la métrique
+ *   helpText  — Texte d'aide explicatif (affiché en sous-titre)
+ */
 import type { ReactNode } from "react";
 
 interface CentreMetricCardProps {

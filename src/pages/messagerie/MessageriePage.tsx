@@ -1,3 +1,37 @@
+/**
+ * MessageriePage.tsx — Interface de messagerie instantanée temps réel.
+ *
+ * RÔLE :
+ *   Page principale du module de messagerie. Layout en 3 colonnes :
+ *   [Sidebar conversations] | [Zone messages] | [Panel groupe optionnel]
+ *
+ * COMPOSITION :
+ *   ConversationList  — Liste des conversations avec aperçu dernier message + badge non-lus
+ *   ConversationView  — Zone principale : messages, saisie, indicateur de frappe
+ *   RecipientPanel    — Panneau de sélection des destinataires pour nouvelle conversation
+ *   GroupManagementPanel — Panneau de gestion du groupe (membres, renommage) si conv. groupe
+ *
+ * HOOK PRINCIPAL : useMessageriePage()
+ *   Gère toute la logique complexe :
+ *   - Connexion Socket.IO (getMessagerieSocket) avec auth JWT
+ *   - Présence en ligne (heartbeat toutes les 30s + offline sur beforeunload)
+ *   - Chargement des conversations + messages
+ *   - Envoi/réception de messages en temps réel
+ *   - Indicateurs de frappe (typing) avec debounce 8s
+ *   - Filtrage des conversations (recherche + archives)
+ *   - Mute, archive, suppression de conversations
+ *   - Gestion des membres de groupe
+ *
+ * DEEP LINK :
+ *   ?conversationId=<id> → ouvre directement une conversation spécifique
+ *   (utilisé depuis NotificationBell et MessageBell)
+ *
+ * CAS PARTICULIER LAYOUT :
+ *   overflow:hidden sur body quand cette page est active (hauteur 100vh exacte)
+ *   Le composant Layout.tsx détecte isMessageriePage pour ce comportement.
+ *
+ * ACCÈS : Tous les rôles authentifiés (ADMIN_OR_ANY_MEMBER)
+ */
 import { Check, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";

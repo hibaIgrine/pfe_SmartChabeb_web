@@ -1,3 +1,19 @@
+/**
+ * AdminEventsStatsPage.tsx — Statistiques globales des événements (vue admin).
+ *
+ * RÔLE :
+ *   Tableau de bord statistique des événements de toute la plateforme.
+ *   Accessible via /admin/events-stats.
+ *
+ * COMPOSITION :
+ *   EventsDashboardStats — Graphiques et KPIs :
+ *     * Total événements par statut (EN_ATTENTE / APPROUVE / REFUSE)
+ *     * Évolution mensuelle des événements
+ *     * Taux de participation moyen
+ *     * Classement des centres/clubs par activité événementielle
+ *
+ * ACCÈS : ADMIN uniquement
+ */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";

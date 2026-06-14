@@ -1,3 +1,17 @@
+/**
+ * FeedHeader.tsx — En-tête du fil d'actualité social.
+ *
+ * RÔLE :
+ *   Barre d'actions au-dessus du feed social.
+ *
+ * FONCTIONNALITÉS :
+ *   RefreshCw        — Bouton actualiser (recharge le feed)
+ *   EyeOff/HiddenUsers — Liste des utilisateurs masqués avec option de les démasquer
+ *                        (badge rouge indique le nombre d'utilisateurs masqués)
+ *
+ * COMPORTEMENT :
+ *   Clic X sur un utilisateur masqué → onUnhideUser(userId) → recharge le feed
+ */
 import { useMemo, useState } from "react";
 import { EyeOff, RefreshCw, X } from "lucide-react";
 import type { HiddenUserLink } from "../../../api/social-media.api";

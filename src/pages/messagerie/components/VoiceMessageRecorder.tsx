@@ -1,3 +1,20 @@
+/**
+ * VoiceMessageRecorder.tsx — Enregistreur de messages vocaux (Web Audio API).
+ *
+ * RÔLE :
+ *   Composant d'enregistrement audio in-browser via MediaRecorder API.
+ *   Intégré dans ConversationView pour envoyer des messages vocaux.
+ *
+ * CYCLE DE VIE :
+ *   1. Clic Mic → demande permission micro → démarre MediaRecorder
+ *   2. Timer en secondes affiché (useEffect)
+ *   3. Clic Stop → MediaRecorder.stop() → Blob → FileReader → dataUrl
+ *   4. Clic Trash → annule l'enregistrement
+ *   5. onRecorded({ dataUrl, mimeType, fileName }) → envoyé à ConversationView
+ *
+ * FORMATS SUPPORTÉS :
+ *   audio/webm (Chrome), audio/ogg (Firefox), audio/mp4 (Safari)
+ */
 import { Mic, Square, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 

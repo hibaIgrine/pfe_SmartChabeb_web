@@ -1,3 +1,45 @@
+/**
+ * generatePaymentReceipt.ts — Génération de reçus de paiement PDF côté client.
+ *
+ * RÔLE :
+ *   Produit un fichier PDF A4 professionnel téléchargeable directement dans le navigateur
+ *   via la bibliothèque jsPDF, sans aucun serveur intermédiaire.
+ *
+ * STRUCTURE DU PDF GÉNÉRÉ :
+ *   ┌─────────────────────────────────────────────────┐
+ *   │  HEADER teal : République Tunisienne | Centre   │
+ *   │  Bande sombre (DARK)                            │
+ *   ├─────────────────────────────────────────────────┤
+ *   │  TITRE : REÇU DE PAIEMENT (centré)              │
+ *   │  Méta : N° reçu  │  Date  │  Heure             │
+ *   ├─────────────────────────────────────────────────┤
+ *   │  Section Bénéficiaire (nom + email)             │
+ *   │  Section Paiement (montant TND + méthode)       │
+ *   │  Section Réservation (si présente)              │
+ *   │  Section Établissement (Maison des Jeunes)      │
+ *   ├─────────────────────────────────────────────────┤
+ *   │  FOOTER sombre : Smart Chabeb — MJS Tunisie     │
+ *   └─────────────────────────────────────────────────┘
+ *
+ * GESTION DE L'ARABE :
+ *   jsPDF ne supporte pas nativement les polices RTL/Arabe. La fonction textToImage()
+ *   rend le texte arabe sur un <canvas> HTML invisible (retina ×3) et insère l'image PNG
+ *   dans le PDF pour préserver l'affichage correct des caractères arabes.
+ *
+ * PALETTE DE COULEURS :
+ *   TEAL  [67, 109, 117]  — Couleur primaire de l'application
+ *   DARK  [32,  58,  67]  — Entête sombre
+ *   GREEN [22, 163,  74]  — Statut PAID
+ *   RED   [185, 28,  28]  — Statut non-PAID
+ *
+ * FONCTIONS INTERNES :
+ *   textToImage()   — Rendu canvas pour textes arabes/RTL → PNG → jsPDF.addImage
+ *   sectionTitle()  — Barre d'entête colorée pour chaque section
+ *   labelValue()    — Paire label gris + valeur noire alignées
+ *
+ * NOM DE FICHIER GÉNÉRÉ :
+ *   recu_paiement_<8 premiers chars ID>_<date ISO>.pdf
+ */
 import jsPDF from 'jspdf';
 
 export interface PaymentItem {

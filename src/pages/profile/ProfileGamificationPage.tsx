@@ -1,3 +1,25 @@
+/**
+ * ProfileGamificationPage.tsx — Classement gamification des membres.
+ *
+ * RÔLE :
+ *   Tableau de classement des membres par points de gamification.
+ *   Affiche les badges et niveaux des utilisateurs.
+ *
+ * SYSTÈME DE BADGES :
+ *   Points cumulés → seuils → badges :
+ *   Bronze (0+), Argent (100+), Or (500+), Platine (1000+), Diamant (5000+)
+ *
+ * DONNÉES :
+ *   GET /users/gamification/leaderboard → GamificationProfile[]
+ *   { user: {id, nom, prenom, photo_profil_url, points},
+ *     badges: [{key, label, minPoints}], rank }
+ *
+ * AFFICHAGE :
+ *   Top 3 en podium (Crown/Trophy/Medal) + liste paginée des autres membres
+ *   Badge de l'utilisateur courant mis en évidence
+ *
+ * ACCÈS : Tous les rôles authentifiés (ADMIN_OR_ANY_MEMBER)
+ */
 import { useEffect, useMemo, useState } from "react";
 import { Crown, Medal, Sparkles, Trophy } from "lucide-react";
 import api from "../../api/axios";

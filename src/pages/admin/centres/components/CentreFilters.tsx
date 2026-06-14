@@ -1,3 +1,14 @@
+/**
+ * CentreFilters.tsx — Barre de filtres de la liste des centres (admin).
+ *
+ * FILTRES :
+ *   search       — Recherche par nom de centre
+ *   selectedGouv — Filtre par gouvernorat (Map icon)
+ *   statusFilter — Filtre par statut: TOUS / ACTIF / INACTIF
+ *
+ * COMPORTEMENT :
+ *   Bouton X remet tous les filtres à zéro.
+ */
 import { Search, Map, X } from "lucide-react";
 
 export const CentreFilters = ({

@@ -1,3 +1,21 @@
+/**
+ * ClubManagementView.tsx — Vue complète de gestion d'un club (RESPONSABLE_CLUB).
+ *
+ * RÔLE :
+ *   Vue détaillée d'un club affichée dans ManagedClubDetailsPage.
+ *   Composition de sous-composants : header + onglets + tableau d'inscriptions.
+ *
+ * STRUCTURE :
+ *   ManagementHeader — Nom du club, statut, boutons actions (activer/désactiver)
+ *   ManagementTabs   — Onglets: Membres | Statistiques | Paramètres
+ *   InscriptionTable — Liste des inscriptions filtrée par statut (ACCEPTE/EN_ATTENTE/REFUSE)
+ *
+ * PROPS :
+ *   club             — Données complètes du club
+ *   onBack()         — Retour à la liste des clubs gérés
+ *   onUpdateStatus() — Changer le statut du club (ACTIF/INACTIF)
+ *   onMemberAction() — Accepter/refuser une inscription
+ */
 import { useState } from "react";
 import { InscriptionTable } from "./components/InscriptionTable";
 import { ManagementHeader } from "./components/ManagementHeader";

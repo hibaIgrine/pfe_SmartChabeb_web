@@ -1,3 +1,17 @@
+/**
+ * UserFilters.tsx — Barre de filtres pour la liste des utilisateurs (admin).
+ *
+ * FILTRES :
+ *   search        — Recherche par nom/email
+ *   filterRole    — Filtre par rôle (ADMIN/RESPONSABLE_CENTRE/RESPONSABLE_CLUB/ADHERENT)
+ *   filterCentre  — Filtre par centre rattaché
+ *   filterGouv    — Filtre par gouvernorat
+ *   ageMin/ageMax — Filtres par tranche d'âge
+ *   filterBanned  — Filtre les utilisateurs bannis uniquement
+ *
+ * COMPORTEMENT :
+ *   Bouton X remet tous les filtres à zéro (clearAll).
+ */
 import { Search, X } from "lucide-react";
 import { useMemo } from "react";
 

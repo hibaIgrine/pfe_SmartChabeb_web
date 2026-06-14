@@ -1,5 +1,22 @@
+/**
+ * EventWaitingListPage.tsx — Gestion de la liste d'attente des événements.
+ *
+ * RÔLE :
+ *   Interface pour gérer les participants en liste d'attente (LISTE_ATTENTE).
+ *   Accessible via /centre/events-waiting-list.
+ *
+ * FONCTIONNALITÉS :
+ *   - Sélection de l'événement
+ *   - Liste des candidats en attente (classés par date d'inscription)
+ *   - Transfert vers la liste principale si une place se libère
+ *   - Notification automatique du participant promu
+ *
+ * ACCÈS : RESPONSABLE_CENTRE uniquement
+ */
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+import { ROUTES } from "../../constants/routes";
 import type { EventItem, EventParticipant } from "./types";
 import { formatDateOnly } from "./utils";
 
@@ -15,6 +32,7 @@ type ParticipantsResponse = {
 };
 
 export default function EventWaitingListPage({ clubIds }: { clubIds?: string[] }) {
+  const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const headers = useMemo(
     () => ({ Authorization: `Bearer ${token}` }),
@@ -120,6 +138,26 @@ export default function EventWaitingListPage({ clubIds }: { clubIds?: string[] }
           className="px-4 py-2 rounded-xl bg-[#436D75] text-white text-xs font-black"
         >
           Actualiser
+        </button>
+      </div>
+
+      <div className="flex items-center gap-1 p-1.5 bg-gray-100 rounded-2xl w-fit">
+        <button
+          onClick={() => navigate(ROUTES.centre.eventRequests)}
+          className="px-4 py-2 rounded-xl text-xs font-black transition text-gray-500 hover:text-gray-700 hover:bg-white/70"
+        >
+          Demandes
+        </button>
+        <button
+          onClick={() => navigate(ROUTES.centre.eventParticipants)}
+          className="px-4 py-2 rounded-xl text-xs font-black transition text-gray-500 hover:text-gray-700 hover:bg-white/70"
+        >
+          Participants
+        </button>
+        <button
+          className="px-4 py-2 rounded-xl text-xs font-black bg-white text-smart-teal shadow-sm"
+        >
+          Liste d'attente
         </button>
       </div>
 

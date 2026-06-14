@@ -1,3 +1,12 @@
+/**
+ * LocauxStats.tsx — Cartes KPI du tableau de bord des locaux.
+ *
+ * MÉTRIQUES :
+ *   Salle la plus utilisée (Building2) — Nom + nombre de réservations
+ *   Total réservations (CalendarCheck2) — Nombre de réservations du mois
+ *   Taux d'occupation (Percent)         — % de créneaux occupés
+ *   Revenus (Wallet)                    — Total facturé (admin uniquement)
+ */
 import { Building2, CalendarCheck2, Percent, Wallet } from "lucide-react";
 
 export const LocauxStats = ({ reservationStats, isAdmin = false }: any) => {

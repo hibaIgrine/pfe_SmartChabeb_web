@@ -1,3 +1,12 @@
+/**
+ * DeleteLocalModal.tsx — Modal de confirmation de suppression d'un local.
+ *
+ * RÔLE :
+ *   Popup de confirmation avant la suppression définitive d'un local/salle.
+ *   Affiche le nom du local et avertit des conséquences (réservations annulées).
+ *
+ * API : DELETE /salles/:id
+ */
 import { X, AlertTriangle, Trash2 } from "lucide-react";
 
 export const DeleteLocalModal = ({

@@ -1,3 +1,58 @@
+/**
+ * social-media.api.ts — Appels API REST pour le réseau social (fil d'actualité).
+ *
+ * RÔLE :
+ *   Centralise toutes les opérations HTTP du module social : publications, réactions,
+ *   commentaires, favoris, stories, profils publics, following/followers, masquage.
+ *
+ * TYPES PRINCIPAUX :
+ *   PublicationVisibility  — 'PUBLIC' | 'PRIVATE' | 'MASKED'
+ *                            PUBLIC = tout le monde, PRIVATE = abonnés, MASKED = caché pour certains
+ *   ReactionType           — 'like' | 'love' | 'wow' | 'bravo' | 'instructif' | 'soutien' | 'haha'
+ *   Publication            — Post complet avec auteur, médias, hashtags, mentions, réactions
+ *   ReactionSummary        — { aggregated: {type: auteurs[]}, total, userReaction }
+ *   PublicUserProfile      — Profil public d'un utilisateur avec compteurs (followers, posts…)
+ *
+ * FONCTIONS PAR CATÉGORIE :
+ *
+ *   PUBLICATIONS :
+ *     fetchFeed(limit, offset)         — Fil d'actualité paginé (GET /social-media/posts)
+ *     fetchPost(id)                    — Détail d'un post
+ *     fetchPostsByUser(userId)         — Posts d'un utilisateur spécifique
+ *     createPublication(payload)       — Crée un post (contenu, visibilité, médias, hashtags, mentions)
+ *     updatePublication(id, payload)   — Modifie un post existant
+ *     deletePublication(id)            — Supprime un post
+ *     sharePublication(id, message)    — Repartage avec token [[shared:<base64>]] côté serveur
+ *
+ *   RÉACTIONS :
+ *     addReaction(postId, type)        — Ajoute/change une réaction (upsert côté serveur)
+ *     removeReaction(postId)           — Retire la réaction
+ *     fetchReactions(postId)           — Récupère le résumé des réactions
+ *
+ *   FAVORIS :
+ *     fetchFavoritePosts()             — Mes posts favoris
+ *     fetchFavoritePostsCount()        — Nombre de favoris (badge dans FavoritePostsBell)
+ *     addFavorite(postId)              — Ajoute aux favoris
+ *     removeFavorite(postId)           — Retire des favoris
+ *
+ *   COMMENTAIRES :
+ *     fetchComments(postId)            — Liste les commentaires d'un post
+ *     createComment(postId, content)   — Ajoute un commentaire (avec mentions optionnelles)
+ *     updateComment(postId, id, content) — Modifie un commentaire
+ *     deleteComment(postId, id)        — Supprime un commentaire
+ *
+ *   PROFILS & FOLLOWING :
+ *     fetchPublicUserProfile(userId)   — Profil public + compteurs + isFollowing
+ *     followUser(userId)               — Abonne au fil d'un utilisateur
+ *     unfollowUser(userId)             — Se désabonne
+ *     fetchMyFollowingUsers()          — Liste des utilisateurs que je suis
+ *     fetchMentionUsers()              — Tous les users (pour l'autocomplétion @mention)
+ *
+ *   MASQUAGE :
+ *     hideUser(userId)                 — Cache les posts d'un utilisateur dans son feed
+ *     unhideUser(userId)               — Rétablit la visibilité
+ *     fetchHiddenUsers()               — Liste des utilisateurs masqués
+ */
 import api from "./axios";
 
 export type PublicationMediaType = "image" | "video" | "document";
@@ -123,6 +178,16 @@ export type FollowedUserLink = {
   followed_id: string;
   created_at: string;
   followed: PublicationAuthor & {
+    role?: string | null;
+  };
+};
+
+export type FollowerUserLink = {
+  id: string;
+  follower_id: string;
+  followed_id: string;
+  created_at: string;
+  follower: PublicationAuthor & {
     role?: string | null;
   };
 };
@@ -315,5 +380,15 @@ export async function unfollowUser(userId: string) {
 
 export async function fetchMyFollowingUsers() {
   const response = await api.get<FollowedUserLink[]>(`/users/me/following`);
+  return response.data;
+}
+
+export async function fetchUserFollowers(userId: string) {
+  const response = await api.get<FollowerUserLink[]>(`/users/${userId}/followers`);
+  return response.data;
+}
+
+export async function fetchUserFollowing(userId: string) {
+  const response = await api.get<FollowedUserLink[]>(`/users/${userId}/following`);
   return response.data;
 }

@@ -1,3 +1,16 @@
+/**
+ * types.ts — Types TypeScript locaux du module social-media (frontend uniquement).
+ *
+ * TYPES :
+ *   DraftMediaItem      — Média en cours de composition (type, url, name, mimeType)
+ *                         Utilisé dans PostComposer avant envoi API
+ *   SocialFeedCurrentUser — Utilisateur courant dans le contexte du feed {id, role}
+ *   EMPTY_MEDIA         — Valeur initiale vide pour un DraftMediaItem
+ *
+ * NOTE :
+ *   Les types API (Publication, ReactionType, etc.) sont dans social-media.api.ts.
+ *   Ce fichier contient uniquement les types LOCAUX au frontend (brouillon, état UI).
+ */
 import type {
   MentionUser,
   PublicationMediaType,

@@ -1,3 +1,13 @@
+/**
+ * EventHeader.tsx — En-tête de la page de gestion des événements.
+ *
+ * RÔLE :
+ *   Barre d'actions en haut d'EventManagementDetailPage / EventsManagerPage.
+ *
+ * ACTIONS :
+ *   showInactive toggle — Afficher/masquer les événements terminés
+ *   onCreate()          — Ouvre EventFormModal pour créer un nouvel événement
+ */
 import { Plus } from "lucide-react";
 
 type Props = {

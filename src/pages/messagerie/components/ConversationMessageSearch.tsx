@@ -1,3 +1,15 @@
+/**
+ * ConversationMessageSearch.tsx — Recherche dans les messages d'une conversation.
+ *
+ * RÔLE :
+ *   Panneau de recherche full-text sur les messages déjà chargés (côté client).
+ *   S'ouvre en overlay dans ConversationView via le bouton 🔍.
+ *
+ * FONCTIONNALITÉS :
+ *   - Filtrage en temps réel sur message.content (useMemo)
+ *   - Résultats cliquables → fait défiler jusqu'au message (onSelectMessage)
+ *   - Message sélectionné surligné dans ConversationView
+ */
 import { Search, X } from "lucide-react";
 import { useMemo } from "react";
 import type { MessengerMessage } from "../types";

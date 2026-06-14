@@ -1,3 +1,26 @@
+/**
+ * CentresPage.tsx — Gestion des maisons des jeunes (vue administrateur).
+ *
+ * RÔLE :
+ *   Interface CRUD des centres (maisons des jeunes) pour l'administrateur.
+ *   Accessible via /admin/centres.
+ *
+ * COMPOSITION :
+ *   CentresStats          — KPIs (total, actifs, gouvernorats couverts)
+ *   CentreFilters         — Filtres par gouvernorat, statut, recherche
+ *   CentreCard            — Carte d'un centre avec actions
+ *   AddCentreModal        — Formulaire de création (nom, adresse, gouvernorat, responsable)
+ *   EditCentreModal       — Modification d'un centre existant
+ *   DeleteCentreModal     — Désactivation / suppression
+ *   ReactivateCentreModal — Réactivation d'un centre désactivé
+ *   CentreQuickView       — Panneau latéral de détail rapide sans navigation
+ *
+ * DONNÉES :
+ *   GET /centres → liste complète avec responsable assigné
+ *   PATCH /centres/:id/reactivate pour réactivation
+ *
+ * ACCÈS : ADMIN uniquement
+ */
 import { useEffect, useState, useMemo } from "react";
 import api from "../../../api/axios";
 import {
