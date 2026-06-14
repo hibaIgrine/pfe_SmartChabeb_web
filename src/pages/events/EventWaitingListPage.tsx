@@ -14,7 +14,7 @@ type ParticipantsResponse = {
   waitingList?: EventParticipant[];
 };
 
-export default function EventWaitingListPage() {
+export default function EventWaitingListPage({ clubIds }: { clubIds?: string[] }) {
   const token = localStorage.getItem("token");
   const headers = useMemo(
     () => ({ Authorization: `Bearer ${token}` }),
@@ -33,9 +33,16 @@ export default function EventWaitingListPage() {
       const eventsResponse = await api.get("/events?includeInactive=false", {
         headers,
       });
-      const events = Array.isArray(eventsResponse.data)
+      const raw = Array.isArray(eventsResponse.data)
         ? (eventsResponse.data as EventItem[])
         : [];
+      const events =
+        clubIds && clubIds.length > 0
+          ? raw.filter((e) => {
+              const ids = [e.club_id, ...(e.collaborating_club_ids ?? [])];
+              return ids.some((id) => id && clubIds.includes(id));
+            })
+          : raw;
 
       const withCapacity = events.filter(
         (event) =>

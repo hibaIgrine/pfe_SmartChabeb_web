@@ -49,6 +49,9 @@ export const ROUTES = {
     clubReservations: "/club-reservations",
     clubMyReservations: "/club-my-reservations",
     clubEventsRequests: "/club-events-requests",
+    eventsManager: "/club-events-manager",
+    eventsManagement: "/club-events-management",
+    eventDetail: "/club/events/:id/detail",
   },
   adherent: {
     myClubRequests: "/my-club-requests",

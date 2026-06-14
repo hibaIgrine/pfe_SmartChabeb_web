@@ -672,10 +672,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {role === "RESPONSABLE_CLUB" && (
             <SidebarItem
-              to={ROUTES.centre.eventsManagement}
+              to={ROUTES.club.eventsManagement}
               icon={<CalendarDays size={18} />}
               label="Gestion Événements"
-              active={location.pathname === ROUTES.centre.eventsManagement}
+              active={location.pathname === ROUTES.club.eventsManagement}
             />
           )}
 
@@ -704,12 +704,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               active={location.pathname === ROUTES.club.clubEventsRequests}
             />
           )}
-          {(role === "RESPONSABLE_CENTRE" || role === "RESPONSABLE_CLUB") && (
+          {role === "RESPONSABLE_CENTRE" && (
             <SidebarItem
               to={ROUTES.centre.eventsManager}
               icon={<CalendarDays size={18} />}
               label="Gestion Participants"
               active={location.pathname === ROUTES.centre.eventsManager}
+            />
+          )}
+          {role === "RESPONSABLE_CLUB" && (
+            <SidebarItem
+              to={ROUTES.club.eventsManager}
+              icon={<CalendarDays size={18} />}
+              label="Gestion Participants"
+              active={location.pathname === ROUTES.club.eventsManager}
             />
           )}
 

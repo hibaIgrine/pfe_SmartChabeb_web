@@ -3,7 +3,7 @@ import api from "../../api/axios";
 import type { EventItem, EventParticipant } from "./types";
 import { formatDateOnly } from "./utils";
 
-export default function EventRequestsPage() {
+export default function EventRequestsPage({ clubIds }: { clubIds?: string[] }) {
   const token = localStorage.getItem("token");
   const headers = useMemo(
     () => ({ Authorization: `Bearer ${token}` }),
@@ -32,9 +32,16 @@ export default function EventRequestsPage() {
       const response = await api.get("/events?includeInactive=false", {
         headers,
       });
-      const list = Array.isArray(response.data)
+      const raw = Array.isArray(response.data)
         ? (response.data as EventItem[])
         : [];
+      const list =
+        clubIds && clubIds.length > 0
+          ? raw.filter((e) => {
+              const ids = [e.club_id, ...(e.collaborating_club_ids ?? [])];
+              return ids.some((id) => id && clubIds.includes(id));
+            })
+          : raw;
       setEvents(list);
 
       const nextSelectedId =

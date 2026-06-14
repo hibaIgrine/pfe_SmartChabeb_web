@@ -1,12 +1,31 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import api from "../../api/axios";
+import { getStoredRole } from "../../utils/authSession";
 import EventParticipantsPage from "./EventParticipantsPage";
 import EventWaitingListPage from "./EventWaitingListPage";
 import EventRequestsPage from "./EventRequestsPage";
+import type { ClubLite } from "./types";
 
 export default function EventsManagerPage() {
   const [tab, setTab] = useState<"requests" | "participants" | "waiting">(
     "requests",
   );
+
+  const isClub = getStoredRole() === "RESPONSABLE_CLUB";
+  const token = localStorage.getItem("token");
+  const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
+  const [clubIds, setClubIds] = useState<string[] | undefined>(undefined);
+
+  useEffect(() => {
+    if (!isClub) return;
+    api
+      .get("/presences/my-clubs", { headers })
+      .then((res) => {
+        const clubs = Array.isArray(res.data) ? (res.data as ClubLite[]) : [];
+        setClubIds(clubs.map((c) => c.id));
+      })
+      .catch(() => setClubIds([]));
+  }, [isClub]);
 
   return (
     <div className="space-y-6 pb-8">
@@ -57,9 +76,9 @@ export default function EventsManagerPage() {
         </nav>
 
         <div className="pt-2">
-          {tab === "requests" && <EventRequestsPage />}
-          {tab === "participants" && <EventParticipantsPage />}
-          {tab === "waiting" && <EventWaitingListPage />}
+          {tab === "requests" && <EventRequestsPage clubIds={clubIds} />}
+          {tab === "participants" && <EventParticipantsPage clubIds={clubIds} />}
+          {tab === "waiting" && <EventWaitingListPage clubIds={clubIds} />}
         </div>
       </div>
     </div>

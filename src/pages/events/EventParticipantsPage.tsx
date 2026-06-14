@@ -10,7 +10,7 @@ type ParticipantsResponse = {
   cancelled?: EventParticipant[];
 };
 
-export default function EventParticipantsPage() {
+export default function EventParticipantsPage({ clubIds }: { clubIds?: string[] }) {
   const token = localStorage.getItem("token");
   const headers = useMemo(
     () => ({ Authorization: `Bearer ${token}` }),
@@ -56,9 +56,16 @@ export default function EventParticipantsPage() {
       const response = await api.get("/events?includeInactive=false", {
         headers,
       });
-      const list = Array.isArray(response.data)
+      const raw = Array.isArray(response.data)
         ? (response.data as EventItem[])
         : [];
+      const list =
+        clubIds && clubIds.length > 0
+          ? raw.filter((e) => {
+              const ids = [e.club_id, ...(e.collaborating_club_ids ?? [])];
+              return ids.some((id) => id && clubIds.includes(id));
+            })
+          : raw;
       setEvents(list);
 
       const nextSelectedId =

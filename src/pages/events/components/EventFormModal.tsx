@@ -61,9 +61,7 @@ export default function EventFormModal({
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [availabilityMessage, setAvailabilityMessage] =
     useState<AlertState>(null);
-  const [isAvailablePreview, setIsAvailablePreview] = useState<boolean | null>(
-    null,
-  );
+
 
   const normalizeTime = (value: string) => {
     const parts = value.split(":");
@@ -140,7 +138,6 @@ export default function EventFormModal({
 
   const checkAvailability = async () => {
     setAvailabilityMessage(null);
-    setIsAvailablePreview(null);
 
     if (
       !form.locaux_id ||
@@ -175,7 +172,6 @@ export default function EventFormModal({
           msg: "Local disponible pour ce créneau.",
           type: "success",
         });
-        setIsAvailablePreview(true);
       } else {
         const conflicts = resp.data?.conflicts;
         const detail =
@@ -186,7 +182,6 @@ export default function EventFormModal({
           msg: `Local indisponible sur ce créneau. ${detail}`.trim(),
           type: "error",
         });
-        setIsAvailablePreview(false);
       }
     } catch (err) {
       setAvailabilityMessage({
@@ -474,7 +469,7 @@ export default function EventFormModal({
                   <div className="space-y-3">
                     {timelineView.map(({ step, originalIndex }, index) => (
                       <div
-                        key={`${originalIndex}-${step.start_time}-${step.end_time}`}
+                        key={originalIndex}
                         className="rounded-xl border border-gray-200 bg-white p-3 shadow-[0_6px_20px_rgba(38,67,74,0.06)]"
                       >
                         <div className="flex items-center justify-between mb-2">
