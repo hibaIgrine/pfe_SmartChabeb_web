@@ -431,68 +431,102 @@ export default function ClubReservationPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-black text-gray-500 uppercase mb-2">
-                Debut
-              </label>
-              <div className="relative">
-                <Clock3
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
-                />
-                <select
-                  value={heureDebut}
-                  onChange={(e) => setHeureDebut(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 py-3 text-sm appearance-none"
-                >
-                  <option value="">--:--</option>
-                  {Array.from({ length: 16 }, (_, i) => {
-                    const hour = 8 + i;
-                    return Array.from({ length: 2 }, (_, j) => {
-                      const minutes = j * 30;
-                      const timeStr = `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
-                      return (
-                        <option key={timeStr} value={timeStr}>
-                          {timeStr}
-                        </option>
-                      );
-                    });
-                  })}
-                </select>
-              </div>
-            </div>
+            {/* Heure début — heures 8-21, minutes libres (max 30 si 21h) */}
+            {(() => {
+              const [dH, dM] = heureDebut ? heureDebut.split(":") : ["", ""];
+              const dHNum = dH ? parseInt(dH, 10) : null;
+              const debutMaxM = dHNum === 21 ? 30 : 59;
+              const fieldCls = "flex-1 rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#436D75]/40";
+              return (
+                <div>
+                  <label className="block text-xs font-black text-gray-500 uppercase mb-2">
+                    Debut
+                  </label>
+                  <div className="flex gap-2 items-center">
+                    <Clock3 className="text-gray-400 shrink-0" size={16} />
+                    <select
+                      value={dH}
+                      onChange={(e) => {
+                        const h = e.target.value;
+                        const m = dM || "00";
+                        setHeureDebut(h ? `${h}:${m}` : "");
+                      }}
+                      className={fieldCls}
+                    >
+                      <option value="">Heure</option>
+                      {Array.from({ length: 14 }, (_, i) => i + 8).map((h) => {
+                        const v = String(h).padStart(2, "0");
+                        return <option key={v} value={v}>{v}h</option>;
+                      })}
+                    </select>
+                    <input
+                      type="number"
+                      min={0}
+                      max={debutMaxM}
+                      placeholder="min"
+                      value={dM ? String(parseInt(dM, 10)) : ""}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        const n = parseInt(raw, 10);
+                        if (raw === "" || (!isNaN(n) && n >= 0 && n <= debutMaxM)) {
+                          setHeureDebut(dH ? `${dH}:${raw === "" ? "00" : String(n).padStart(2, "0")}` : "");
+                        }
+                      }}
+                      className={fieldCls}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
 
-            <div>
-              <label className="block text-xs font-black text-gray-500 uppercase mb-2">
-                Fin
-              </label>
-              <div className="relative">
-                <Clock3
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                  size={16}
-                />
-                <select
-                  value={heureFin}
-                  onChange={(e) => setHeureFin(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 py-3 text-sm appearance-none"
-                >
-                  <option value="">--:--</option>
-                  {Array.from({ length: 16 }, (_, i) => {
-                    const hour = 8 + i;
-                    return Array.from({ length: 2 }, (_, j) => {
-                      const minutes = j * 30;
-                      const timeStr = `${hour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
-                      return (
-                        <option key={timeStr} value={timeStr}>
-                          {timeStr}
-                        </option>
-                      );
-                    });
-                  })}
-                  <option value="23:59">23:59</option>
-                </select>
-              </div>
-            </div>
+            {/* Heure fin — heures debut-22, minutes libres (max 0 si 22h) */}
+            {(() => {
+              const [fH, fM] = heureFin ? heureFin.split(":") : ["", ""];
+              const fHNum = fH ? parseInt(fH, 10) : null;
+              const debutH = heureDebut ? parseInt(heureDebut.split(":")[0], 10) : 8;
+              const finMaxM = fHNum === 22 ? 0 : 59;
+              const fieldCls = "flex-1 rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#436D75]/40";
+              return (
+                <div>
+                  <label className="block text-xs font-black text-gray-500 uppercase mb-2">
+                    Fin
+                  </label>
+                  <div className="flex gap-2 items-center">
+                    <Clock3 className="text-gray-400 shrink-0" size={16} />
+                    <select
+                      value={fH}
+                      onChange={(e) => {
+                        const h = e.target.value;
+                        const m = fM || "00";
+                        setHeureFin(h ? `${h}:${m}` : "");
+                      }}
+                      className={fieldCls}
+                    >
+                      <option value="">Heure</option>
+                      {Array.from({ length: 22 - debutH + 1 }, (_, i) => i + debutH).map((h) => {
+                        const v = String(h).padStart(2, "0");
+                        return <option key={v} value={v}>{v}h</option>;
+                      })}
+                    </select>
+                    <input
+                      type="number"
+                      min={0}
+                      max={finMaxM}
+                      placeholder="min"
+                      value={fM ? String(parseInt(fM, 10)) : ""}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        const n = parseInt(raw, 10);
+                        if (raw === "" || (!isNaN(n) && n >= 0 && n <= finMaxM)) {
+                          setHeureFin(fH ? `${fH}:${raw === "" ? "00" : String(n).padStart(2, "0")}` : "");
+                        }
+                      }}
+                      className={fieldCls}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {selectedLocal && (

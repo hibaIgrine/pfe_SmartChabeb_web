@@ -479,80 +479,12 @@ export default function CentreEventsRequestsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[1.05fr_1.4fr]">
-          <section className="rounded-[30px] border border-gray-100 bg-white shadow-sm p-5 md:p-6 space-y-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-black text-[#1A1C1E]">
-                  Centre actif
-                </h2>
-                <p className="text-xs text-gray-400 uppercase tracking-[0.2em] font-bold mt-1">
-                  {centreClubs.length} club(s) dans le périmètre
-                </p>
-              </div>
-              <button
-                onClick={() => void loadData()}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#F7FBFC] px-3 py-2 text-xs font-black text-[#244047]"
-              >
-                <RefreshCcw size={14} /> Actualiser
-              </button>
-            </div>
-
-            <div className="grid gap-3">
-              {centreClubs.map((club) => {
-                const active = club.id === primaryClubId;
-                return (
-                  <button
-                    key={club.id}
-                    onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        club_id: club.id,
-                        club_ids: prev.club_ids.filter((id) => id !== club.id),
-                        locaux_id: "",
-                      }))
-                    }
-                    className={`text-left rounded-2xl border p-4 transition ${
-                      active
-                        ? "border-[#436D75] bg-[#EAF2F4]"
-                        : "border-gray-100 bg-white hover:bg-gray-50"
-                    }`}
-                  >
-                    <p className="text-sm font-black text-[#244047]">
-                      {club.nom}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="rounded-[24px] border border-[#D8E5E8] bg-[#F7FBFC] p-4">
-              <p className="text-[11px] uppercase tracking-[0.22em] font-black text-gray-500">
-                Club principal par défaut
-              </p>
-              <p className="mt-2 text-sm font-bold text-[#244047]">
-                {selectedClubContext?.nom || "Aucun club sélectionné"}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <StatCard
-                label="En attente"
-                value={counts.pending}
-                tone="pending"
-              />
-              <StatCard
-                label="Validées"
-                value={counts.approved}
-                tone="approved"
-              />
-              <StatCard
-                label="Refusées"
-                value={counts.refused}
-                tone="refused"
-              />
-            </div>
-          </section>
+        <div className="space-y-6">
+          <div className="grid grid-cols-3 gap-4">
+            <StatCard label="En attente" value={counts.pending} tone="pending" />
+            <StatCard label="Validées"   value={counts.approved} tone="approved" />
+            <StatCard label="Refusées"   value={counts.refused}  tone="refused" />
+          </div>
 
           <section className="rounded-[30px] border border-gray-100 bg-white shadow-sm p-5 md:p-6 space-y-5">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

@@ -415,15 +415,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           )}
 
-          {role === "RESPONSABLE_CENTRE" && (
-            <SidebarItem
-              to={ROUTES.centre.reservationRevenues}
-              icon={<Wallet size={18} />}
-              label="Revenus Réservations"
-              active={location.pathname === ROUTES.centre.reservationRevenues}
-            />
-          )}
-
           {(role === "ADMIN" || role === "RESPONSABLE_CENTRE") && (
             <SidebarItem
               to={role === "ADMIN" ? ROUTES.admin.centres : ROUTES.centre.home}
@@ -451,6 +442,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               icon={<CalendarCheck size={18} />}
               label="Réservation du local"
               active={location.pathname === ROUTES.centre.reservations}
+            />
+          )}
+          {role === "RESPONSABLE_CENTRE" && (
+            <SidebarItem
+              to={ROUTES.centre.reservationRevenues}
+              icon={<Wallet size={18} />}
+              label="Revenus Réservations"
+              active={location.pathname === ROUTES.centre.reservationRevenues}
             />
           )}
 
